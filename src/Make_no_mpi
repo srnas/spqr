@@ -1,0 +1,23 @@
+CC=gcc
+#CFLAGS = -c -O3 -DWARMUP -DFROZEN
+CFLAGS = -c -O3 -DFROZEN
+#CFLAGS = -c -O3 
+
+ %.o : %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+
+MC : mpi_mc.o    mc_bond_lists.o  mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o mc_utils.o
+	$(CC)  	mpi_mc.o   mc_bond_lists.o  mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o -o MC -lm -O3
+
+ENERG :  calc_energy.o  mc_bond_lists.o  mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o
+	$(CC)  	calc_energy.o    mc_bond_lists.o  mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o -o ENERG -lm -O3 
+
+FINDMIN :  find_min_energs.o  mc_bond_lists.o  mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o
+	$(CC)  	find_min_energs.o  mc_bond_lists.o  mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o -o FINDMIN -lm -O3 
+
+WFINDMAX :  find_max_energs.o  mc_bond_lists.o  mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o  mc_utils.o
+	$(CC)  	find_max_energs.o  mc_bond_lists.o  mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o -o WFINDMAX -lm -O3 
+
+clean: 
+	rm *.o MC ENERG FINDMIN WFINDMAX 
