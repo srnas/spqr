@@ -4,7 +4,8 @@ SPQR is a coarse-grained representation and energy function for the prediction o
 
 A nucleotide is represented as two particles: an anisotropic one which stands for the nucleoside and a point particle for the phosphate group.
 
-![Image](http://people.sissa.it/~spoblete/webpage/multiscale.png)
+<img src="http://people.sissa.it/~spoblete/webpage/multiscale.png" width="500">
+
 # Features
 
 ## Interactions
