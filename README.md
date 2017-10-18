@@ -30,6 +30,8 @@ We include here a small tutorial for the folding of a small tetraloop hairpin, a
 
 ## References
 [1] S. Bottaro, F. Di Palma and G. Bussi, _Nucleic Acids Res._ 42(21), 13306-13314 (2014).
+
 [2] S. Poblete, S. Bottaro and G. Bussi, [Link] (https://arxiv.org/abs/1709.08691).
+
 [3] S. Poblete, S. Bottaro and G. Bussi, _submitted_.
 You can use the [editor on GitHub](https://github.com/srnas/spqr/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
