@@ -34,4 +34,4 @@ We include here a small tutorial for the folding of a small tetraloop hairpin, a
 
 [2] S. Poblete, S. Bottaro and G. Bussi, [Link] (https://arxiv.org/abs/1709.08691).
 
-[3] S. Poblete, S. Bottaro and G. Bussi, _submitted_.
+[3] S. Poblete, S. Bottaro and G. Bussi, [Link] (https://arxiv.org/abs/1711.00741).
