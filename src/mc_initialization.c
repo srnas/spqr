@@ -1,22 +1,322 @@
 #include "mc_initialization.h"
 
-void MC_initialize(int mc_n, double **rsx, double **rsy, double **rsz, double lx, double ly, double lz, int mc_read_conf_flag, int mcseed, int ini, int mpi_id){
-  MC_initialize_global(mc_n, lx, ly, lz, mcseed, mpi_id);
-  //if(mc_read_conf_flag==READ_MC_CONF){
-  MC_initialize_positions(mc_n,rsx,rsy,rsz,mc_read_conf_flag, mpi_id);
-  /* INITIALIZE CONFIGURATION FILE */
-  MC_initialize_save_configs(mc_n, ini, mpi_id);
-  MC_initialize_energies(mc_n, *rsx, *rsy, *rsz);
+int MC_detect_initial_condition(int mpi_id){
+  FILE *infile;
+  char initname[256];
+  int flag=-1;
+  //case 1
+  printf("Detecting initial condition...");
+  sprintf(initname, "pdb_inits/init.p%02d.mc", mpi_id);
+  if((infile=fopen(initname, "rb"))==NULL){
+    sprintf(initname, "pdb_inits/init.mc");
+    if((infile=fopen(initname, "rb"))==NULL){
+      sprintf(initname, "pdb_inits/init.p%02d.pdb", mpi_id);
+      if((infile=fopen(initname, "r"))==NULL){
+	sprintf(initname, "pdb_inits/init.pdb");
+	if((infile=fopen(initname, "r"))==NULL){
+	  printf("No valid initial condition found for processor %d!\n", mpi_id);
+	  exit(ERR_INPUT);
+	}
+	else{
+	  fclose(infile);
+	  flag=3;
+	}
+      }
+      else{
+	fclose(infile);
+	flag=2;
+      }
+    }
+    else{
+      fclose(infile);
+      flag=1;
+    }
+  }
+  else{
+    fclose(infile);
+    flag=0;
+  }
+  printf("Initial condition taken from %s.\n", initname);
+  return flag;
 }
 
-void MC_initialize_global(int mc_n, double lx, double ly, double lz, int mcseed, int mpi_id){
+
+int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_iter, int *rand_a, int mpi_id, int init_type, double *add_data){
+  int nt_n;
+  int init=0;
+  char initfile[256];
+  if(init_type==0 || init_type==1){
+    if(init_type==0) sprintf(initfile, "pdb_inits/init.p%02d.mc", mpi_id);
+    else  sprintf(initfile, "pdb_inits/init.mc"  );
+    MC_read_params(mc_iter, rand_a,mpi_id);
+   
+    init=MC_read_checkpoint(mc_n, rsx, rsy, rsz, rand_a, mpi_id, initfile, add_data);
+  }
+  else{
+    if(init_type==2) sprintf(initfile, "pdb_inits/init.p%02d.pdb", mpi_id);
+    else  sprintf(initfile, "pdb_inits/init.pdb"  );
+    MC_read_nsolute(mc_n, mpi_id, initfile);
+    MC_read_params(mc_iter, rand_a, mpi_id);
+    MC_initialize_global(*mc_n, *rand_a, mpi_id);
+    MC_initialize_arrays(*mc_n,rsx,rsy,rsz);
+    MC_read_pdb(*mc_n, rsx, rsy, rsz, mpi_id,initfile);
+  }
+  /* INITIALIZE CONFIGURATION FILE */
+  MC_initialize_save_configs(*mc_n, mpi_id);
+#ifdef ERMSDR
+  nt_n=*mc_n/N_PARTS_PER_NT;
+  MC_init_ermsd_restr(nt_n);
+  MC_init_ermsd_out(mpi_id);
+  ERMSD_SQ=get_first_ermsd(rsx, rsy, rsz, nt_n);
+  DELTA_ERMSD_SQ=0;
+#endif
+  MC_initialize_energies(*mc_n, *rsx, *rsy, *rsz);
+
+  return init;
+}
+
+
+
+
+/* void MC_initialize(int mc_n, double **rsx, double **rsy, double **rsz, double lx, double ly, double lz, , int mcseed, int ini, int mpi_id){ */
+/*   MC_initialize_global(mc_n, lx, ly, lz, mcseed, mpi_id); */
+/*   MC_initialize_arrays(mc_n,rsx,rsy,rsz, mpi_id); */
+/*   MC_read_pdb(mc_n, rsx, rsy, rsz, mpi_id,NULL); */
+  
+  
+/*   /\* INITIALIZE CONFIGURATION FILE *\/ */
+/*   MC_initialize_save_configs(mc_n, ini, mpi_id); */
+/* #ifdef ERMSDR */
+/*   int nt_n=mc_n/N_PARTS_PER_NT; */
+/*   MC_init_ermsd_restr(nt_n); */
+/*   MC_init_ermsd_out(mpi_id); */
+/*   ERMSD_SQ=get_first_ermsd(rsx, rsy, rsz, nt_n); */
+/*   DELTA_ERMSD_SQ=0; */
+/* #endif */
+/*   MC_initialize_energies(mc_n, *rsx, *rsy, *rsz); */
+/* } */
+
+void MC_read_pdb(int mc_n, double **rx, double **ry, double **rz, int mpi_id, char *outpdbname){
+  //read pdb - read types, positions, glp, frz, and bonds
+  char *pdbrectyp, resname, *fullresname, *stmp, *sresind;
+  char *atname, gl, pu, mv, fr, tgl, tpu, tmv, tfr;
+  char pdbname[MAXSTR];
+  static size_t st_l=0;
+  
+  int nt=0, nt_n=mc_n/N_PARTS_PER_NT, at=0, inat=0, l, i, j, atindex;
+  char chain;
+  int firstat, firstnt, isfirst=1;
+  int tempres, prevres;
+  int *chains; chains=(int *)malloc(sizeof(int)*nt_n);
+  char tempchain, prevchain; int currchain=0;
+  double tx, ty, tz;
+  
+  FILE *pdbfile;
+  int fileflag=1, fileflaggen=1;
+  char *lline=NULL;
+  
+  if(outpdbname==NULL)
+    sprintf(pdbname,"pdb_inits/mc.p%02d.pdb", mpi_id); 
+  else 
+    strcpy(pdbname, outpdbname); 
+  if((pdbfile=fopen(pdbname, "r"))==NULL){
+    if(outpdbname!=NULL){
+      printf("pdb file %s not found!\n", outpdbname);
+      exit(ERR_INPUT);
+    }
+    fileflag=0;
+    sprintf(pdbname,"pdb_inits/mc.pdb"); 
+    if((pdbfile=fopen(pdbname, "r"))==NULL){
+      printf("No decent init files found in pdb_inits. Can not run like this.\n");
+      exit(ERR_INPUT);
+      fileflaggen=0;
+    }
+  }
+
+  while((l=getline(&lline, &st_l, pdbfile))>6){
+    //for(j=0;j<6;j++)
+    //pdbrectyp[j]=lline[j];
+    pdbrectyp=strndup(lline, 6);
+    if(!strcmp(pdbrectyp, "ATOM  ")){
+      //read    
+      //stmp=strndup(lline+6, 5);atindex=strtol(stmp, NULL, 10);free(stmp);
+      stmp=strndup(lline+6, 5);atindex=atoi(stmp);free(stmp);
+      atname=strndup(lline+12,4);//lline[15];
+      fullresname=strndup(lline+17,3);
+      if(fullresname[0]==' ' && fullresname[1]==' ') resname=fullresname[2];
+      else if(fullresname[1]==' ' && fullresname[2]==' ') resname=fullresname[0];
+      else if(fullresname[0]==' ' && fullresname[2]==' ') resname=fullresname[1];
+      else{printf("Residue not recognized in atom %d\n", at); exit(ERR_INPUT);}
+      //resname=lline[19];
+      //stmp=strndup(lline+21, 1);chain=atoi(stmp);free(stmp);
+      //chain=atoi(lline[21]);
+      if(inat==0){
+	sresind=strndup(lline+22,4);tempres=atoi(sresind);free(sresind);
+	tempchain=lline[21];
+	if(at==0) {prevchain=tempchain;prevres=tempres-1;}
+	if((tempchain!=prevchain || tempres!=(prevres+1))) currchain++;
+	//chain=currchain;
+	//prevchain=currchain;prevres=tempres;
+      }
+      //printf("%d %d %d %d -  %c %d %c\n", at, nt, tempres, prevres, tempchain, currchain, prevchain);
+      stmp=strndup(lline+30, 8);tx=atof(stmp);free(stmp);
+      stmp=strndup(lline+38, 8);ty=atof(stmp);free(stmp);
+      stmp=strndup(lline+46, 8);tz=atof(stmp);free(stmp);
+      
+      gl='A';
+      pu='3';
+      mv='N';
+      fr='A';
+      if(strlen(lline)>58 && inat==0){
+
+	tgl=lline[56];
+	tpu=lline[57];
+	tmv=lline[58];
+	tfr=lline[59];
+	if((tgl=='A' || tgl=='H' || tgl=='S') && (tpu=='3' || tpu=='2') && (tmv=='N' || tmv=='G' || tmv=='P' || tmv=='A') && (tfr=='N' || tfr=='B' || tfr=='P' || tfr=='A')){
+	  gl=tgl;pu=tpu;mv=tmv;fr=tfr;
+	}
+	//printf("READ PDB %d  %c %c %c %c\n", nt, gl, pu, mv, fr);
+      }
+      //check indexes
+      if(isfirst==1){
+	firstat=atindex;
+	//firstnt=resindex;
+	isfirst=0;
+      }
+      
+      //set position
+      (*rx)[at]=tx;
+      (*ry)[at]=ty;
+      (*rz)[at]=tz;
+      if(strcmp(atname, "BASE")==0){
+	if(resname=='A') mc_types[at]=TYP_ADENINE;
+	if(resname=='U') mc_types[at]=TYP_URACIL;
+	if(resname=='G') mc_types[at]=TYP_GUANINE;
+	if(resname=='C') mc_types[at]=TYP_CYTOSINE;
+      }
+      if(strcmp(atname, "XVEC")==0) mc_types[at]=-1;
+      if(strcmp(atname, "YVEC")==0) mc_types[at]=-2;
+      if(strcmp(atname, "SUGR")==0) mc_types[at]=-3;
+      if(strcmp(atname, "PHOS")==0) mc_types[at]=-4;
+      
+      /*** THIS SETUP IS ONLY READ ON BASES ***/
+      if(inat==0){
+	chains[nt]=currchain;
+	prevchain=tempchain; prevres=tempres;
+	//set glp
+	if(gl=='A') mc_glyc[nt]=GLYC_A;
+	else if(gl=='H') mc_glyc[nt]=GLYC_H;
+	else if(gl=='S') mc_glyc[nt]=GLYC_S;
+	else {
+	  printf("Invalid GLYCOSIDIC index for %d.\n", nt);
+	  exit(ERR_INPUT);
+	}
+	
+	if(pu=='3') mc_puck[nt]=PUCK_3;
+	else if(pu=='2') mc_puck[nt]=PUCK_2;
+	else {
+	  printf("Invalid PUCKER index for %d in gly_pck.dat file.\n", nt);
+	  exit(ERR_INPUT);
+	}
+	
+	if(mv=='N') glp_is_flippable[nt]=GLP_FIXED;
+	else if(mv=='G') glp_is_flippable[nt]=GLP_GLYC;
+	else if(mv=='P') glp_is_flippable[nt]=GLP_PUCK;
+	else if(mv=='A') glp_is_flippable[nt]=GLP_BOTH;
+	else{
+	  printf("Invalid fix flag in glyc and puck at nucleoside %d .\n", nt);
+	  exit(ERR_INPUT);
+	}
+	
+	//set frz
+	if(fr=='N') fr_is_mobile[nt]=FR_MOB_FROZ;
+	else if(fr=='B') fr_is_mobile[nt]=FR_MOB_BASE;
+	else if(fr=='P') fr_is_mobile[nt]=FR_MOB_PHOS;
+	else if(fr=='A') fr_is_mobile[nt]=FR_MOB_FULL;
+	else{
+	  printf("Invalid fix flag for nucleoside %d .\n", nt);
+	  exit(ERR_INPUT);
+	}
+      }
+      at++;inat++;if(inat==N_PARTS_PER_NT){inat=0;nt++;}
+    }
+    else if(!strcmp(pdbrectyp, "REMARK")){
+      //here we just read a comment
+#ifdef INPUTVERBOSE
+      printf("Comment is: %s\n", pdbrectyp);
+#endif
+      
+    }
+    else{
+      printf("Record in pdb file not recognized at nucleotide %d.\n", nt);
+      exit(ERR_INPUT);
+    }
+  }
+  for(i=0;i<nt_n;i++)
+    MC_map_sugar(i, rx, ry, rz);
+  //copy glp to temp
+  for(i=0;i<nt_n;i++){
+    mc_temp_glyc[i]=mc_glyc[i];
+    mc_temp_puck[i]=mc_puck[i];
+  }
+  
+  //set bonds
+  int nbonds=0, currb;
+  nt=0;
+  if(chains[nt]==chains[nt+1]) nbonds++;
+  mc_nbonds[nt][0]=nbonds;
+  if(mc_nbonds[nt][0]>0){
+    mc_bondlist[nt]=(int *)malloc(2*mc_nbonds[nt][0]*sizeof(int));
+    currb=0;
+    if(chains[nt]==chains[nt+1]) {mc_bondlist[nt][currb]=nt+1;mc_bondlist[nt][currb+mc_nbonds[nt][0]];currb++;};
+  }
+  nbonds=0;
+  nt=nt_n-1;
+  if(chains[nt]==chains[nt-1]) nbonds++;
+  mc_nbonds[nt][0]=nbonds;
+  if(mc_nbonds[nt][0]>0){
+    mc_bondlist[nt]=(int *)malloc(2*mc_nbonds[nt][0]*sizeof(int));
+    currb=0;
+    if(chains[nt]==chains[nt-1]) {mc_bondlist[nt][currb]=nt-1;mc_bondlist[nt][currb+mc_nbonds[nt][0]];currb++;};
+  }
+  for(nt=1;nt<nt_n-1;nt++){
+    nbonds=0;
+    if(chains[nt]==chains[nt-1]) nbonds++;
+    if(chains[nt]==chains[nt+1]) nbonds++;
+    mc_nbonds[nt][0]=nbonds;
+    if(nbonds>0){
+      mc_bondlist[nt]=(int *)malloc(2*mc_nbonds[nt][0]*sizeof(int));
+      currb=0;
+      if(chains[nt]==chains[nt-1]) {mc_bondlist[nt][currb]=nt-1;mc_bondlist[nt][currb+mc_nbonds[nt][0]];currb++;};
+      if(chains[nt]==chains[nt+1]) {mc_bondlist[nt][currb]=nt+1;mc_bondlist[nt][currb+mc_nbonds[nt][0]];currb++;};
+    }
+  }
+  free(chains);
+  //we check that no pyrimidines are in SYN state, but they can change their GLYC
+  for(i=0;i<nt_n; i++){
+    if(is_pyrimidine(i)){
+      //mc_types[i*N_PARTS_PER_NT]==TYP_URACIL || mc_types[i*N_PARTS_PER_NT]==TYP_CYTOSINE){
+      //if((glp_is_flippable[i]==GLP_GLYC || glp_is_flippable[i]==GLP_BOTH) || (mc_glyc[i]==GLYC_S) ){
+      if(mc_glyc[i]==GLYC_S ){
+	printf("Some pyrimidine (residue %d) has a SYN conformation. This is not implemented for the moment.\n", i);
+	exit(1);
+      }
+    }
+  }
+}
+
+void MC_initialize_global(int mc_n, int mcseed, int mpi_id){
   int i;
   int nt_n=mc_n/N_PARTS_PER_NT;
   /* RANDOM SEED */
   idum=(double *)malloc(sizeof(double));
-  *idum=-((double) mcseed+(double)mpi_id);
-  
+  if(mpi_id>-1)
+    *idum=-((double) mcseed+(double)mpi_id);
+  else 
+    *idum=-((double) mcseed);
   /* GENERAL INITIALIZATION */
+  double lx=100.0, ly=100.0, lz=100.0;
   box_l[0]=lx;
   box_l[1]=ly;
   box_l[2]=lz;
@@ -69,304 +369,31 @@ void MC_initialize_global(int mc_n, double lx, double ly, double lz, int mcseed,
   for(i=mc_n;i<mc_n+mc_n_linked_cells-1;i++)
     mc_cells[i]=-1;
   mc_cells[mc_n+mc_n_linked_cells-1]=0;
-
-  /*************************/
-  
-  /* INITIALIZE BONDLISTS */
-  mc_nbonds=(int **)malloc(sizeof(int *)*nt_n);
-  for(i=0;i<nt_n;i++)
-    mc_nbonds[i]=(int *)malloc(sizeof(int)*N_BONDED_INTERACTIONS);
-  mc_bondlist=(int **)malloc(sizeof(int *)*nt_n);
-  mc_anglelist=(int **)malloc(sizeof(int *)*nt_n);
-  mc_anglecenter=(int **)malloc(sizeof(int *)*nt_n);
-
-#ifdef STWCBONDED
-  mc_stbondlist=(int **)malloc(sizeof(int *)*nt_n);
-  mc_wcbondlist=(int **)malloc(sizeof(int *)*nt_n);
-#endif
-#ifdef DIHEDRALS
-  mc_dihedrallist=(int **)malloc(sizeof(int *)*nt_n);
-#endif
-  if(MC_open_bondlist_file()){
-    //printf("Open bonds.dat with %d types of bonded interactions\n", (int) N_BONDED_INTERACTIONS);
-    for(i=0;i<nt_n;i++){
-      MC_read_bondlist_from_file(i, mpi_id);
-    }
-    MC_close_bondlist_file();
-  }else{
-    printf("Using default bonds.\n");
-    MC_default_bonds(nt_n);
-  }
-
-  /* int j;  */
-  /* for(i=0;i<nt_n;i++){ */
-  /*   printf("%d :  ", i); */
-  /*   for(j=0;j<mc_nbonds[i][2];j++) */
-  /*     printf("st %d ", mc_stbondlist[i][j]); */
-  /*   for(j=0;j<mc_nbonds[i][3];j++) */
-  /*     printf("wc %d ", mc_wcbondlist[i][j]); */
-    
-    
-  /*   printf("\n"); */
-  /* } */
- 
-  /************************/
-  
-  
-#ifdef FROZEN
-  MC_init_frozen_file(nt_n);
-#endif
-  if(mpi_id==0)
-    MC_print_parameters(mc_n);
-  //INITIALIZE PUCKERS
-  MC_init_glycs_and_pucks(nt_n);
-
-#ifdef SECONDSTC
-  MC_init_sec_str_c_lists(nt_n);
-#endif
-
 }
 
-#ifdef SECONDSTC
-void MC_init_sec_str_c_lists(int nt_n){
-  int i, p;
-  int temp1, temp2, temp3, temp4;
-  char filename[256];
-  sprintf(filename, "sec_strc.lst");
-  FILE *sscfile;
-  
-  wc_sstruct_N=(int *)malloc(sizeof(int)*nt_n);
-  wc_sstruct_neigh=(int **)malloc(sizeof(int *)*nt_n);
-  for(i=0;i<nt_n;i++){
-    wc_sstruct_N[i]=0;
-  }
-  if((sscfile=fopen(filename,"r"))==NULL){
-    printf("List of secondary_structure constrain not found - ignoring it\n");
-  }
-  else{
-    printf("SECONDARY STRUCTURE IS CONSTRAINED!!\n");
-    for(i=0;i<nt_n;i++){
-      fscanf(sscfile, "%d%d", &temp1, &temp2);
-      if(temp1!=i){
-	printf("Invalid index in sec_strc.lst file at line %d\n", i);
-	exit(ERR_INPUT);
-      }
-      wc_sstruct_N[i]=temp2; //THIS IS THE NUMBER OF NT CONSTRAINED TO INTERACT WITH THE CURRENT NT. 0 MEANS NO RESTRICTION, -1 MEANS FULL RESTRICTION
-      wc_sstruct_neigh[i]=(int *)malloc(sizeof(int)*2*wc_sstruct_N[i]);
-      for(p=0;p<wc_sstruct_N[i];p++){
-	fscanf(sscfile, "%d%d", &temp3, &temp4);
-	wc_sstruct_neigh[i][2*p]=temp3; //THIS IS THE INDEX OF THE NEIGHBOR
-	wc_sstruct_neigh[i][2*p+1]  =temp4; //THIS MUST BE THE TYPE OF CONSTRAINT - 0 , ONLY BASE-PAIR, 1 - ALL, 2 - THIS BASE + PHOS , 3 - THIS PHOS + BASE
-	
-      }
-      
-    }
-    /* for(p=0;p<nt_n;p++){ */
-    /*   printf("%d %d  ", p, wc_sstruct_N[p]); */
-    /*   for(i=0;i<wc_sstruct_N[p];i++){ */
-    /* 	printf("%d %d  ", wc_sstruct_neigh[p][1], wc_sstruct_neigh[p][0]); */
-    /*   } */
-    /*   printf("\n"); */
-    /* } */
-    fclose(sscfile);
-  }
-}
-#endif
-#ifdef FROZEN
-void MC_init_frozen_file(int nt_n){
-  int i, temp1, temp2;
-  fr_is_mobile=(int *)malloc(nt_n*sizeof(int));
-  for(i=0;i<nt_n;i++)
-    fr_is_mobile[i]=FR_MOB_FULL;
-  char filename[256];
-  sprintf(filename, "mobile.lst");
-  FILE *frfile;
-  if((frfile=fopen(filename,"r"))==NULL){
-    printf("List of mobile particles not found. All atoms are mobile by default.\n");
-  }
-  else{
-    printf("List of mobile particles found.\n");
-    for(i=0;i<nt_n;i++){
-      fscanf(frfile, "%d %d", &temp1, &temp2);
-      if(temp1!=i){
-	printf("Invalid index in mobile.lst file at line %d\n", i);
-	exit(ERR_INPUT);
-      }
-      if(temp2<FR_MOB_FROZ || temp2 > FR_MOB_FULL){
-	printf("Invalid value in mobile.lst file at line %d\n", i);
-	exit(ERR_INPUT);
-      }
-      fr_is_mobile[temp1]=temp2;
-    }
-    fclose(frfile);
-  }
-}
-#endif
-
-void MC_init_glycs_and_pucks(int nt_n){ 
-  int i, temp1, temp3;
-  char temp2;
-  char filename[256];
-  mc_glyc=(int *)malloc(sizeof(int)*nt_n);
-  mc_temp_glyc=(int *)malloc(sizeof(int)*nt_n);
-  
-  mc_puck=(int *)malloc(sizeof(int)*nt_n);
-  mc_temp_puck=(int *)malloc(sizeof(int)*nt_n);
-  
-  
-  sprintf(filename, "gly_pck.dat");
-  FILE *glycfile;
-  if((glycfile=fopen(filename, "r"))==NULL){
-    printf("No glycosidic indexes file found. Setting all glycosidic states to ANTI and all puckers to C3' endo\n");
-    for(i=0;i<nt_n;i++){
-      mc_glyc[i]=GLYC_A;
-      mc_puck[i]=PUCK_3;
-    }
-  }
-  else{
-    for(i=0;i<nt_n;i++){
-      fscanf(glycfile, "%d %c %d", &temp1, &temp2, &temp3);
-      if(temp1!=i){
-	printf("Wrong index for %d in gly_pck.dat file.\n", i);
-	exit(ERR_INPUT);
-      }
-      if(temp2=='A') mc_glyc[i]=GLYC_A;
-      else if(temp2=='H') mc_glyc[i]=GLYC_H;
-      else if(temp2=='S') mc_glyc[i]=GLYC_S;
-      else {
-	printf("Invalid GLYCOSIDIC index for %d in gly_pck.dat file.\n", i);
-	exit(ERR_INPUT);
-      }
-      
-      if(temp3==3) mc_puck[i]=PUCK_3;
-      else if(temp3==2) mc_puck[i]=PUCK_2;
-      else {
-	printf("Invalid PUCKER index for %d in gly_pck.dat file.\n", i);
-	exit(ERR_INPUT);
-      }
-      
-      
-    }
-    fclose(glycfile);
-  }
-  for(i=0;i<nt_n;i++){
-    mc_temp_glyc[i]=mc_glyc[i];
-    mc_temp_puck[i]=mc_puck[i];
-  }
-}
-
-void MC_print_parameters(int mc_n){
-  int i,j;
-  printf("\nMC parameters:\n");
-  printf("Number of particles                                     : %d\n", mc_n);
-  printf("MC linked cell length                                   : %lf\n",mc_linked_cell_l);
-  printf("Number of MC linked cells                               : %d\n", mc_n_linked_cells);
-  printf("Maximum cutoff radius between nucleotides               : %lf\n", mc_r_cut);
-  printf("Number of particle types (for non-bonded interactions)  : %d\n", mc_n_types);
-  printf("Number of bond types                                    : %d  %d", mc_n_bond_types, mc_n_ang_types);
-#ifdef DIHEDRALS
-  printf("  %d", mc_n_dih_types);
-#endif
-  printf("\n");
-  printf("Skin for Verlet list                                    : %lf\n", vl_skin);
-  /* printf("LJ epsilon (for non-bonded interactions)                : "); */
-  /* for(i=0;i<mc_n_types;i++) */
-  /*   printf(" ( %d %d %lf ) ", i, i, mc_lj_eps[i][i]); */
-  /* for(i=0;i<mc_n_types;i++) */
-  /*   for(j=i+1;j<mc_n_types;j++) */
-  /*     printf(" ( %d %d %lf ) ", i,j,mc_lj_eps[i][j]); */
-  /* printf("\n"); */
-  
-  /* printf("LJ sigma (for non-bonded interactions)                  : "); */
-  /* for(i=0;i<mc_n_types;i++) */
-  /*   printf("%lf ", mc_lj_sig[i][i]); */
-  /* for(i=0;i<mc_n_types;i++) */
-  /*   for(j=i+1;j<mc_n_types;j++) */
-  /*     printf("%lf ", mc_lj_sig[i][j]); */
-  /* printf("\n"); */
-  
-  /* printf("Harmonic bond K                                         : "); */
-  /* for(i=0;i<mc_n_bond_types;i++) */
-  /*   printf("%lf ", mc_harm_k[i]); */
-  /* printf("\n"); */
-  
-  /* printf("Harmonic bond R                                         : "); */
-  /* for(i=0;i<mc_n_bond_types;i++) */
-  /*   printf("%lf ", mc_harm_r[i]); */
-  /* printf("\n"); */
-  
-  /* printf("Angle constant K                                        : "); */
-  /* for(i=0;i<mc_n_ang_types;i++) */
-  /*   printf("%lf ", mc_ang_k[i]); */
-  /* printf("\n"); */
-  
-  /* printf("Angle constant THETA                                    : "); */
-  /* for(i=0;i<mc_n_ang_types;i++) */
-  /*   printf("%lf ", mc_ang_th[i]); */
-  /* printf("\n"); */
-
-#ifdef FROZEN
-  printf("Some particles are MOBILE: ");
-  for(i=0;i<mc_n/N_PARTS_PER_NT;i++){
-    if(fr_is_mobile[i]==FR_MOB_FULL) printf(" %d FULL ", i);
-    if(fr_is_mobile[i]==FR_MOB_BASE) printf(" %d (N) ", i);
-    if(fr_is_mobile[i]==FR_MOB_PHOS) printf(" %d (P) ", i);
-    if(fr_is_mobile[i]==FR_MOB_FROZ) printf(" %d FROZEN ", i);
-  }
-  printf("\n");
-#endif
-#ifdef DIHEDRALS
-  printf("Dihedral constant K                                     : ");
-  for(i=0;i<mc_n_dih_types;i++)
-    printf("%lf ", mc_dih_k[i]);
-  printf("\n");
-  
-  printf("Dihedral constant THETA                                 : ");
-  for(i=0;i<mc_n_dih_types;i++)
-    printf("%lf ", mc_dih_phi[i]);
-  printf("\n");
-  
-  printf("Dihedral constant N                                     : ");
-  for(i=0;i<mc_n_dih_types;i++)
-    printf("%lf ", mc_dih_n[i]);
-  printf("\n");
-#endif
-  
-  printf("MC random seed                                          : %lf\n",*idum); 
-  printf("MC configurations saved every %d MPC steps.\n", mc_chk_freq);
-}
-
-void MC_read_nsolute(int *mc_n, int mpi_id){
-  FILE * xyzfile;
-  FILE * xyzfile_gen;
-  
-  char xyzname[256];
-  int nmc;
+void MC_read_nsolute(int *mc_n, int mpi_id, char *pdbname){
+  FILE * pdbfile;
+  int nmc=0, l, j;
   int fileflag=1, fileflaggen=1;
-  sprintf(xyzname,"xyz_inits/mc.p%02d.xyz", mpi_id);
-  if((xyzfile=fopen(xyzname, "r"))==NULL){
-    fileflag=0;
-    sprintf(xyzname,"xyz_inits/mc.xyz");
-    if((xyzfile=fopen(xyzname, "r"))==NULL){
-      printf("No file  mc.p%02d.xyz nor mc.xyz found. Number of MC particles set to default %d.\n", mpi_id, *mc_n);
-      fileflaggen=0;
+  char *pdbrectyp;
+  static size_t st_l=0;
+  static char *lline=NULL;
+    
+  if((pdbfile=fopen(pdbname, "r"))==NULL){
+    printf("No decent init files found in pdb_inits. Can not run like this.\n");
+    exit(ERR_INPUT);
+  }
+  
+  while((l=getline(&lline, &st_l, pdbfile))>6){
+    pdbrectyp=strndup(lline, 6);
+    if(!strcmp(pdbrectyp, "ATOM  ")){
+      nmc++;
     }
   }
-  //printf("fileflags %d and %d\t%s\n", fileflag, fileflaggen, xyzname);
-  if(fileflag==1 || fileflaggen==1){
-    if(!(fscanf(xyzfile, "%d", &nmc))){
-      fprintf(stderr, "Invalid number of MC particles in xyz file.\n");
-      exit(ERR_INPUT);
-    }
-    else{
-      *mc_n=nmc;
-      printf("Number of MC particles %d read from file %s\n", nmc,xyzname);
-      fclose(xyzfile);
-    }
-  }
+  *mc_n=nmc;
 }
 
-void MC_initialize_positions(int mc_n, double **rx, double **ry, double **rz, int mc_read_conf_flag, int mpi_id){
+void MC_initialize_arrays(int mc_n, double **rx, double **ry, double **rz){
   int nmc, i, j;
   int type;
   char tmp_str[MAX_BUFFER];
@@ -384,154 +411,42 @@ void MC_initialize_positions(int mc_n, double **rx, double **ry, double **rz, in
   mc_temp_y=(double *)malloc(sizeof(double)*mc_n);
   mc_temp_z=(double *)malloc(sizeof(double)*mc_n);
   
-  switch(mc_read_conf_flag){
-  case READ_MC_CONF:
-    //printf("Positions to be read from file mc.%02d.xyz.\n", mpi_id);
-    sprintf(xyzname,"xyz_inits/mc.p%02d.xyz", mpi_id);
-    if((xyzfile=fopen(xyzname, "r"))==NULL){
-      fileflag=0;
-      sprintf(xyzname,"xyz_inits/mc.xyz");
-      if((xyzfile=fopen(xyzname, "r"))==NULL){
-	//printf("No file  mc.%02d.xyz nor mc.xyz found. Number of MC particles set to default %d.\n", mpc_id, xyzname, *mc_n);
-	fileflaggen=0;
-	
-	//printf("No file %s. Therefore, the MC positions will be left as they are!\n", xyzname, (int) DEFAULT_MC_MASS);
-	printf("No file %s found.\n", xyzname);
-	printf("MC particles will be initialized at random positions.\n");
-	for(i=0;i<mc_n;i++){
-	  for(j=0;j<DIM;j++){
-	    pos[j]=rand_d(box_l[j]);
-	    mc_pbox[i][j]=0;
-#ifdef PBC
-	    mc_pbox[i][j]=(int)floor(pos[j]/box_l[j]);
-	    fold_coordinate(&pos[j],box_l[j],0);
-#endif
-	  }
-	  (*rx)[i]=pos[0];
-	  (*ry)[i]=pos[1];
-	  (*rz)[i]=pos[2];
-	  mc_types[i]=0;
-	}
-      }
-    }
-    if(fileflag==1 || fileflaggen==1){
-      printf("MC positions read from file %s.\n", xyzname);
-      if(!(fscanf(xyzfile, "%d", &nmc))){
-	fprintf(stderr, "Invalid number of MC particles in xyz file.\n");
-	exit(ERR_INPUT);
-      }
-      if(mc_n!=nmc){
-	fprintf(stderr, "Number of MC particles of file %s does not match the input file.\n", xyzname);
-	exit(ERR_INPUT);
-      }
-      /* the comment line */
-      fgets(tmp_str, MAX_BUFFER, xyzfile);
-      fgets(tmp_str, MAX_BUFFER, xyzfile);
-      //printf("%s file says: ", xyzname);
-      //puts(tmp_str);
-      
-      for(i=0;i<mc_n;i++){
-	if(!(fscanf(xyzfile, "%d%lf%lf%lf", &type, &pos[0], &pos[1], &pos[2]))){
-	  fprintf(stderr, "Wrong syntax in  %s file at line %d.\n", xyzname, i+3);
-	  exit(ERR_INPUT);
-	} else {
-	  fgets(tmp_str, MAX_BUFFER, xyzfile);
-	  /* fold coordinates */
-	  for(j=0;j<DIM;j++){
-	    mc_pbox[i][j]=0;
-#ifdef PBC
-	    mc_pbox[i][j]=(int)floor(pos[j]/box_l[j]);
-	    fold_coordinate(&pos[j], box_l[j],0);
-#endif
-	  }
-	  (*rx)[i]=pos[0];
-	  (*ry)[i]=pos[1];
-	  (*rz)[i]=pos[2];
-	  if(type>=mc_n_types){
-	    fprintf(stderr, "Type of particle %d exceeds the number of types %d.\n", type, mc_n_types);
-	    exit(ERR_INPUT);
-	  }
-	  mc_types[i]=type;
-	}
-	//printf("%lf %lf %lf\n", (*rx)[i], (*ry)[i], (*rz)[i]);
-      }
-      fclose(xyzfile);
-    } 
-    break;
-    
-  case READ_MC_CHECK:
-    printf("Positions to be read from checkpoint, and lastmc.xyz file for unfolded positions and particle types.\n");
-    printf("NOT IMPLEMENTED YET.\n");
-    exit(ERR_INIT);
-    char chkname[11]="lastmc.xyz";
-    if((xyzfile=fopen(chkname, "r"))==NULL){
-      //printf("No file %s. Therefore, the MC positions will be left as they are!\n", xyzname, (int) DEFAULT_MC_MASS);
-      printf("No file %s found.\n", chkname);
-      exit(ERR_INPUT);
-    }
-    else {
-      printf("File %s found.\n", chkname);
-      if(!(fscanf(xyzfile, "%d", &nmc))){
-	fprintf(stderr, "Invalid number of MC particles in xyz file.\n");
-	exit(ERR_INPUT);
-      }
-      if(mc_n!=nmc){
-	fprintf(stderr, "Number of MC particles of file %s does not match the input file.\n", chkname);
-	exit(ERR_INPUT);
-      }
-      /* the comment line */
-      fgets(tmp_str, MAX_BUFFER, xyzfile);
-      fgets(tmp_str, MAX_BUFFER, xyzfile);
-      printf("%s file says: ", chkname);
-      puts(tmp_str);
-      for(i=0;i<mc_n;i++){
-	if(!(fscanf(xyzfile, "%d%lf%lf%lf", &type, &pos[0], &pos[1], &pos[2]))){
-	  fprintf(stderr, "Wrong syntax in  %s file at line %d.\n", chkname, i+3);
-	  exit(ERR_INPUT);
-	} else {
-	  fgets(tmp_str, MAX_BUFFER, xyzfile);
-	  /* fold coordinates */
-	  for(j=0;j<DIM;j++){
-	    mc_pbox[i][j]=0;
-#ifdef PBC
-	    mc_pbox[i][j]=(int)floor(pos[j]/box_l[j]);
-	    //fold_coordinate(&pos[j],box_l[j],0);
-#endif
-	  }
-	  if(type>=mc_n_types){
-	    fprintf(stderr, "Type of particle %d exceeds the number of types %d.\n", type, mc_n_types);
-	    exit(ERR_INPUT);
-	  }
-	  mc_types[i]=type;
-	}
-      }
-      fclose(xyzfile);
-    }
-    break;
-    
-  case DONT_READ_MC_CONF:
-    printf("MC particles will be initialized at random positions.\n");
-    for(i=0;i<mc_n;i++){
-      for(j=0;j<DIM;j++){
-	pos[j]=rand_d(box_l[j]);
-	mc_pbox[i][j]=0;
-#ifdef PBC
-	mc_pbox[i][j]=(int)floor(pos[j]/box_l[j]);
-	fold_coordinate(&pos[j],box_l[j],0);
-#endif
-      }
-      (*rx)[i]=pos[0];
-      (*ry)[i]=pos[1];
-      (*rz)[i]=pos[2];
-      mc_types[i]=0;
-    }
-    
-    break;
+  //ALLOCATE PUCKERS 
+  //MC_init_glycs_and_pucks(nt_n, mpi_id); 
+  mc_glyc=(int *)malloc(sizeof(int)*nt_n);
+  mc_temp_glyc=(int *)malloc(sizeof(int)*nt_n);
+  mc_puck=(int *)malloc(sizeof(int)*nt_n);
+  mc_temp_puck=(int *)malloc(sizeof(int)*nt_n);
+  glp_is_flippable=(int *)malloc(sizeof(int)*nt_n);
+  //defaults
+  for(i=0;i<nt_n;i++){
+    mc_glyc[i]=GLYC_A;
+    mc_puck[i]=PUCK_3;
+    glp_is_flippable[i]=GLP_FIXED;
   }
+  /* ALLOCATE BONDLISTS */
+  mc_nbonds=(int **)malloc(sizeof(int *)*nt_n);
+  for(i=0;i<nt_n;i++)
+    mc_nbonds[i]=(int *)malloc(sizeof(int)*N_BONDED_INTERACTIONS);
+  mc_bondlist=(int **)malloc(sizeof(int *)*nt_n);
+  mc_anglelist=(int **)malloc(sizeof(int *)*nt_n);
+  mc_anglecenter=(int **)malloc(sizeof(int *)*nt_n);
+  //defaults
+  for(i=0;i<nt_n;i++)
+    for(j=0;j<N_BONDED_INTERACTIONS;j++)
+      mc_nbonds[i][j]=0;
+  
+  
+  /* ALLOCATE FRZ ARRAYS */
+  fr_is_mobile=(int *)malloc(nt_n*sizeof(int));
+  //defaults
+  for(i=0;i<nt_n;i++)
+    fr_is_mobile[i]=FR_MOB_FULL;
+   
   for(i=0;i<N_PARTS_PER_NT;i++)
     for(j=0;j<DIM;j++)
       mc_temp_pbox[i][j]=0;
-
+  
   MC_initialize_sugars(nt_n, rx, ry, rz);
 }
 
@@ -577,23 +492,49 @@ void MC_initialize_sugars(int nt_n, double **rx, double **ry, double **rz){
   MAP_SUG_GL_X[TYP_URACIL][GLYC_S]=MAP_SUG_GL_X_S_Y;
   MAP_SUG_GL_Y[TYP_URACIL][GLYC_S]=MAP_SUG_GL_Y_S_Y;
   MAP_SUG_GL_Z[TYP_URACIL][GLYC_S]=MAP_SUG_GL_Z_S_Y;
-    
   
-  
-  
-  for(i=0;i<nt_n;i++)
-    MC_map_sugar(i, rx, ry, rz);
+  //for(i=0;i<nt_n;i++)
+  //MC_map_sugar(i, rx, ry, rz);
 }
 
 void MC_initialize_energies(int mc_n, double *rx, double *ry, double *rz){
   //MC_update_linked_lists(mc_n, rx, ry, rz);
   int nt_n=mc_n/N_PARTS_PER_NT;
   MC_initialize_verlet_lists(nt_n, rx, ry, rz);
+  MC_swap_local_energies(nt_n, rx,ry,rz);
+  
+  
   //MC_energy_calc(mc_n, rx, ry, rz, fsx, fsy, fsz);
    /* INITIALIZE WC LISTS */
   MC_init_wc_arrays(nt_n, rx, ry, rz);
-
   
+}
+
+void MC_swap_local_energies(int nt_n, double *rx, double *ry, double *rz){
+  //here we dont move particles, but we might change their GLYC state between ANTI and HIGH-ANTI
+  int nt_c, flag, glyflag, tempglp;
+  double temp;
+  #ifdef INPUTVERBOSE
+  printf("Calculating local energies for consistency between ANTI and HIGH-ANTI conformations. ONLY ON FLIPPABLE NUCLEOTIDES\n");
+  #endif
+  for(nt_c=0;nt_c<nt_n;nt_c++){
+    if(glp_is_flippable[nt_c]==GLP_BOTH || glp_is_flippable[nt_c]==GLP_GLYC){
+      glyflag=0;
+      tempglp=glp_is_flippable[nt_c];
+      glp_is_flippable[nt_c]=GLP_BOTH;
+      MC_copy_nt(nt_c, rx, ry, rz);
+      flag=MC_calculate_local_energy(rx, ry, rz, nt_c, &temp, nt_n, -1);
+      if(mc_glyc[nt_c]!=mc_temp_glyc[nt_c])
+	printf("Fixing GLYC of NT %d from %d to %d\n", nt_c, mc_glyc[nt_c], mc_temp_glyc[nt_c]);
+      if(mc_puck[nt_c]!=mc_temp_puck[nt_c])
+	printf("Fixing PUCK of NT %d from %d to %d\n", nt_c, mc_puck[nt_c], mc_temp_puck[nt_c]);
+      MC_update_glypuck(nt_c);
+      glp_is_flippable[nt_c]=tempglp;
+    }
+  }
+  #ifdef INPUTVERBOSE
+  printf("GLYCS and PUCKS fixed.\n");
+  #endif
 }
 
 void MC_print_positions(int mc_n, double ** rx, double **ry, double **rz){
@@ -602,40 +543,55 @@ void MC_print_positions(int mc_n, double ** rx, double **ry, double **rz){
     printf("%d %lf %lf %lf\n", i, (*rx)[i], (*ry)[i], (*rz)[i]);
 }
 
-char *ew_gtl2(FILE *source) {
-  static size_t st_l2=0;
-  int n,i;
-  static char *sch_s2=NULL;
-  while ((n=getline(&sch_s2,&st_l2,source))>0) {
-//    printf("%d %d %s",n,strlen(s),s);
-//    assert(s[n-1]=='\n');
-    if (sch_s2[n-1]=='\n')
-      sch_s2[n-1]='\0';
-    if (isalpha(sch_s2[0]))
-      for(i=0;sch_s2[i];++i)
-        if (isspace(sch_s2[i]))
-          sch_s2[i--]='\0';
-    if (sch_s2[0]!='#')
-      break;
-    }
-  return n>0?sch_s2:NULL;
-}
+/* char *ew_gtl(FILE *source) { */
+/*   static size_t st_l2=0; */
+/*   int n,i; */
+/*   static char *sch_s2=NULL; */
+/*   while ((n=getline(&sch_s2,&st_l2,source))>0) { */
+/* //    printf("%d %d %s",n,strlen(s),s); */
+/* //    assert(s[n-1]=='\n'); */
+/*     if (sch_s2[n-1]=='\n') */
+/*       sch_s2[n-1]='\0'; */
+/*     if (isalpha(sch_s2[0])) */
+/*       for(i=0;sch_s2[i];++i) */
+/*         if (isspace(sch_s2[i])) */
+/*           sch_s2[i--]='\0'; */
+/*     if (sch_s2[0]!='#') */
+/*       break; */
+/*     } */
+/*   return n>0?sch_s2:NULL; */
+/* } */
 
-void  MC_print_params(double lx, double ly, double lz, int mc_steps, int rand_seed){
-  printf("MC simulation parameters:\n");  
-  printf("System size              : %lf %lf %lf\n", lx, ly, lz);
-  printf("Temperature              : %lf\n", mc_target_temp);
-  printf("MC total steps           : %d\n", mc_steps);
-  printf("Random seed              : %d\n", rand_seed);
+void  MC_print_params(int mc_steps, int rand_seed){
+  printf("SPQR SIMULATION PARAMETERS\n");  
+  printf("Temperature                 : %lf\n", mc_target_temp);
+  printf("MC integration steps        : %d\n", mc_steps);
+  printf("Saving trajectory every     : %d\n", mc_traj_steps);
+  printf("Saving checkpoints every    : %d\n", mc_chkp_steps);
+  printf("Random seed                 : %d\n", rand_seed);
   printf("MC nt position displacement : %lf\n", MC_NT_XYZ);
   printf("MC ph position displacement : %lf\n", MC_PH_XYZ);
-  printf("MC nt-rotation angle     : %lf\n", MC_NT_ANGLE);
+  printf("MC nt-rotation angle        : %lf\n", MC_NT_ANGLE);
+  printf("Cutoff radii                : %lf %lf (wc) %lf (bph) %lf (nb)\n", mc_r_cut, mc_wc_rcut, mc_bph_rcut, mc_nb_rcut);
+  printf("Verlet skin                 : %lf\n", vl_skin);
   printf("\n");
 }
 
-void MC_read_params(double *lx, double *ly, double *lz, int *mc_iter, int *rand_a, int mpi_id){
+void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   FILE *mc_params;
-  char *s;
+  char stmp[MAXSTR], s[MAXSTR], s2[MAXSTR], s3[MAXSTR], *line=NULL;  static size_t st_l=0;
+  int cnt=0, l;
+  //*lx=100.0 ;*ly=100.0;*lz=100.0;
+  mc_r_cut=DEFAULT_MC_RCUT;
+  mc_wc_rcut=DEFAULT_MC_RCUT;
+  mc_bph_rcut=DEFAULT_MC_RCUT;
+  mc_nb_rcut=DEFAULT_MC_RCUT;
+  mc_n_types=N_BASES;
+  mc_n_bond_types=DEFAULT_MC_N_BOND_TYPES;
+  vl_skin=DEFAULT_VL_SKIN;
+  mc_chkp_steps=DEFAULT_CHKP_STEPS;
+  mc_traj_steps=DEFAULT_TRAJ_STEPS;
+  strcpy(ENERG_PATH,".");
   
   MC_NT_XYZ=(double)MC_NT_XYZ_DEF;
   MC_PH_XYZ=(double)MC_PH_XYZ_DEF;
@@ -643,52 +599,80 @@ void MC_read_params(double *lx, double *ly, double *lz, int *mc_iter, int *rand_
   mc_target_temp=(double)MC_TEMP_DEF;
   *rand_a=(double)MC_RAND_SEED_DEF;
   *mc_iter=(double)MC_ITER_DEF;
-  mc_params=fopen("input.mc", "r");
+  mc_params=fopen("input.spqr", "r");
   if(mc_params==NULL){
-    printf("No MC parameters file found. Using default values.\n");
+    printf("No MC parameters file found.\n");
+    exit(ERR_INPUT);
   } else {
     if(mpi_id==0)
-      printf("Reading MC parameters from file.\n");
-    while (s=ew_gtl2(mc_params)) {
-      if(!strcmp(s, "DIMENSIONS")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%lf%lf%lf", lx, ly, lz)==3);
-      }
-      if(!strcmp(s, "TEMPERATURE")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%lf", &mc_target_temp)==1);
-      }
-      if(!strcmp(s, "MC_NT_XYZ")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%lf", &MC_NT_XYZ)==1);
-      }
-      if(!strcmp(s, "MC_PH_XYZ")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%lf", &MC_PH_XYZ)==1);
-      }
-      
-      if(!strcmp(s, "MC_STEPS")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%d", mc_iter)==1);
-      }
-      if(!strcmp(s, "RANDOM_SEED")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%d", rand_a)==1);
-      }
-      if(!strcmp(s, "MC_NT_ANGLE")) {
-	assert(s=ew_gtl2(mc_params));
-	assert(sscanf(s, "%lf%lf", &MC_NT_ANGLE, &MC_BB_ANGLE)==2);
-	MC_NT_ANGLE_COS=cos(MC_NT_ANGLE);
-	MC_NT_ANGLE_SIN=sin(MC_NT_ANGLE);
-	MC_BB_ANGLE_COS=cos(MC_BB_ANGLE);
-	MC_BB_ANGLE_SIN=sin(MC_BB_ANGLE);
-      }
+      printf("Reading MC parameters from file input.spqr ...\n");
+    //while (s=ew_gtl(mc_params)) {
+    while((l=getline(&line, &st_l, mc_params))>0){
+      //printf("ret %d  '%s'\n", sscanf(line, "%s", s), s);
+      //if(line[0]!='#' && sscanf(line, "%s", stmp)>0 && (line[0]!='S' && (line[1]!='A' && line[1]!='T' ) && (line[2]!='_'))){
+	if(line[0]!='#' && sscanf(line, "%s", stmp)>0){
+	  if((line[0]!='S' || (line[1]!='A' && line[1]!='T' ) || (line[2]!='_')) ){
+	    sscanf(line, "%s", s);
+	    //printf("read %s - line = %s\n", s2, line);
+	    if(!strcmp(s, "TEMPERATURE")) {
+	      if(sscanf(line, "%s %lf", s2, &mc_target_temp)!=2){printf("Invalid value of TEMPERATURE in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "ENERGS_PATH")) {
+	      if(sscanf(line, "%s %s", s2, s3)!=2){printf("Invalid value of ENERGS_PATH in input.spqr\n");exit(ERR_INPUT);}
+	      strcpy(ENERG_PATH, s3);
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_NT_XYZ")) {
+	      if(sscanf(line, "%s %lf", s2, &MC_NT_XYZ)!=2){printf("Invalid value of MC_NT_XYZ in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_PH_XYZ")) {
+	      if(sscanf(line, "%s %lf", s2, &MC_PH_XYZ)!=2){printf("Invalid value of MC_PH_XYZ in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_STEPS")) {
+	      if(sscanf(line, "%s %d", s2, mc_iter)!=2){printf("Invalid value of MC_STEPS in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "RANDOM_SEED")) {
+	      if(sscanf(line, "%s %d", s2, rand_a)!=2){printf("Invalid value of RANDOM_SEED in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_NT_ANGLE")) {
+	      if(sscanf(line, "%s %lf %lf", s2, &MC_NT_ANGLE, &MC_BB_ANGLE)!=3){printf("Invalid values of MC_NT_ANGLE in input.spqr\n");exit(ERR_INPUT);}
+	      MC_NT_ANGLE_COS=cos(MC_NT_ANGLE);
+	      MC_NT_ANGLE_SIN=sin(MC_NT_ANGLE);
+	      MC_BB_ANGLE_COS=cos(MC_BB_ANGLE);
+	      MC_BB_ANGLE_SIN=sin(MC_BB_ANGLE);
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_RCUT")) {
+	      if(sscanf(line, "%s %lf %lf %lf %lf", s2, &mc_r_cut, &mc_wc_rcut, &mc_bph_rcut, &mc_nb_rcut)!=5){printf("Invalid values of MC_RCUT in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "VL_SKIN")) {
+	      if(sscanf(line, "%s %lf", s2, &vl_skin)!=2){printf("Invalid value of VL_SKIN in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_TRAJ_STEPS")) {
+	      if(sscanf(line, "%s %d", s2, &mc_traj_steps)!=2){printf("Invalid value of MC_TRAJ_STEPS in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "MC_CHKP_STEPS")) {
+	      if(sscanf(line, "%s %d", s2, &mc_chkp_steps)!=2){printf("Invalid value of MC_CHKP_STEPS in input.spqr\n");exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else {printf("Parameter %s not recognized in input.spqr\n", s);exit(ERR_INPUT);}
+	  }
+	}
     }
+    if(cnt!=11){printf("Missing parameters in input.spqr!\n"); exit(ERR_INPUT);}
   }
   fclose(mc_params);
   /***** check some parameters *****/
-
+  
   /*********************************/
   if(mpi_id==0)
-    MC_print_params(*lx, *ly, *lz, *mc_iter, *rand_a);
+    MC_print_params(*mc_iter, *rand_a);
 }

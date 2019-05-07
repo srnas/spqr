@@ -5,6 +5,9 @@
 #include "mc_verlet_lists.h"
 #include "mc_energies.h"
 
+#define E_HB 27.5
+#define RHB 3.1
+#define CHB -0.65
 #define WC_FACE_SUGAR 0
 #define WC_FACE_WATSCRICK 1
 #define WC_FACE_HOOGSTEEN 2
@@ -178,6 +181,71 @@
 #define BPSPECANG_3_0 151
 #define BPSPECANG_3_1 180
 
+#define BP_OP1X -0.9022973
+#define BP_OP1Y -0.9411747
+#define BP_OP1Z -0.5219181
+#define BP_OP2X -0.10462739
+#define BP_OP2Y 1.340639
+#define BP_OP2Z -0.4210464
+
+
+#define BP_CONTACT_G_S_X  2.68918
+#define BP_CONTACT_G_S_Y  0.130544
+#define BP_CONTACT_G_S_Z  -0.00852924
+#define BP_CONTACT_G_W1_X 2.69001
+#define BP_CONTACT_G_W1_Y 0.124714
+#define BP_CONTACT_G_W1_Z 0.00423577
+#define BP_CONTACT_G_W2_X 0.622095
+#define BP_CONTACT_G_W2_Y 1.17305
+#define BP_CONTACT_G_W2_Z -0.00995796
+#define BP_CONTACT_U_W_X  0.680016
+#define BP_CONTACT_U_W_Y  1.15549
+#define BP_CONTACT_U_W_Z  0.0
+#define BP_CONTACT_A_W_X  -1.34088
+#define BP_CONTACT_A_W_Y  2.40597
+#define BP_CONTACT_A_W_Z  -0.0135445
+#define BP_CONTACT_A_H_X  -1.30871
+#define BP_CONTACT_A_H_Y  2.41847
+#define BP_CONTACT_A_H_Z  0.00488927
+#define BP_CONTACT_C_W_X  -1.23645
+#define BP_CONTACT_C_W_Y   2.38727
+#define BP_CONTACT_C_W_Z  0.000929817
+#define BP_CONTACT_C_H_X  -1.24184
+#define BP_CONTACT_C_H_Y   2.38439
+#define BP_CONTACT_C_H_Z  0.00223364
+
+#define BP_HYDRO_G_S_X  3.29193
+#define BP_HYDRO_G_S_Y  -0.695619
+#define BP_HYDRO_G_S_Z  0.0148206
+#define BP_HYDRO_G_W1_X 3.1827
+#define BP_HYDRO_G_W1_Y 1.02883
+#define BP_HYDRO_G_W1_Z 0.0325176
+#define BP_HYDRO_G_W2_X 1.09028
+#define BP_HYDRO_G_W2_Y 2.09202
+#define BP_HYDRO_G_W2_Z -0.0585693
+#define BP_HYDRO_U_W_X  1.21479
+#define BP_HYDRO_U_W_Y  2.04385
+#define BP_HYDRO_U_W_Z  0.00232977
+#define BP_HYDRO_A_W_X  -0.853091
+#define BP_HYDRO_A_W_Y  3.30294
+#define BP_HYDRO_A_W_Z  -0.00778549
+#define BP_HYDRO_A_H_X  -2.32178
+#define BP_HYDRO_A_H_Y  2.54785
+#define BP_HYDRO_A_H_Z  -0.0240658
+#define BP_HYDRO_C_W_X  -0.707043
+#define BP_HYDRO_C_W_Y  3.25897
+#define BP_HYDRO_C_W_Z  0.000907987
+#define BP_HYDRO_C_H_X  -2.2631
+#define BP_HYDRO_C_H_Y  2.47282
+#define BP_HYDRO_C_H_Z  0.0474806
+
+extern double bp_contacts[N_BASES][WC_FACES][DIM];
+extern double bp_hydros[N_BASES][WC_FACES][DIM];
+extern double bp_G_cont_W2[DIM];
+extern double bp_G_hydr_W2[DIM];
+
+
+
 extern double mc_sameface_max_aWW[N_BASES][N_BASES];
 extern double mc_sameface_max_aSS[N_BASES][N_BASES];
 extern double mc_sameface_max_pSS[N_BASES][N_BASES];
@@ -227,15 +295,19 @@ void MC_find_min_wc_per_nt(int, int, int, double*, double*, double*, int, int, i
 double MC_calculate_local_wc_energy(int, int, double *, double *, double *);
 double MC_calculate_total_wc_energy(int,int, double *, double *, double *);
 void MC_init_wc_arrays(int, double *, double *, double *);
-void MC_calc_nnN_watscric(int, int, double *, double *, double , double, int, int);
+void MC_calc_nnN_watscric(int, int, double *, double *, double , double, int, int, int, int);
+double MC_sugar_penalization(int, int, int, int, int, int, int);
 double calc_wc_psdihedr(double *, double *, double *, double *, double *, double *, int , int);
 double calc_nnN_tab_wc_psdihedr(double , int, int);
 double calc_nnN_tab_watscric(double *, int, int, int);
 double calc_nnN_tab_watscric_inv(double *, int, int, int);
 int MC_update_min_wc(int, int, double *, double *, double *, int);
 
-void MC_calc_npN_phosbase(int, double *, int, int, int);
+void MC_calc_npN_phosbase(int, double *, int, int, int, double *, double *, double *, int);
 double calc_npN_tab_phosbase(double *, int);
 double calc_wc_secdihed(double *, double *, double *, double *, double *, double * , int, int);
 int eval_wc_secdihed(double, int, int, int);
+void  MC_get_op1op2(double *, double *, double *, double *, double *, double *);
+int MC_check_bph_HB(double *, double *, int , int);
+
 #endif

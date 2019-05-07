@@ -1,59 +1,162 @@
 #include "mc_integrate.h"
 
-void MC_integrate(int mc_n, double **rx, double **ry, double **rz){
+double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
   int nt_n=mc_n/N_PARTS_PER_NT, i;
-  /* int a,b; */
-  /* for(a=0;a<nt_n;a++){ */
-  /*   printf("%d    %d : ", a, vl_n_pairs[a]); */
-  /*   for(b=0;b<vl_n_pairs[a];b++) */
-  /*     printf("%d  ",vl_neighbor_tables[a][b]); */
-  /*   printf("\n"); */
-  /* } */
-  //  nt2=vl_neighbor_tables[the_nt][n];
-
-  int nt_c;
-  double old_energy, new_energy, wc_energ_diff=0.0; // wc energ is the difference between the new and the old : Ewc - Ewc_old
+  
+  int nt_c, trial;
+  double old_energy, new_energy, wc_energ_diff=0.0, dwce=0; // wc energ is the difference between the new and the old : Ewc - Ewc_old
   int mc_trial_flag=0;
   int nt_to_select=nt_n;
-  
+  double d_energ=0.0;
 #ifdef MCVLISTS
   for(i=0;i<nt_n;i++){
     if(vl_count[i]>=vl_ncrit-1)
       MC_build_verlet_lists(nt_n, *rx, *ry, *rz, i);
   }
-  //printf("Updating Verlet list - vlncrit = %d\n", vl_ncrit);
 #endif
-  //MC_eval_total_energy(nt_n, *rx, *ry, *rz);
-  
-  MC_select_rand_nt(nt_to_select, *rx, *ry, *rz, &nt_c); //here we copy the position to the temp position (the whole nucleotide). nt_c is between 0 and mc_n/N_PARTS_PER_NT
-  //printf("*************************   SELECTED  %d   ****************************\n", nt_c);
-  //printf("tot pre\n");
-  //double wce_init=MC_calculate_total_wc_energy(nt_n, -1, *rx, *ry, *rz);
-  
-
-  mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &old_energy); //here we calculate the energy of the selected particle, from temp position
-  if(mc_trial_flag!=0){ printf("THIS SHOULDNT HAPPEN\n flag = %d, selected %d\n", mc_trial_flag, nt_c);
-    MC_get_sp_bonded_energy(nt_c, nt_n, *rx, *ry, *rz);
-    //MC_get_energy(nt_n, *rx, *ry, *rz,0);MC_get_energy(nt_n, *rx, *ry, *rz,1);MC_get_energy(nt_n, *rx, *ry, *rz,2);
-    exit(1);}
-  int trial=MC_perform_trial_movement(nt_c); //here we update the position to temp position
-  mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &new_energy); //here we calculate the energy of the selected particle, from temp position
-  //printf("tot post\n");
-  //double wce_trial=MC_calculate_total_wc_energy(nt_n, nt_c, *rx, *ry, *rz);
-  
-  double dwce=MC_calculate_local_wc_energy(nt_n, nt_c, *rx, *ry, *rz);
-  //wc_energ_diff=wce_trial-wce_init;
-  /* fflush(stdout); */
-  /* if(fabs(wc_energ_diff - dwce) > 0.000001){ */
-  /*   printf("ways of calculating energy differ!\nLOCAL=%lf\nTOTAL=%lf\n%lf\n", dwce, wc_energ_diff,fabs( wc_energ_diff-dwce)); */
-  /*   exit(1); */
-  /* } */
-  if(mc_trial_flag==0){
-    MC_eval_displacement(nt_n,rx, ry, rz, nt_c, old_energy, new_energy, dwce); //if the movement is accepted, we update the position
-    //printf("trial evaluated!  ENERG OLD : %lf\tENERG NEW %lf \t ENERG WC: %lf\n", old_energy, new_energy, wc_energ_diff);
+  for(nt_c=0;nt_c<nt_n;nt_c++){
+    mc_trial_flag=0;
+    if(fr_is_mobile[nt_c]!=FR_MOB_FROZ){
+      MC_copy_nt(nt_c, *rx, *ry, *rz);
+      
+      mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &old_energy, nt_n, -1); //here we calculate the energy of the selected particle, from temp position
+      
+      if(mc_trial_flag!=0){ printf("THIS SHOULDNT HAPPEN\n flag = %d, selected %d\n", mc_trial_flag, nt_c);
+	for(i=0;i<nt_n;i++){
+	  printf("%d  GLYC %d  PUCK %d   -    temp: GLYC %d  PUCK  %d\n", i, mc_glyc[i], mc_puck[i], mc_temp_glyc[i], mc_temp_puck[i]);
+	}
+	MC_get_sp_bonded_energy(nt_c, nt_n, *rx, *ry, *rz);
+	exit(1);
+      }
+      
+      trial=MC_perform_trial_movement(nt_c); //here we update the position to temp position
+      
+    
+      mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &new_energy, nt_n, trial); //here we calculate the energy of the selected particle, from temp position
+#ifndef NOCTCS
+      dwce=MC_calculate_local_wc_energy(nt_n, nt_c, *rx, *ry, *rz);
+#endif
+      if(mc_trial_flag==0){
+	d_energ+=MC_eval_displacement(nt_n,rx, ry, rz, nt_c, old_energy, new_energy, dwce); //if the movement is accepted, we update the position
+      }
+    }
   }
-  //else printf("trial rejected (not evaluated)!\n");
+  return d_energ;
 }
+
+
+void MC_print_secondary_structure(int nt_n, double *rx, double *ry, double *rz){
+  int nt_c, at_c, typ1, typ2;
+  double b_st=0.0, b_sg=0.0, b_ev=0.0,nb_st=0.0, nb_wc=0.0;
+  double tot_b_st=0.0, tot_b_sg=0.0, tot_b_ev=0.0,tot_nb_st=0.0, tot_nb_wc=0.0, tot_nb_ev=0.0;
+  double d_vec[DIM], r_vec[DIM], r_vec_inv[DIM];
+  double dist, sugdistsq;
+  int typ_ind, typ_ind2;
+  //int flag=0;
+  int b, nt_neigh, ba, at_ne;
+  double eta, theta, eta2;
+  int temp_flag;
+  double epsilon, sigma;
+  int nt2,n;
+  int wc_pair_array1[3],wc_pair_array2[3];
+  int *secstr;
+  secstr=(int*)malloc(sizeof(int)*nt_n);
+  for(nt_c=0;nt_c<nt_n;nt_c++)
+    secstr[nt_c]=-1;
+  
+  int temp_face1, temp_face2;
+  double energ_wc=MC_calculate_total_wc_energy(nt_n,-1,rx, ry, rz);
+  MC_update_wc_lists(nt_n); 
+  for(nt_c=0;nt_c<nt_n;nt_c++){
+    at_c=N_PARTS_PER_NT*nt_c;
+    MC_copy_nt(nt_c, rx, ry, rz);
+    typ1=mc_types[nt_c*N_PARTS_PER_NT];
+    printf("%d ", nt_c);
+    if(typ1==TYP_ADENINE)
+      printf("(A)  :");
+    if(typ1==TYP_URACIL)
+      printf("(U)  :");
+    if(typ1==TYP_GUANINE)
+      printf("(G)  :");
+    if(typ1==TYP_CYTOSINE)
+      printf("(C)  :");
+    
+    //Base pairs
+    for(n=0;n<vl_n_pairs[nt_c];n++){
+      nt2=vl_neighbor_tables[nt_c][n];
+      at_ne=N_PARTS_PER_NT*nt2;
+      typ2=mc_types[nt2*N_PARTS_PER_NT];
+      MC_is_wc_corresp(nt_c, nt2, nt_n, wc_pair_array1);
+      MC_is_wc_corresp(nt2, nt_c, nt_n, wc_pair_array2);
+      temp_face1=wc_pair_array1[0];
+      temp_face2=wc_pair_array2[0];
+      //if(temp_face1>=0 && temp_face2>=0) {
+      if(temp_face1==WC_FACE_WATSCRICK && temp_face2==WC_FACE_WATSCRICK && is_canonical(typ1, typ2) == 1) {
+	theta=calc_wc_psdihedr(mc_temp_x,mc_temp_y,mc_temp_z,rx, ry, rz,nt_c,nt2);
+	//if(theta>=0 && theta <= M_PI/2)
+	//printf(" pWC %d ", nt2);
+	if(theta>M_PI/2 && theta <= M_PI){
+	  printf(" %d ", nt2);
+	  if(typ2==TYP_ADENINE)
+	    printf("(A)");
+	  if(typ2==TYP_URACIL)
+	    printf("(U)");
+	  if(typ2==TYP_GUANINE)
+	    printf("(G)");
+	  if(typ2==TYP_CYTOSINE)
+	    printf("(C)");
+	  if(nt_c<nt2) secstr[nt_c]=0;
+	  if(nt_c>nt2) secstr[nt_c]=1;
+	  
+	}
+      }
+    }
+    printf("\n");
+  }
+  for(nt_c=0;nt_c<nt_n;nt_c++){
+     typ1=mc_types[nt_c*N_PARTS_PER_NT];
+      if(typ1==TYP_ADENINE)
+	printf("A");
+      if(typ1==TYP_URACIL)
+	printf("U");
+      if(typ1==TYP_GUANINE)
+	printf("G");
+      if(typ1==TYP_CYTOSINE)
+	printf("C");
+      
+  }
+  printf("\n");
+  for(nt_c=0;nt_c<nt_n;nt_c++){
+    typ1=secstr[nt_c];
+
+    if(typ1==-1)
+      printf(".");
+    if(typ1==0)
+      printf("(");
+    if(typ1==1)
+    printf(")");
+  }
+  printf("\n");
+  free(secstr);
+}
+
+int is_canonical(int typ1, int typ2){
+  int ret=-1;
+  if(typ1==TYP_ADENINE)
+    if(typ2==TYP_URACIL)
+      ret=1;
+  if(typ1==TYP_URACIL)
+    if(typ2==TYP_ADENINE)
+      ret=1;
+  if(typ1==TYP_CYTOSINE)
+    if(typ2==TYP_GUANINE)
+      ret=1;
+  if(typ1==TYP_GUANINE)
+    if(typ2==TYP_CYTOSINE)
+      ret=1;
+  return ret;
+}
+
 
 void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
   int nt_c, at_c;
@@ -86,7 +189,6 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
     if(mc_types[nt_c*N_PARTS_PER_NT]==3)
       printf("(C)  :");
     
-    
     for(b=0;b<mc_nbonds[nt_c][0];b++){
       nt_neigh=mc_bondlist[nt_c][b];
       //first, we see if they are stacked!
@@ -94,7 +196,6 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
       typ_ind = mc_n_types*mc_types[at_c]     + mc_types[ba];
       typ_ind2= mc_n_types*mc_types[ba] + mc_types[at_c];
       d_vec[0]=get_unf_coo_x(rx, ba) - get_unf_coo_temp_x(at_c);
-      //(rx[ba]+mc_pbox[ba][0]*box_l[0]) - (mc_temp_x[0]+mc_temp_pbox[0][0]*box_l[0]);
       d_vec[1]=get_unf_coo_y(ry, ba) - get_unf_coo_temp_y(at_c);
       d_vec[2]=get_unf_coo_z(rz, ba) - get_unf_coo_temp_z(at_c);
       
@@ -120,90 +221,15 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
     //NON BONDED
     //if(cflag!=1) printf("\nnonbonded : ");
     
-    for(n=0;n<vl_n_pairs[nt_c];n++){
-      nt2=vl_neighbor_tables[nt_c][n];
+    //for(n=0;n<vl_n_pairs[nt_c];n++){
+    for(nt2=0;nt2<nt_n;nt2++){
+      //nt2=vl_neighbor_tables[nt_c][n];
       at_ne=N_PARTS_PER_NT*nt2;
       typ_ind = mc_n_types*mc_types[at_c]  + mc_types[at_ne];
-      typ_ind2= mc_n_types*mc_types[at_ne] + mc_types[at_c];
-      sugdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
-      
-      
-      if(sugdistsq<mc_r_cut_sq){
-	calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], d_vec, &dist);
-	proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-	proj_on_nt_inv(d_vec, rx, ry, rz, nt2, r_vec_inv);
-
-	MC_is_wc_corresp(nt_c, nt2, nt_n, wc_pair_array1);
-	MC_is_wc_corresp(nt2, nt_c, nt_n, wc_pair_array2);
-	temp_face1=wc_pair_array1[0];
-	temp_face2=wc_pair_array2[0];
-	//printf("%d   %d %d %d\t%d %d %d\n", nt_c,wc_pair_array1[0], wc_pair_array1[1], wc_pair_array1[2], wc_pair_array2[0], wc_pair_array2[1], wc_pair_array2[2]);
-	if(temp_face1>=0 && temp_face2>=0) {
-	  printf(" wcp %d (", nt2);
-	  if(temp_face2==WC_FACE_SUGAR)
-	    printf("S");
-	  else if(temp_face2==WC_FACE_WATSCRICK)
-	    printf("W");
-	  else if(temp_face2==WC_FACE_HOOGSTEEN)
-	    printf("H");
-	  if(temp_face1==WC_FACE_SUGAR)
-	    printf("S");
-	  else if(temp_face1==WC_FACE_WATSCRICK)
-	    printf("W");
-	  else if(temp_face1==WC_FACE_HOOGSTEEN)
-	    printf("H");
-	  printf(")");
-	}
-	
-	temp_face1=wc_pair_array1[1];
-	temp_face2=wc_pair_array2[2];
-	if(temp_face1>=0 && temp_face2>=0) {
-	  printf(" bph %d (", nt2);
-	  if(temp_face2==WC_FACE_SUGAR)
-	    printf("S");
-	  else if(temp_face2==WC_FACE_WATSCRICK)
-	    printf("W");
-	  else if(temp_face2==WC_FACE_HOOGSTEEN)
-	    printf("H");
-	  printf("P)");
-	}
-	
-	temp_face1=wc_pair_array1[2];
-	temp_face2=wc_pair_array2[1];
-	if(temp_face1>=0 && temp_face2>=0) {
-	  printf(" bph %d (P", nt2);
-	  if(temp_face1==WC_FACE_SUGAR)
-	    printf("S");
-	  else if(temp_face1==WC_FACE_WATSCRICK)
-	    printf("W");
-	  else if(temp_face1==WC_FACE_HOOGSTEEN)
-	    printf("H");
-	  printf(")");
-	}
-	//nb_wc =0;// MC_calc_nnN_watscric(typ_ind, r_vec, r_vec_inv, theta, &temp_flag);
-	//if(temp_flag==0){
-	// if(nb_wc<0)printf(" wcp %d ", nt2);//if(cflag==-1)printf( " %lf ", nb_wc);
-	//}
-	temp_flag=0;
-	eta2=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt2);
-	nb_st=0;
-	if(fabs(eta2)<STANG || fabs(eta2) > M_PI-STANG)
-	  nb_st = MC_calc_nnN_stacking(typ_ind,typ_ind2, r_vec, r_vec_inv, &temp_flag); // NO PAIR SPECIFIC!!
-	else temp_flag=1;
-	
-	if(temp_flag==0){
-	  if(nb_st<0)printf(" nst %d ", nt2);// if(cflag==-1)printf( " %lf ", nb_st);
-	}
-      }
-    }
-    //THE ADDITIONAL PAIR
-    nt2=nt_c-1;
-    for(nt2=nt_c-1;nt2<=nt_c+1;nt2+=2){
-      if(nt2>=0 && nt2<nt_n){
-    	at_ne=N_PARTS_PER_NT*nt2;
-	typ_ind = mc_n_types*mc_types[at_c]  + mc_types[at_ne];
 	typ_ind2= mc_n_types*mc_types[at_ne] + mc_types[at_c];
 	sugdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
+	
+	
 	if(sugdistsq<mc_r_cut_sq){
 	  calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], d_vec, &dist);
 	  proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
@@ -211,12 +237,9 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
 	  
 	  MC_is_wc_corresp(nt_c, nt2, nt_n, wc_pair_array1);
 	  MC_is_wc_corresp(nt2, nt_c, nt_n, wc_pair_array2);
-	  
-	  
-	  
 	  temp_face1=wc_pair_array1[0];
 	  temp_face2=wc_pair_array2[0];
-	  
+	  //printf("%d   %d %d %d\t%d %d %d\n", nt_c,wc_pair_array1[0], wc_pair_array1[1], wc_pair_array1[2], wc_pair_array2[0], wc_pair_array2[1], wc_pair_array2[2]);
 	  if(temp_face1>=0 && temp_face2>=0) {
 	    printf(" wcp %d (", nt2);
 	    if(temp_face2==WC_FACE_SUGAR)
@@ -236,7 +259,6 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
 	  
 	  temp_face1=wc_pair_array1[1];
 	  temp_face2=wc_pair_array2[2];
-	  
 	  if(temp_face1>=0 && temp_face2>=0) {
 	    printf(" bph %d (", nt2);
 	    if(temp_face2==WC_FACE_SUGAR)
@@ -253,19 +275,36 @@ void MC_print_contact_list(int nt_n, double *rx, double *ry, double *rz){
 	  if(temp_face1>=0 && temp_face2>=0) {
 	    printf(" bph %d (P", nt2);
 	    if(temp_face1==WC_FACE_SUGAR)
-	      printf("S");
-	    else if(temp_face1==WC_FACE_WATSCRICK)
-	      printf("W");
-	    else if(temp_face1==WC_FACE_HOOGSTEEN)
-	      printf("H");
-	    printf(")");
+	    printf("S");
+	  else if(temp_face1==WC_FACE_WATSCRICK)
+	    printf("W");
+	  else if(temp_face1==WC_FACE_HOOGSTEEN)
+	    printf("H");
+	  printf(")");
+	  }
+	
+	  if(!MC_are_neighbors(nt_c,nt2)){
+	    temp_flag=0;
+	    eta2=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt2);
+	    nb_st=0;
+	    if(fabs(eta2)<STANG || fabs(eta2) > M_PI-STANG)
+	      nb_st = MC_calc_nnN_stacking(typ_ind,typ_ind2, r_vec, r_vec_inv, &temp_flag); // NO PAIR SPECIFIC!!
+	    else temp_flag=1;
+	    
+	    if(temp_flag==0){
+	      if(nb_st<0)printf(" nst %d ", nt2);// if(cflag==-1)printf( " %lf ", nb_st);
+	    }
 	  }
 	}
-      }
     }
+        
     printf("\n");
+    
+  
   }
 }
+
+
   
 void MC_write_contact_list(int nt_n, double *rx, double *ry, double *rz, int init){
   FILE * mcconf;
@@ -422,67 +461,6 @@ void MC_write_contact_list(int nt_n, double *rx, double *ry, double *rz, int ini
       }
       
       //THE ADDITIONAL PAIR
-      for(nt2=nt_c-1;nt2<=nt_c+1;nt2+=2){
-      	if(nt2>=0 && nt2<nt_n){
-      	  ba=N_PARTS_PER_NT*nt2;
-      	  typ_ind = mc_n_types*mc_types[at_c]  + mc_types[ba];
-      	  typ_ind2= mc_n_types*mc_types[ba] + mc_types[at_c];
-      	  sugdistsq=calc_min_dist_sq(rx[ba+ISUG], ry[ba+ISUG], rz[ba+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
-      	  if(sugdistsq<mc_r_cut_sq){
-      	    calc_min_vec(rx[ba], ry[ba], rz[ba], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], d_vec, &dist);
-      	    proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-      	    proj_on_nt_inv(d_vec, rx, ry, rz, nt2, r_vec_inv);
-	    
-      	    MC_is_wc_corresp(nt_c, nt2, nt_n, wc_pair_array1);
-      	    MC_is_wc_corresp(nt2, nt_c, nt_n, wc_pair_array2);
-	    temp_face1=wc_pair_array1[0];
-	    temp_face2=wc_pair_array2[0];
-	    
-	    if(temp_face1>=0 && temp_face2>=0) {
-	      fprintf(mcconf, " wcp %d (", nt2);
-	      if(temp_face2==WC_FACE_SUGAR)
-		fprintf(mcconf, "S");
-	      else if(temp_face2==WC_FACE_WATSCRICK)
-		fprintf(mcconf, "W");
-	      else if(temp_face2==WC_FACE_HOOGSTEEN)
-		fprintf(mcconf, "H");
-	      if(temp_face1==WC_FACE_SUGAR)
-		fprintf(mcconf, "S");
-	      else if(temp_face1==WC_FACE_WATSCRICK)
-		fprintf(mcconf, "W");
-	      else if(temp_face1==WC_FACE_HOOGSTEEN)
-		fprintf(mcconf, "H");
-	      fprintf(mcconf, ")");
-	    }
-	    
-	    
-	    temp_face1=wc_pair_array1[1];
-      	    temp_face2=wc_pair_array2[2];
-      	    if(temp_face1>=0 && temp_face2>=0) {
-      	      fprintf(mcconf, " bph %d (", nt2);
-      	      if(temp_face2==WC_FACE_SUGAR)
-      		fprintf(mcconf,"S");
-      	      else if(temp_face2==WC_FACE_WATSCRICK)
-      		fprintf(mcconf,"W");
-      	      else if(temp_face2==WC_FACE_HOOGSTEEN)
-      		fprintf(mcconf,"H");
-      	      fprintf(mcconf,"P)");
-      	    }
-      	    temp_face1=wc_pair_array1[2];
-      	    temp_face2=wc_pair_array2[1];
-      	    if(temp_face1>=0 && temp_face2>=0) {
-      	      fprintf(mcconf," bph %d (P", nt2);
-      	      if(temp_face1==WC_FACE_SUGAR)
-      		fprintf(mcconf,"S");
-      	      else if(temp_face1==WC_FACE_WATSCRICK)
-      		fprintf(mcconf,"W");
-      	      else if(temp_face1==WC_FACE_HOOGSTEEN)
-      		fprintf(mcconf,"H");
-      	      fprintf(mcconf,")");
-      	    }
-      	  }
-      	}
-      }
       fprintf(mcconf,"\n");
     }
     fclose(mcconf);
@@ -492,16 +470,17 @@ void MC_write_contact_list(int nt_n, double *rx, double *ry, double *rz, int ini
 void MC_get_sp_bonded_energy(int nt_c, int nt_n, double *rx, double *ry, double *rz){
   //central
   double energ_c=0, energ_pr=0, energ_po=0;
+  int gly_flag=0;
   MC_copy_nt(nt_c, rx, ry, rz);
   int tflag=0;
-  energ_c+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag)/2.0;
+  //energ_c+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag,0,1,0,0,&gly_flag)/2.0;//we stick to the current GLYC conformation : don't allow the change between A and H since this is not in the integrator  // energ+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag, tflag_G1, tflag_G2, &gly_flag);
   //prev
   if(nt_c>0){
     mc_nbonds[nt_c-1][0]=1;
     mc_bondlist[nt_c-1][0]=nt_c;
     MC_copy_nt(nt_c-1, rx, ry, rz);
     tflag=0;
-    energ_pr+=MC_calc_bonded_energy(nt_c-1, rx, ry, rz, &tflag)/2.0;
+    //energ_pr+=MC_calc_bonded_energy(nt_c-1, rx, ry, rz, &tflag,0,1,0,0,&gly_flag)/2.0;
   }
   //post
   if(nt_c<nt_n){
@@ -509,7 +488,7 @@ void MC_get_sp_bonded_energy(int nt_c, int nt_n, double *rx, double *ry, double 
     mc_bondlist[nt_c+1][0]=nt_c;
     MC_copy_nt(nt_c+1, rx, ry, rz);
     tflag=0;
-    energ_po+=MC_calc_bonded_energy(nt_c+1, rx, ry, rz, &tflag)/2.0;
+    //energ_po+=MC_calc_bonded_energy(nt_c+1, rx, ry, rz, &tflag,0,1,0,0,&gly_flag)/2.0;
   }
   printf("%d  :  %lf \t%d  :  %lf \t%d  :  %lf\n", nt_c, energ_c, nt_c-1, energ_pr, nt_c+1, energ_po);
   
@@ -523,67 +502,78 @@ double MC_get_energy(int nt_n, double *rx, double *ry, double *rz, int index){
   double d_vec[DIM], r_vec[DIM], r_vec_inv[DIM];
   double dist, sugdistsq;
   int typ_ind, typ_ind2;
-  int tflag=0;
+  int tflag=0, tflag_G1=0, tflag_G2=0, tflag_G1_pre=0, tflag_G2_pre=0;
+  double dumm;
+  
   int b, nt_neigh, ba;
   double eta, theta;
   int temp_flag;
   double sigma, r;
   int n, nt2;
   double b_ev_temp1, b_ev_temp2, t_vec[DIM], nb_ev_temp1, nb_ev_temp2;
-  //int a;//,b;
-  /* for(a=0;a<nt_n;a++){ */
-  /*   printf("%d    %d : ", a, vl_n_pairs[a]); */
-  /*   for(b=0;b<vl_n_pairs[a];b++) */
-  /*     printf("%d  ",vl_neighbor_tables[a][b]); */
-  /*   printf("\n"); */
-  /* } */
-  //printf("Evaluating energy\n");
+  double EintraG1=0, EintraG2=0;
+  
+  double etemp;
+ 
   double energ_c=0;
+  int gly_flag=0, gly_flag_pre=0;
   for(nt_c=0;nt_c<nt_n;nt_c++){
-    //printf("Part %d (of %d)\n", nt_c, nt_n);
+
     at_c=N_PARTS_PER_NT*nt_c;
     MC_copy_nt(nt_c, rx, ry, rz);
-    tflag=0;
-    
+    tflag=0; tflag_G1=0; tflag_G2=0;
+    EintraG1=0; EintraG2=0;
+
     /* self interaction (or intra-nt) */
-    if(index==0 || index ==3)
-      energ_c+=MC_calc_intra_energy(nt_c,&tflag);
-    
-    if(tflag!=0 && index==0)
-      {  printf("Intra: flag = %d\n", tflag);exit(0);	}//   return;	}
-    /* bonded interactions */
-    
-     //tflag=0;
-     if(index==1 || index==3)
-       energ_c+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag)/2.0;
-     if(tflag!=0 && index==1)
-       {  printf("Bonded flag = %d\n", tflag);exit(0);	}
-     
-     
-     /* non bonded loop */
-     
-     //printf("i survived the bonded loop\n");
-     if(index==2 || index==3){
-       for(n=0;n<vl_n_pairs[nt_c];n++) {
-	 nt2=vl_neighbor_tables[nt_c][n];
-	 at_ne=N_PARTS_PER_NT*nt2;
-	  sugdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);                                     
-	  if(sugdistsq<mc_r_cut_sq) {
-	    calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
-	    tflag=0;
-	    //printf("%d  and %d\n", nt_c, nt2);
-	    energ_c+=MC_calc_non_bonded_energy(nt_c, rx, ry, rz, nt2, r_vec, r, &tflag)/2.0;
-	    if(tflag!=0 && index==2)
-	      {  printf("Nonbonded flag = %d between %d and %d\n", tflag, nt_c, nt2);exit(0);	   	}
-	  }
-	}
+    if(index==0 || index ==3){
+      if(fr_is_mobile[nt_c]!=FR_MOB_FROZ){
+	etemp=MC_calc_intra_energy(nt_c,&tflag_G1, &tflag_G2, &EintraG1, &EintraG2);
+	energ_c+=etemp;//MC_calc_intra_energy(nt_c,&tflag);
       }
-      
-   }
-   //ADD WATSON-CRICK!
-  if(index==3 || index==4) energ_c+=MC_calculate_total_wc_energy(nt_n,-1,rx, ry, rz);
-   
-   return energ_c;
+    }
+    
+    if(tflag_G1!=0 && (index==0 || index == 3))
+      {  printf("Intra: flag = %d, glp = %d   %d   %d\n", tflag, mc_glyc[nt_c], mc_puck[nt_c], glp_is_flippable[nt_c]);exit(0);	}//   return;	}
+    /* bonded interactions */
+    if(index==1 || index==3){
+      //froz check is done insidle the MC_calc_bonded_energy function
+	energ_c+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag, 0, 1, 0,0,
+				     0, 1, 0, 0, &gly_flag, &gly_flag_pre, &dumm)/2.0;
+
+	
+    }
+    if(tflag!=0 && index==1)
+      {  printf("Bonded flag = %d\n", tflag);exit(0);	}
+    
+    /* non bonded loop */
+    if(index==2 || index==3){
+      for(n=0;n<vl_n_pairs[nt_c];n++) {
+	nt2=vl_neighbor_tables[nt_c][n];
+	at_ne=N_PARTS_PER_NT*nt2;
+#ifdef FROZEN
+	if(fr_is_mobile[nt_c]!=FR_MOB_FROZ || fr_is_mobile[nt2]!=FR_MOB_FROZ)
+#endif
+	  {
+	    sugdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
+	    if(sugdistsq<mc_nb_rcut_sq) {
+	      calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
+	      tflag=0;
+	      //printf("%d  and %d\n", nt_c, nt2);
+	      energ_c+=MC_calc_non_bonded_energy(nt_c, rx, ry, rz, nt2, r_vec, r, &tflag)/2.0;
+	      if(tflag!=0 && index==2)
+		{  printf("Nonbonded flag = %d between %d and %d\n", tflag, nt_c, nt2);exit(0);	   	}
+	    }
+	  }
+      }
+    }
+    
+}
+  //ADD WATSON-CRICK!
+#ifndef NOCTCS
+if(index==3 || index==4) energ_c+=MC_calculate_total_wc_energy(nt_n,-1,rx, ry, rz);
+#endif
+  
+  return energ_c;
 }
 
 
@@ -591,7 +581,6 @@ double MC_get_energy(int nt_n, double *rx, double *ry, double *rz, int index){
 
 void MC_update_positions(double **rx, double **ry, double **rz, int nt){
   int i;
-  //printf("from %lf %lf %lf\to to %lf %lf %lf\n", (*rx)[N_PARTS_PER_NT*nt], (*ry)[N_PARTS_PER_NT*nt],(*rz)[N_PARTS_PER_NT*nt], mc_temp_x[nt_c], mc_temp_y[0],mc_temp_z[0]);
   for(i=0;i<N_PARTS_PER_NT;i++){
     (*rx)[N_PARTS_PER_NT*nt+i]=mc_temp_x[N_PARTS_PER_NT*nt+i];
     (*ry)[N_PARTS_PER_NT*nt+i]=mc_temp_y[N_PARTS_PER_NT*nt+i];
@@ -602,19 +591,58 @@ void MC_update_positions(double **rx, double **ry, double **rz, int nt){
     mc_pbox[N_PARTS_PER_NT*nt+i][2]=mc_temp_pbox[N_PARTS_PER_NT*nt+i][2];
 #endif
   }
+}
+
+void MC_update_glypuck(int nt){
   mc_glyc[nt]=mc_temp_glyc[nt];
   mc_puck[nt]=mc_temp_puck[nt];
 }
 
-void MC_eval_displacement(int nt_n, double **rx, double **ry, double **rz, int nt, double o_ene, double n_ene, double wc_ene_nmo){
-  double ranf=rand_d(1.0);
-  if(ranf <= exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp )){
+double MC_eval_displacement(int nt_n, double **rx, double **ry, double **rz, int nt, double o_ene, double n_ene, double wc_ene_nmo){
+  double d_energ=0;
+  //double pref=1.0;
+  double ranf;
+  double expfac=0;
+  double sign=1; if(n_ene-o_ene+wc_ene_nmo<0) sign=-1; //sign of DELTA_E
+  int accflag=0;
+  if(mc_target_temp>0.05){
+    if(sign*(n_ene-o_ene+wc_ene_nmo)/mc_target_temp < 100){
+      expfac=exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp);
+      ranf=rand_d(1.0);
+      if(ranf<expfac) accflag=1;
+    }
+    else{
+      //value overflowed - accept of reject depending on sign
+      if(sign>0) accflag=0;
+      else accflag=1;
+    }
+  }
+  else{
+    if(sign>0) accflag=0;
+    else accflag=1;
+  }
+  if(accflag==1){
+    //if(ranf <= exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp )){
+    //printf("accepted\n");
+    d_energ=n_ene-o_ene+wc_ene_nmo;
     MC_update_positions(rx, ry, rz, nt);
-    //printf("trial accepted!\t %lf %lf     %lf\t %lf %lf  %lf\n", o_ene, n_ene, wc_ene_nmo, ranf,exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp ), mc_target_temp );
+    MC_update_glypuck(nt);
     MC_add_vl_count(nt);
     MC_update_wc_lists(nt_n);
+    
+    if(nt>0){
+      MC_update_positions(rx, ry, rz, nt-1);
+      MC_update_glypuck(nt-1);
+      //printf("updating %d and %d\n", nt, nt-1);
+    }
+#ifdef ERMSDR
+    //DELTA_ERMSD_SQ=-MC_reduce_ermsd(nt, nt_n);
+    //MC_update_ermsd_g(nt, nt_n);
+    //DELTA_ERMSD_SQ+=MC_reduce_ermsd(nt, nt_n);
+    ERMSD_SQ=ERMSD_SQ+DELTA_ERMSD_SQ;///((double)ERMSD_NNT) ;
+#endif
   }
-  //else printf("trial rejected!\t %lf %lf     %lf\t%lf %lf  %lf\n", o_ene, n_ene, wc_ene_nmo,ranf,exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp ), mc_target_temp);
+  return d_energ;
 }
 
 void MC_perform_bb_rotation(int nt_c){
@@ -903,104 +931,485 @@ void MC_perform_p_translation(int nt_c){
 }
 
 int MC_perform_trial_movement(int nt_c){
-  int rand1=rand_i(6);
+  int maxmoves=9;
+  //printf("performing trial mov\n");
+  //printf("glycs =  %d %d %d\n", mc_glyc[0],mc_glyc[1],mc_glyc[2]);
+  //int maxmoves=7;//THIS IS TEMPORARY !!! THIS LINE SHOULD NOT BE UNCOMMENTED!!!
+  
+  //if(glp_is_flippable[nt_c]==GLP_FIXED || mc_temp_glyc[nt_c]==GLYC_H)
+  if(glp_is_flippable[nt_c]==GLP_FIXED)
+    maxmoves=maxmoves-2;
+  int rand1=rand_i(maxmoves);
 #ifdef FROZEN
   if(fr_is_mobile[nt_c]==FR_MOB_BASE) //only NT is mobile - the flag has to be > 0 
-    rand1=rand_i(5)+1;
+    rand1=rand_i(maxmoves-1)+1;
   else if(fr_is_mobile[nt_c]==FR_MOB_PHOS)
     rand1=0;
 #endif
-  if(N_PARTS_PER_NT>1){
-    if(rand1==0){
-      MC_perform_nt_rotation(nt_c,0); // ROTATION AROUND SUGAR
-      //printf(" NT rot       \n");
-    }
-    else if(rand1==1){
-      MC_perform_nt_rotation(nt_c,1); // ROTATION AROUND BASE
-      //printf(" NT rot       \n");
-    }
-    else if(rand1==2){
-      MC_perform_nt_rotation(nt_c,2); // ROTATION AROUND (SUG+BAS)/2
-      //printf(" NT rot       \n");
-    }
-    else if(rand1==3){
-        MC_perform_p_translation(nt_c);
-    }
-    //else if(rand1==4){
-    else{
-      MC_perform_nt_translation(nt_c);
-    }
-
-    
-    /* else if (rand1==3){ */
-    /*   MC_perform_nt_rotation(nt_c,1); */
-    /* } */
-      /* else */
-    /* 	{ */
-    /* 	  MC_perform_nt_rotation(1); // ROTATION AROUND BASE CENTER */
-    /* 	  //printf("NT rot 1 "); */
-    /* 	} */
-    /* #ifdef GLYC_TRIAL */
-    /* else if(rand1==3){ */
-    /*   MC_perform_base_flip(nt_c); */
-    /* } */
-    /* #endif */
-    /* else{ */
-    /*   MC_perform_bb_rotation(nt_c); */
-    /*   //printf(" BB rot        \n"); */
-    /* } */
+  if(rand1==0 || rand1==maxmoves){
+    MC_perform_p_translation(nt_c);
+    //MC_perform_nt_translation(nt_c);
   }
-  else
-    MC_perform_nt_translation(nt_c);
+  else if(rand1==1){
+    MC_perform_nt_rotation(nt_c,0); // ROTATION AROUND SUGAR
+  }
+  else if(rand1==2){
+    MC_perform_nt_rotation(nt_c,1); // ROTATION AROUND BASE
+  }
+  else if(rand1==3){
+    MC_perform_nt_rotation(nt_c,2); // ROTATION AROUND (SUG+BAS)/2
+  }
+  else if(rand1==4 || rand1==5 || rand1==6){
+    MC_perform_nt_translation(nt_c); // TRANSLATION OF NT
+  }
+  else if(rand1==7){
+    if(glp_is_flippable[nt_c]==GLP_PUCK){
+      MC_perform_base_flip(nt_c,FLIP_PUCK);
+    }
+    else{
+      if(is_pyrimidine(nt_c)){
+	if(glp_is_flippable[nt_c]==GLP_BOTH)
+	  MC_perform_base_flip(nt_c,FLIP_PUCK);
+	else
+	  MC_perform_nt_translation(nt_c); // do something else when glyc is the only change you can make
+      }
+      else
+	MC_perform_base_flip(nt_c,FLIP_GLYC);
+    }
+  }
+  else if(rand1==8){
+    if(glp_is_flippable[nt_c]==GLP_GLYC){
+      if(is_purine(nt_c))
+	MC_perform_base_flip(nt_c,FLIP_GLYC);
+      else
+	MC_perform_nt_translation(nt_c); // do something else when glyc is the only change you can make
+      
+    }
+    else{
+      MC_perform_base_flip(nt_c,FLIP_PUCK);
+    }
+  }
   return rand1;
 }
 
-/* void MC_perform_base_flip(int nt_c){ */
-/*   // we displace the base */
-/*   //then flip it */
-/*   //then update the glycosidic index */
-/*   //then remap the sugar */
+void MC_perform_base_flip(int nt_c, int flip_type){
+  //we displace the base
+  //then flip it
+  //then update the glycosidic index
+  //then remap the sugar
+  int i,j,d,m,n;
+  double xvec[DIM], yvec[DIM], zvec[DIM];
+  double newxvec[DIM], newyvec[DIM], newzvec[DIM];
+  double mat_U[DIMSQ], mat_Utr[DIMSQ], mat_A[DIMSQ], mat_B[DIMSQ];
+  double vec_a[DIM], vec_b[DIM];
+  //double **mat_A, **mat_U, **mat_Utr, *vec_a, *vec_b;
+  //choose parameters
+  int at_c=nt_c*N_PARTS_PER_NT;
+  //printf("Flipping %d\t", nt_c);
+  int newconf=MC_init_flip(mc_types[at_c], mc_temp_glyc[nt_c],mc_temp_puck[nt_c], flip_type, mat_A, vec_a); // and we have set the rotation matrix and the displacement vector
+  xvec[0]=mc_temp_x[at_c+IX]-mc_temp_x[at_c];  xvec[1]=mc_temp_y[at_c+IX]-mc_temp_y[at_c];  xvec[2]=mc_temp_z[at_c+IX]-mc_temp_z[at_c];
+  yvec[0]=mc_temp_x[at_c+IY]-mc_temp_x[at_c];  yvec[1]=mc_temp_y[at_c+IY]-mc_temp_y[at_c];  yvec[2]=mc_temp_z[at_c+IY]-mc_temp_z[at_c];
+  vec_prod(xvec, yvec, zvec);
+  mat_U[0*DIM+0]=xvec[0];  mat_U[0*DIM+1]=xvec[1];  mat_U[0*DIM+2]=xvec[2];
+  mat_U[1*DIM+0]=yvec[0];  mat_U[1*DIM+1]=yvec[1];  mat_U[1*DIM+2]=yvec[2];
+  mat_U[2*DIM+0]=zvec[0];  mat_U[2*DIM+1]=zvec[1];  mat_U[2*DIM+2]=zvec[2];
+  for(i=0;i<DIM;i++){
+    for(j=0;j<DIM;j++){
+      mat_Utr[i*DIM+j]=mat_U[j*DIM+i];
+      mat_B[i*DIM+j]=0;
+    }
+    vec_b[i]=0;
+    newxvec[i]=0;
+    newyvec[i]=0;
+    newzvec[i]=0;
+  }
+  for(i=0;i<DIM;i++)
+    for(j=0;j<DIM;j++)
+      for(m=0;m<DIM;m++)
+	for(n=0;n<DIM;n++)
+	  mat_B[i*DIM+j]+=mat_Utr[i*DIM+m]*mat_A[m*DIM+n]*mat_U[n*DIM+j];
+  for(d=0;d<DIM;d++)
+    for(i=0;i<DIM;i++)
+      for(j=0;j<DIM;j++)
+      //vec_b[d]+=mat_B[d][i]*vec_a[i];
+      //vec_b[d]+=mat_B[d*DIM+i]*mat_A[i*DIM+j]*vec_a[j];
+	vec_b[d]+=mat_Utr[d*DIM+i]*mat_A[i*DIM+j]*vec_a[j];
   
-/* } */
+  //so we have the new nucleoside orientation
+  for(d=0;d<DIM;d++)
+    for(i=0;i<DIM;i++){
+      newxvec[d]+=mat_B[d*DIM+i]*xvec[i];
+      newyvec[d]+=mat_B[d*DIM+i]*yvec[i];
+      //newzvec[d]+=mat_B[d][i]*zvec[i];
+    }
+  //normalize these vectors
+  double normx=sqrt(SQ(newxvec[0])+SQ(newxvec[1])+SQ(newxvec[2]));
+  double normy=sqrt(SQ(newyvec[0])+SQ(newyvec[1])+SQ(newyvec[2]));
+  for(d=0;d<DIM;d++){
+    newxvec[d]/=normx;
+    newyvec[d]/=normy;
+  }
+  double xyproj=newxvec[0]*newyvec[0]+newxvec[1]*newyvec[1]+newxvec[2]*newyvec[2];
+  for(d=0;d<DIM;d++)
+    newyvec[d]=newyvec[d]-newxvec[d]*xyproj;
+  normy=sqrt(SQ(newyvec[0])+SQ(newyvec[1])+SQ(newyvec[2]));
+  for(d=0;d<DIM;d++)
+    newyvec[d]/=normy;
+  
+  
+  
+  //and the new base position
+  mc_temp_x[at_c]+=vec_b[0];  mc_temp_y[at_c]+=vec_b[1];  mc_temp_z[at_c]+=vec_b[2];
+  mc_temp_x[at_c+IX]=mc_temp_x[at_c]+newxvec[0];  mc_temp_y[at_c+IX]=mc_temp_y[at_c]+newxvec[1];  mc_temp_z[at_c+IX]=mc_temp_z[at_c]+newxvec[2];
+  mc_temp_x[at_c+IY]=mc_temp_x[at_c]+newyvec[0];  mc_temp_y[at_c+IY]=mc_temp_y[at_c]+newyvec[1];  mc_temp_z[at_c+IY]=mc_temp_z[at_c]+newyvec[2];
+  
+  //we update the glyc bond/sugar pucker
+  MC_assign_temp_glp(nt_c, newconf);
+  //we remap the sugar with the "new" pucker/glyc
+  MC_map_sugar_temp(nt_c);
+  
+}
 
-int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, double *energ_calc){
-  //NO CELL STRUCTURE IMPLEMENTED YET
-   /* for three dimensions! */
-  int n, nt2, at_c, at_ne;
-  double r, r_vec[DIM], centdistsq;
-  //HERE WE HAVE TO CALCULATE THE ENERGIES OF THE AUXILIAR PARTICLES TOO!!
-  double energ=0.0;
-  int flag=0;
+int MC_init_flip(int bastyp, int oldglyc, int oldpuck, int flip_type, double *matrix, double *vec){
+  int newglyc, newpuck;
+  //this returns the new glyc-puck conformation and selects the proper matrices and displacement vectors
   
-  /* self interaction (or intra-nt) */
-  energ+=MC_calc_intra_energy(nt_c,&flag);
-  if(flag!=0)
-    return flag;
-  /* bonded interactions */
-  energ+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &flag);
-  if(flag!=0)
-    return flag;
-  /* non bonded loop */
-  //printf("i survived the bonded loop\n");
-  for(n=0;n<vl_n_pairs[nt_c];n++){
-    nt2=vl_neighbor_tables[nt_c][n];
-    at_ne=N_PARTS_PER_NT*nt2;
-    at_c=N_PARTS_PER_NT*nt_c;
-    centdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
+  //TEMPORARY, WE treat GLUC_H AS GLYC_A. THE JUMP SYN->HIGH ANTI IS NOT CONSIDERED, SINCE HIGH ANTI IS A "SUBSPACE" OF ANTI 
+  /* if(oldglyc==GLYC_H){ */
+  /*   printf("Trying to flip high-anti.\n"); */
+  /*   exit(1); */
+  /* } */
+  //printf("In init flip, from %d , %d\n", oldglyc, oldpuck); 
+  if(flip_type==FLIP_GLYC){
+    newpuck=oldpuck;
+    //now, we allow the A-H -> S change, but with the same parameters of A->S change
+    if(oldpuck==PUCK_3){
+      if(oldglyc==GLYC_A || oldglyc==GLYC_H){
+	newglyc=GLYC_S;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{-0.452135, 0.0978822, -0.886562}, {0.372873,   0.923683, -0.0881798}, {0.810271, -0.370445, -0.454127}}
+	  //{-0.645402, -1.32813, 1.45666}
+	  matrix[0*DIM+0]=-0.452135;	matrix[0*DIM+1]= 0.0978822;     matrix[0*DIM+2]=-0.886562;
+	  matrix[1*DIM+0]= 0.372873;	matrix[1*DIM+1]= 0.923683;	matrix[1*DIM+2]=-0.0881798;
+	  matrix[2*DIM+0]= 0.810271;	matrix[2*DIM+1]=-0.370445;	matrix[2*DIM+2]=-0.454127;
+	  
+	  vec[0]=-0.645402;	vec[1]=-1.32813;	vec[2]= 1.45666;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  printf("i shouldnt be here!\n");
+	  exit(1);
+	}
+      }
+      else if(oldglyc==GLYC_S){
+	newglyc=GLYC_A;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{-0.452135, 0.372873, 0.810271}, {0.0978822,   0.923683, -0.370445}, {-0.886562, -0.0881798, -0.454127}}
+	  //{1.12961, 1.59587, 0.692458}
+	  matrix[0*DIM+0]=-0.452135;	matrix[0*DIM+1]=0.372873;	matrix[0*DIM+2]= 0.810271;
+	  matrix[1*DIM+0]=0.0978822;	matrix[1*DIM+1]=0.923683;	matrix[1*DIM+2]=-0.370445;
+	  matrix[2*DIM+0]=-0.886562;	matrix[2*DIM+1]=-0.0881798;     matrix[2*DIM+2]= -0.454127;
+	  
+	  vec[0]= 1.12961;	vec[1]= 1.59587;	vec[2]= 0.692458;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  printf("i shouldnt be here!\n");
+	  exit(1);
+	}
+      }
+    }
+    else if(oldpuck==PUCK_2){
+      if(oldglyc==GLYC_A || oldglyc==GLYC_H){
+	newglyc=GLYC_S;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{-0.452135, 0.0978822, -0.886562}, {0.372873,   0.923683, -0.0881798}, {0.810271, -0.370445, -0.454127}}
+	  //{-0.645402, -1.32813, 1.45666}
+	  //puck 2{{-0.917397, -0.199475, -0.344373}, {-0.162731,  0.977691, -0.13281}, {0.363183, -0.0657992, -0.929392}}
+	  //{2.1465, 0.16011, 1.19316}
+	  matrix[0*DIM+0]=-0.917397 ;	matrix[0*DIM+1]=-0.199475;      matrix[0*DIM+2]=-0.344373;
+	  matrix[1*DIM+0]=-0.162731 ;	matrix[1*DIM+1]= 0.977691;	matrix[1*DIM+2]= -0.13281;
+	  matrix[2*DIM+0]= 0.363183 ;	matrix[2*DIM+1]=-0.0657992;	matrix[2*DIM+2]=-0.929392;
+	  
+	  vec[0]=2.1465;	vec[1]=0.16011;	      vec[2]= 1.19316;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  printf("i shouldnt be here!\n");
+	  exit(1);
+	}
+      }
+      else if(oldglyc==GLYC_S){
+	newglyc=GLYC_A;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{-0.452135, 0.372873, 0.810271}, {0.0978822,   0.923683, -0.370445}, {-0.886562, -0.0881798, -0.454127}}
+	  //{1.12961, 1.59587, 0.692458}
+	  //puck2 {{-0.917397, -0.162731, 0.363183}, {-0.199475,   0.977691, -0.0657992}, {-0.344373, -0.13281, -0.929392}}
+	  //{2.41203, 0.351229, 0.339875}
+	  matrix[0*DIM+0]=-0.917397;	matrix[0*DIM+1]=-0.162731;	matrix[0*DIM+2]=0.363183;
+	  matrix[1*DIM+0]=-0.199475;	matrix[1*DIM+1]= 0.977691;	matrix[1*DIM+2]=-0.0657992;
+	  matrix[2*DIM+0]=-0.344373;	matrix[2*DIM+1]=-0.13281;       matrix[2*DIM+2]=-0.929392;
+	  
+	  vec[0]= 2.41203;	vec[1]= 0.351229;	vec[2]= 0.339875;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  printf("i shouldnt be here!\n");
+	  exit(1);
+	}
+      }
+      
     
-    
-    //centdistsq=calc_min_dist_sq(0.5*(rx[at_ne+IPHO]+rx[at_ne]), 0.5*(ry[at_ne+IPHO]+ry[at_ne]), 0.5*(rz[at_ne+IPHO]+rz[at_ne]), 				0.5*(mc_temp_x[at_c+IPHO] + mc_temp_x[at_c]), 0.5*(mc_temp_y[at_c+IPHO]+mc_temp_y[at_c]), 0.5*(mc_temp_z[at_c+IPHO]+mc_temp_z[at_c]));
-    
-    if(centdistsq<mc_nb_rcut_sq){
-      calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
-      energ+=MC_calc_non_bonded_energy(nt_c, rx, ry, rz, nt2, r_vec, r, &flag);
-      if(flag!=0)
-  	return flag;
     }
   }
-  //HERE WE HAVE TO CALCULATE THE ENERGIES OF THE AUXILIAR PARTICLES TOO!!
-  *energ_calc=energ;
-  return flag;
+  else if(flip_type==FLIP_PUCK){
+    newglyc=oldglyc;
+    if(oldglyc==GLYC_A){//WE ASUMME THAT THE GLYCOSIDIC BOND ANGLE CONFORMATION IS ANTI!!
+      if(oldpuck==PUCK_3){
+	newpuck=PUCK_2;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.921656, -0.0221719, -0.387374}, {0.232272, 0.831246,   0.505054}, {0.310805, -0.555462, 0.771273}}
+	  //{-1.03938, 0.973513, 0.355191}
+	  matrix[0*DIM+0]=0.921656;	matrix[0*DIM+1]=-0.0221719;	matrix[0*DIM+2]=-0.387374;
+	  matrix[1*DIM+0]=0.232272;	matrix[1*DIM+1]=0.831246;	matrix[1*DIM+2]=0.505054;
+	  matrix[2*DIM+0]=0.310805;	matrix[2*DIM+1]=-0.555462;	matrix[2*DIM+2]=0.771273;
+	  
+	  vec[0]=-1.03938;	vec[1]=0.973513;	vec[2]=0.355191;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  //{{0.859784, 0.20379, -0.468233}, {0.119701, 0.810944,   0.572748}, {0.496431, -0.548488, 0.672843}}
+	  //{-0.860058, 0.391386, -1.00444}
+	  matrix[0*DIM+0]=0.859784;	matrix[0*DIM+1]=0.20379;	matrix[0*DIM+2]= -0.468233;
+	  matrix[1*DIM+0]=0.119701;	matrix[1*DIM+1]=0.810944;	matrix[1*DIM+2]=0.572748;
+	  matrix[2*DIM+0]=0.496431;	matrix[2*DIM+1]=-0.548488;	matrix[2*DIM+2]=0.672843;
+	  
+	  vec[0]=-0.860058;	vec[1]=0.391386;	vec[2]=-1.00444;
+	}
+      }
+      else if(oldpuck==PUCK_2){
+	newpuck=PUCK_3;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.921656, 0.232272, 0.310805}, {-0.0221719,  0.831246, -0.555462}, {-0.387374, 0.505054, 0.771273}}
+	  //{1.11713, -0.7472, 0.589845}
+	  matrix[0*DIM+0]=0.921656;	matrix[0*DIM+1]=0.232272;	matrix[0*DIM+2]=0.310805;
+	  matrix[1*DIM+0]=-0.0221719;	matrix[1*DIM+1]=0.831246;	matrix[1*DIM+2]=-0.555462;
+	  matrix[2*DIM+0]=-0.387374;	matrix[2*DIM+1]=0.505054;	matrix[2*DIM+2]=0.771273;
+	  
+	  vec[0]=1.11713;	vec[1]=-0.7472;	vec[2]=0.589845;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  //{{0.859784, 0.119701, 0.496431}, {0.20379,   0.810944, -0.548488}, {-0.468233, 0.572748, 0.672843}}
+	  //{0.189393, 0.360848, 1.31746}
+	  matrix[0*DIM+0]=0.859784;	 matrix[0*DIM+1]=0.119701;	 matrix[0*DIM+2]=0.496431;
+	  matrix[1*DIM+0]=0.20379;	 matrix[1*DIM+1]=0.810944;	 matrix[1*DIM+2]=-0.548488;
+	  matrix[2*DIM+0]=-0.468233;	 matrix[2*DIM+1]=0.572748;	 matrix[2*DIM+2]= 0.672843;
+	  
+	  vec[0]=0.189393;	 vec[1]=0.360848;	 vec[2]= 1.31746;
+	}
+      }
+    }
+    else if(oldglyc==GLYC_H){
+       if(oldpuck==PUCK_3){
+	newpuck=PUCK_2;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.726084, 0.494585, -0.477691}, {-0.398939, 0.868843,   0.293189}, {0.560045, -0.0223101, 0.828162}}
+	  //{1.07218, -0.41053, -0.231989}
+	  matrix[0*DIM+0]=0.726084;	matrix[0*DIM+1]=0.494585;	matrix[0*DIM+2]=-0.477691;
+	  matrix[1*DIM+0]=-0.398939;	matrix[1*DIM+1]=0.868843;	matrix[1*DIM+2]=0.293189;
+	  matrix[2*DIM+0]=0.560045;	matrix[2*DIM+1]=-0.0223101;	matrix[2*DIM+2]=0.828162;
+	  
+	  vec[0]=1.07218;	vec[1]=-0.41053;	vec[2]=-0.231989;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  //{{0.608478, 0.116058, -0.785038}, {-0.268734,  0.960935, -0.0662318}, {0.746684, 0.251267, 0.615896}}
+	  //{-0.612358, -0.0141759, 0.503744}
+	  matrix[0*DIM+0]=0.608478;	matrix[0*DIM+1]=0.116058;	matrix[0*DIM+2]=-0.785038;
+	  matrix[1*DIM+0]=-0.268734;	matrix[1*DIM+1]=0.960935;	matrix[1*DIM+2]=-0.0662318;
+	  matrix[2*DIM+0]=0.746684;	matrix[2*DIM+1]=0.251267;	matrix[2*DIM+2]=0.615896;
+	  
+	  vec[0]=-0.612358;	vec[1]=-0.0141759;	vec[2]=0.503744;
+	}
+      }
+      else if(oldpuck==PUCK_2){
+	newpuck=PUCK_3;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.726084, -0.398939, 0.560045}, {0.494585,   0.868843, -0.0223101}, {-0.477691, 0.293189, 0.828162}}
+	  //{-0.686272, 0.852439, -0.417506}
+	  matrix[0*DIM+0]=0.726084;	matrix[0*DIM+1]=-0.398939;	matrix[0*DIM+2]=0.560045;
+	  matrix[1*DIM+0]=0.494585;	matrix[1*DIM+1]=0.868843;	matrix[1*DIM+2]=-0.0223101;
+	  matrix[2*DIM+0]=-0.477691;	matrix[2*DIM+1]=0.293189;	matrix[2*DIM+2]=0.828162;
+	  
+	  vec[0]=-0.686272;	vec[1]= 0.852439;	vec[2]=-0.417506;
+	}
+	else if(bastyp==TYP_CYTOSINE || bastyp==TYP_URACIL){
+	  //{{0.608478, -0.268734, 0.746684}, {0.116058, 0.960935,   0.251267}, {-0.785038, -0.0662318, 0.615896}}
+	  //{0.76971, -0.117576, 0.150545}
+	  matrix[0*DIM+0]=0.608478;	 matrix[0*DIM+1]=-0.268734;	 matrix[0*DIM+2]=0.746684;
+	  matrix[1*DIM+0]=0.116058;	 matrix[1*DIM+1]=0.960935;	 matrix[1*DIM+2]=0.251267;
+	  matrix[2*DIM+0]=-0.785038;	 matrix[2*DIM+1]=-0.0662318;	 matrix[2*DIM+2]=0.615896;
+	  
+	  vec[0]=0.76971;	 vec[1]=-0.117576;	 vec[2]=0.150545;
+	}
+      }
+    }
+    else if(oldglyc==GLYC_S){
+      if(oldpuck==PUCK_3){
+	newpuck=PUCK_2;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.588908, -0.806364, -0.0544508}, {0.456939,   0.387771, -0.800525}, {0.666629, 0.446555, 0.59682}}
+	  //{-1.34632, 2.41762, 4.21156}
+	  matrix[0*DIM+0]=0.588908;	matrix[0*DIM+1]=-0.806364;	matrix[0*DIM+2]=-0.0544508;
+	  matrix[1*DIM+0]=0.456939;	matrix[1*DIM+1]=0.387771;	matrix[1*DIM+2]=-0.800525;
+	  matrix[2*DIM+0]=0.666629;	matrix[2*DIM+1]=0.446555;	matrix[2*DIM+2]=0.59682;
+	  
+	  vec[0]=-1.34632;	vec[1]=2.41762;	vec[2]=4.21156;
+	}
+      }
+      else if(oldpuck==PUCK_2){
+	newpuck=PUCK_3;
+	if(bastyp==TYP_ADENINE || bastyp==TYP_GUANINE){
+	  //{{0.588908, 0.456939, 0.666629}, {-0.806364, 0.387771,   0.446555}, {-0.0544508, -0.800525, 0.59682}}
+	  //{2.97166, 3.04916, -2.69565}
+	  matrix[0*DIM+0]=0.588908;	matrix[0*DIM+1]=0.456939;	matrix[0*DIM+2]=0.666629;
+	  matrix[1*DIM+0]=-0.806364;	matrix[1*DIM+1]= 0.387771;	matrix[1*DIM+2]=0.446555;
+	  matrix[2*DIM+0]=-0.0544508;	matrix[2*DIM+1]=-0.800525;	matrix[2*DIM+2]=0.59682;
+	  
+	  vec[0]=2.97166;	vec[1]=3.04916;	vec[2]=-2.69565;
+	}
+      }
+    }
+  }
+  else {
+    printf("Invalid FLIP type.\n");
+    exit(1);
+  }
+  
+  return newpuck*N_GLYC_STATES+newglyc;
+}
+
+
+int MC_get_temp_glp(int nt, int conf){
+  return mc_temp_puck[nt]*N_GLYC_STATES + mc_temp_glyc[nt];
+}
+
+void MC_assign_temp_glp(int nt, int conf){
+  int temp=conf/N_GLYC_STATES;
+  //if(temp==0) mc_temp_puck[nt]=PUCK_2; else mc_temp_puck[nt]=PUCK_3;
+  if(temp==0) mc_temp_puck[nt]=PUCK_3; else mc_temp_puck[nt]=PUCK_2;
+  temp=conf-temp*N_GLYC_STATES;
+  if(temp==GLYC_A) mc_temp_glyc[nt]=GLYC_A;  else if(temp==GLYC_H) mc_temp_glyc[nt]=GLYC_H;  else if(temp==GLYC_S) mc_temp_glyc[nt]=GLYC_S; else{printf("ERROR: GLYC TYPE NOT RECOGNIZED!\n"); exit(1);}
+}
+
+int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, double *energ_calc, int nt_n, int trial){
+   //NO CELL STRUCTURE IMPLEMENTED YET
+   /* for three dimensions! */
+  int n, nt2, at_c=N_PARTS_PER_NT*nt_c, at_ne,  nt_pre=nt_c-1, at_pre=(nt_c-1)*N_PARTS_PER_NT;
+  double r, r_vec[DIM], centdistsq;
+  double TEMP_ERMSD_SQ=0;
+#ifdef ERMSDR
+  double e_vec[DIM], e_vec_inv[DIM];
+  double ermsd_energ;
+#endif  
+  double energ=0.0;
+  int flag=0, tflag=0;
+  double EintraG1, EintraG2, etemp, etemp_PRE;
+  double EintraG1_PRE, EintraG2_PRE;
+  int iflag_G1=0, iflag_G2=0, gly_flag=-1, eval, temp_flag_G1, temp_flag_G2;
+  int iflag_G1_PRE=0, iflag_G2_PRE=0, gly_flag_PRE=-1,  temp_flag_G1_PRE, temp_flag_G2_PRE;
+  double next_intra=0, next_inter=0, t_vec[DIM], mc_ev_glob_rcut_sq, bond_bp_G1, bond_bp_G2, bond_bp_G1_PRE, bond_bp_G2_PRE;
+  double pr_vec[DIM], pr_vec_inv[DIM], cr_vec[DIM], cr_vec_inv[DIM], cd_vec[DIM];
+  double tnb_energ;
+  /*********************/
+  etemp=MC_calc_intra_energy(nt_c,&iflag_G1, &iflag_G2, &EintraG1, &EintraG2); //WE SELECT LATER THE CORRECT ENERGY
+  if(nt_c>0){
+    MC_copy_nt(nt_pre, rx, ry, rz);
+    etemp_PRE=MC_calc_intra_energy(nt_pre,&iflag_G1_PRE, &iflag_G2_PRE, &EintraG1_PRE, &EintraG2_PRE); //WE SELECT LATER THE CORRECT ENERGY, for the PREVIOUS nucleotide
+    if(fr_is_mobile[nt_pre]!=FR_MOB_FULL){
+      //if the previous nt is frozen, we do not modify its glp state
+      iflag_G2_PRE=1;
+      EintraG2_PRE=0;
+    }
+  }
+  //we dont add the intra energy yet - we have to see if there was jump between A and H
+  if(iflag_G1!=0 && iflag_G2!=0) // we dont check PRE bc it didnt move
+    return iflag_G1;
+  
+  if((glp_is_flippable[nt_c]==GLP_FIXED || glp_is_flippable[nt_c]==GLP_PUCK) && iflag_G1!=0) return iflag_G1;
+  /* bonded interactions */
+  energ+=MC_calc_bonded_energy(nt_c, rx, ry, rz, &tflag, iflag_G1, iflag_G2, EintraG1, EintraG2, iflag_G1_PRE, iflag_G2_PRE, EintraG1_PRE, EintraG2_PRE, &gly_flag, &gly_flag_PRE, &TEMP_ERMSD_SQ);
+  if(tflag!=0)
+    return tflag;
+  
+  //note that the gly_flag has already been updated, and the bad cases have been filtered
+  
+  //this must happen uniquely and exclusively if the energy has been taken from the "different" glyc state
+  //since it is the minimum energy state, 
+#ifndef WARMUP
+  if(gly_flag!=mc_temp_glyc[nt_c] && (glp_is_flippable[nt_c]==GLP_BOTH || glp_is_flippable[nt_c]==GLP_GLYC) && gly_flag!=-1) { 
+    mc_temp_glyc[nt_c]=gly_flag;
+    energ+=EintraG2; //now, we add the correct intra energy
+  }
+  else
+#endif
+    energ+=EintraG1; // if not, we add the one of the original configuration
+
+  if(nt_c>0){  
+#ifndef WARMUP
+    if(fr_is_mobile[nt_pre]==FR_MOB_FULL && gly_flag_PRE!=mc_temp_glyc[nt_pre] && (glp_is_flippable[nt_pre]==GLP_BOTH || glp_is_flippable[nt_pre]==GLP_GLYC) && gly_flag_PRE!=-1) { 
+      //printf("MODIFYING NEIGHBOR GLYC %d  from %d to %d\n", nt_c-1, mc_temp_glyc[nt_pre], gly_flag_PRE);
+      mc_temp_glyc[nt_pre]=gly_flag_PRE;
+      energ+=EintraG2_PRE; //now, we add the correct intra energy
+    }
+    else
+#endif
+      energ+=EintraG1_PRE; // if not, we add the one of the original configuration
+  }
+  
+  /* non bonded loop */
+  //printf("beg\n");
+  for(n=0;n<vl_n_pairs[nt_c];n++){
+    nt2=vl_neighbor_tables[nt_c][n];
+#ifdef FROZEN
+    if(fr_is_mobile[nt_c]!=FR_MOB_FROZ || fr_is_mobile[nt2]!=FR_MOB_FROZ)
+#endif
+      {   
+	at_ne=N_PARTS_PER_NT*nt2;
+	at_c=N_PARTS_PER_NT*nt_c;
+	centdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
+	if(centdistsq<mc_nb_rcut_sq){
+	  calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
+	  tnb_energ=MC_calc_non_bonded_energy(nt_c, rx, ry, rz, nt2, r_vec, r, &flag);
+	  energ+=tnb_energ;
+	  /* if(nt_c==1){ */
+	  /* printf("%d %lf\n", nt2, tnb_energ); */
+	  /* } */
+	  if(flag!=0)
+	    return flag;
+	}
+	
+#ifdef ERMSDR
+	if(G_groups[nt_c][nt2]>-1){
+	  calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
+	  //if(r<ERMSD_CUTOFF*ERMSDX){
+	  proj_on_nt(r_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, pr_vec);
+	  proj_on_nt_inv(r_vec, rx, ry,rz, nt2, pr_vec_inv);
+	  TEMP_ERMSD_SQ+=MC_get_pair_ermsd(pr_vec[0]/ERMSDX    , pr_vec[1]/ERMSDY    , pr_vec[2]/ERMSDZ    , G_ref[nt_c][nt2][0], G_ref[nt_c][nt2][1], G_ref[nt_c][nt2][2], G_ref[nt_c][nt2][3]);
+	  TEMP_ERMSD_SQ+=MC_get_pair_ermsd(pr_vec_inv[0]/ERMSDX, pr_vec_inv[1]/ERMSDY, pr_vec_inv[2]/ERMSDZ, G_ref[nt2][nt_c][0], G_ref[nt2][nt_c][1], G_ref[nt2][nt_c][2], G_ref[nt2][nt_c][3]);
+	    //}
+	}
+#endif  
+      }
+   }
+   *energ_calc=energ;
+#ifdef ERMSDR
+   TEMP_ERMSD_SQ/=((double)ERMSD_NNT);
+   if(trial==-1){
+     DELTA_ERMSD_SQ=-TEMP_ERMSD_SQ;
+   }
+   else{
+     DELTA_ERMSD_SQ+=TEMP_ERMSD_SQ;
+     //in this manner, if the step is completely evaluated, we have that DELTA ERMSD = ERMSD_trial - ERMSD_curr. Once this is calculated, we add the corresponding difference of energy
+     ermsd_energ=0.5*ERMSD_PREF*DELTA_ERMSD_SQ;
+     *energ_calc+=ermsd_energ;
+   }
+#endif
+   return flag;
 }
 
 void MC_select_rand_nt(int nt_n, double *rx, double *ry, double *rz,  int *nt){

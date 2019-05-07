@@ -15,6 +15,9 @@ double MC_NT_ANGLE;
 double MC_BB_ANGLE;
 double MC_NT_ANGLE_COS, MC_NT_ANGLE_SIN;
 double MC_BB_ANGLE_COS, MC_BB_ANGLE_SIN;
+
+char ENERG_PATH[MAX_BUFFER];
+
 #ifdef FROZEN
 int *fr_is_mobile;
 #endif
@@ -22,6 +25,7 @@ double bia_lambda;
 double bia_cap;
 int *mc_glyc;
 int *mc_temp_glyc;
+int *glp_is_flippable;
 double MAP_SUG_GL_X[N_BASES][N_GLYC_STATES];
 double MAP_SUG_GL_Y[N_BASES][N_GLYC_STATES];
 double MAP_SUG_GL_Z[N_BASES][N_GLYC_STATES];
@@ -41,7 +45,8 @@ int mc_nc[DIM];
 double mc_linked_cell_l;
 
 /* mc_checkpoints */
-int mc_chk_freq;
+int mc_chkp_steps;
+int mc_traj_steps;
 
 /* mc_energies */
 int mc_n_types;
@@ -76,8 +81,10 @@ double BB_PREF;
 double BB_PREF_A;
 double nb_bp_well[N_BASES][WC_FACES];
 double nb_bp_spec_well[N_BASES][3];
-double glyc_well[N_GLYC_STATES];
-double puck_well[N_PUCK_STATES];
+double glp_well_R[N_GLYC_STATES][N_PUCK_STATES];
+//double puck_well_R[N_PUCK_STATES];
+double glp_well_Y[N_GLYC_STATES][N_PUCK_STATES];
+//double puck_well_Y[N_PUCK_STATES];
 double wc_secdih_min[N_BASES_SQ][WC_FACES_SQ];
 double wc_secdih_max[N_BASES_SQ][WC_FACES_SQ];
 double wc_secdih_min_F[N_BASES_SQ][WC_FACES_SQ];
@@ -205,6 +212,28 @@ double ss_ang_ave;
 int *wc_sstruct_N;
 int **wc_sstruct_neigh;
 #endif
+
+//#ifdef ERMSDR
+FILE *ermsd_obs;
+double ERMSD_SQ;
+double DELTA_ERMSD_SQ;
+int ERMSD_FLAG;
+double ERMSD_PREF;
+double ERMSD_CUTOFF;
+double *ermsdref_X;
+double *ermsdref_Y;
+double *ermsdref_Z;
+ double *ermsdref_B;
+ double *ermsdref_S;
+ double *ermsdref_P;
+double ***G_curr;
+double ***G_trial;
+double ***G_ref;
+int **G_groups;
+int ERMSD_N_GROUPS;
+int ERMSD_NNT;
+//#endif
+
 /* mc_verlet_lists */
 int *vl_n_pairs;
 int vl_n_pairs_max;
@@ -239,3 +268,8 @@ int *bp_is_paired, *bp_is_paired_trial;
 double bp_face_angle[N_BASES][4];
 double bp_spec_ang[N_BASES][2];
 
+
+double bp_contacts[N_BASES][WC_FACES][DIM];
+double bp_hydros[N_BASES][WC_FACES][DIM];
+double bp_G_cont_W2[DIM];
+double bp_G_hydr_W2[DIM];

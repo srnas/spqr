@@ -1,5 +1,5 @@
-#ifndef MD_H
-#define MD_H
+#ifndef MC_H
+#define MC_H
 //#include "md_global.h"
 #include "mc_initialization.h"
 #include "mc_integrate.h"

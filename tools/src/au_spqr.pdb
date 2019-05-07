@@ -1,0 +1,21 @@
+REMARK temp
+ATOM      0 BASE A   0   0       5.454  -1.762   0.630
+ATOM      1 XVEC A   0   0       6.246  -1.156   0.559
+ATOM      2 YVEC A   0   0       4.856  -1.014   0.341
+ATOM      3 SUGR A   0   0       6.783  -5.879   2.766
+ATOM      4 PHOS A   0   0       2.847  -8.829   3.227
+ATOM      5 BASE U   0   1       5.772  -0.472   3.837
+ATOM      6 XVEC U   0   1       6.357   0.339   3.846
+ATOM      7 YVEC U   0   1       4.999   0.089   3.540
+ATOM      8 SUGR U   0   1       8.884  -1.283   5.576
+ATOM      9 PHOS U   0   1       6.882  -5.338   6.560
+ATOM     10 BASE A   1   2       3.638   4.429   2.180
+ATOM     11 XVEC A   1   2       4.632   4.347   2.251
+ATOM     12 YVEC A   1   2       3.539   3.477   2.469
+ATOM     13 SUGR A   1   2       2.531   8.611   0.044
+ATOM     14 PHOS A   1   2      -1.989   8.480  -0.940
+ATOM     15 BASE U   1   3       4.602   3.515  -1.027
+ATOM     16 XVEC U   1   3       5.533   3.149  -1.036
+ATOM     17 YVEC U   1   3       4.256   2.626  -0.730
+ATOM     18 SUGR U   1   3       6.783   5.879  -2.766
+ATOM     19 PHOS U   1   3       2.907   8.210  -3.750

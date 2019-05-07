@@ -1,0 +1,28 @@
+CFLAGS = -c -O3 -DFROZEN  -DTANN -DWARMUP 
+MPICC = mpicc
+#CFLAGS = -c -O3 -DWARMUP -DFROZEN
+#CFLAGS = -c -O3 -DFROZEN -DSECONDSTC -DERMSDR -DNOCTCS
+#CFLAGS = -c -O3 -DFROZEN -DERMSDR -DNOCTCS
+#CFLAGS = -c -O3 
+all: SIM_TMPR
+
+%.o : %.c
+	$(MPICC) $(CFLAGS) -DMPIMC -o $@ -c $< -lm
+
+
+T_ANN : sim_anneal.o  sa_impl.o   mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o
+	$(MPICC) sim_anneal.o sa_impl.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o -o T_ANN -lm -O3 
+SIM_TMPR : Sim_tempering.o  st_impl.o   mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o
+	$(MPICC) Sim_tempering.o st_impl.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o -o SIM_TMPR -lm -O3 
+
+MPIMC : mpi_mc.o    mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o
+	$(MPICC)  	mpi_mc.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o  -o MPIMC -lm -O3  
+
+#PT : parallel_temp.o  pt_impl.o   mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o
+#	$(MPICC)  	parallel_temp.o pt_impl.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o mc_utils.o  mc_base_pairing.o mc_global.o -o PT -lm -O3 
+
+PFINDMIN :  find_min_energs_par.o    mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o
+	$(MPICC)  	find_min_energs_par.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o -o PFINDMIN -lm -O3  
+
+clean : 
+	rm *.o MPIMC SIM_TMPR

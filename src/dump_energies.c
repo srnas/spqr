@@ -18,46 +18,58 @@ char checkpoint[256];
 /* MC variables */
 int mc_n;
 double *rx,*ry,*rz;
-int mc_iter, mc_ini;
+int mc_iter;
 /****************/
 
 
 
 
 int main(int argc, char **argv) {
-  int i,j;
+  int i,j,tempinit=0;
   int base, face, stf;
   double TOT, BB1, BB2, ST_and_BB2, WCE_and_BPH, WCE, NST, BPH;
   int rand_a;
-  double lx, ly, lz;
-  int typ_e=atoi(argv[1]);
+  //  double lx, ly, lz;
+  int typ_e=-1;
+  
   /* initialization */
   mc_n=(int)NSOLUTE;
   int nt_n;
-  if (argc==2){
-    MC_read_nsolute(&mc_n,20);
-    mc_ini=0;
-    MC_read_params(&lx, &ly, &lz, &mc_iter, &rand_a,20);
-    //MC_initialize(mc_n, &rx, &ry, &rz, lx, ly, lz, READ_MC_CONF, rand_a, mc_ini);
-    MC_initialize_global(mc_n, lx, ly, lz, rand_a,20);
-    //if(mc_read_conf_flag==READ_MC_CONF){
-    MC_initialize_positions(mc_n,&rx,&ry,&rz,READ_MC_CONF,20);
-    /* INITIALIZE CONFIGURATION FILE */
-    //MC_initialize_save_configs(mc_n, ini);
-    MC_initialize_energies(mc_n, rx, ry, rz);
-
-    
-    
-  }  else {
-    printf("We require the type of energy to calculate:\n-1  : Annotations\n0  : Total energy (detailed)\n1  : Total energy\n2  : Backbone energy\n3  : Bonded energy (Includes S-S and Stacking)\n4  : Non-bonded energy\n");
-    exit(1);
+  if (argc==2 || argc==3){
+    if(argc==2)
+      typ_e=0;
+    if (argc==3)
+      typ_e=atoi(argv[2]);
+    //check if file is binary(.mc) or ascii(.pdb)
+    int len=strlen(argv[1]);
+    const char *last_three=&argv[1][len-3];
+    if(!strcmp(last_three, ".mc")){
+      MC_read_params(&mc_iter, &rand_a,-1);
+      tempinit=MC_read_checkpoint(&mc_n, &rx, &ry, &rz, &rand_a, -1, argv[1], NULL);
+      MC_initialize_energies(mc_n, rx, ry, rz);
+    }
+    else if(!strcmp(last_three, "pdb")){
+      MC_read_nsolute(&mc_n,-1, argv[1]);
+      MC_read_params(&mc_iter, &rand_a,-1);
+      //MC_initialize(mc_n, &rx, &ry, &rz, lx, ly, lz, READ_MC_CONF, rand_a, mc_ini);
+      MC_initialize_global(mc_n, rand_a,-1);
+      MC_initialize_arrays(mc_n,&rx,&ry,&rz);
+      MC_read_pdb(mc_n, &rx, &ry, &rz, -1, argv[1]);
+      MC_initialize_energies(mc_n, rx, ry, rz);
+    }
+    else{
+      printf("Unrecognized file extension. It must be pdb or mc.\n");
+      exit(ERR_INPUT);
+    }
+  } else {
+    printf("We require the type of energy to calculate:\n-2  : Secondary structure\n-1  : Full annotations\n0  : Total energy (detailed)\n1  : Total energy\n2  : Backbone energy\n3  : Bonded energy (Includes S-S and Stacking)\n4  : Non-bonded energy\n");
+    exit(ERR_INPUT);
   }
   /* before running */
   nt_n=mc_n/N_PARTS_PER_NT;
-#ifdef NEW_BIA
-  mc_target_temp=1;
-#endif
-  if(typ_e<0)
+  if(typ_e==-2)
+    MC_print_secondary_structure(nt_n, rx, ry, rz);
+  else if(typ_e==-1)
     MC_print_contact_list(nt_n, rx, ry, rz);
   else if(typ_e==0){
     
@@ -116,5 +128,6 @@ int main(int argc, char **argv) {
   
   
   else{printf("We require the type of energy to calculate:\n-1  : Annotations\n0  : Total energy\n1  : Backbone energy\n2  : Bonded energy (Includes S-S and Stacking)\n3  : Non-bonded energy\n"); exit(1);}
+  if(typ_e!=-2) printf("No clashes found.\n");
   return 0;
 }

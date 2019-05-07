@@ -1,14 +1,45 @@
 #!/bin/bash
-
+VERSION=0.9.5.1
 if [ "$#" -eq 0 ]
-   then
-   	make -f  Make_no_mpi clean
-	make -f  Make_no_mpi MC -j3
-	make -f  Make_no_mpi ENERG -j3
-	make -f Make_no_mpi FINDMIN -j3
-	make -f Make_no_mpi WFINDMAX -j3
-	make -f Make_xyz clean
-	make -f Make_xyz XYZENERG -j3
+then
+    rm PDBERMSD_$VERSION SPQR_MCermsd_$VERSION SPQR_wrmMC_$VERSION SPQR_MC_$VERSION SPQR_ENERG_$VERSION
+    make -f Make_no_mpi clean
+    touch Maketemp ; rm Maketemp
+    echo "CFLAGS = -c -O3 -DFROZEN -DNOCTCS -DERMSDR" > Maketemp
+    cat Make_no_mpi >> Maketemp
+    make -f  Maketemp MC -j3
+    mv MC SPQR_MCermsd_$VERSION
+    make -f  Maketemp PDBERMSD -j3
+    mv PDBERMSD PDBERMSD_$VERSION
+    
+    make -f Make_no_mpi clean
+    touch Maketemp ; rm Maketemp
+    echo "CFLAGS = -c -O3 -DFROZEN -DNOCTCS -DWARMUP" > Maketemp
+    cat Make_no_mpi >> Maketemp
+    make -f  Maketemp MC -j3
+    mv MC SPQR_wrmMC_$VERSION
+    
+    make -f Make_no_mpi clean
+    touch Maketemp ; rm Maketemp
+    echo "CFLAGS = -c -O3 -DFROZEN" > Maketemp
+    cat Make_no_mpi >> Maketemp
+    make -f  Maketemp MC -j3
+    mv MC SPQR_MC_$VERSION
+    
+    make -f Make_pdb clean
+    make -f Make_pdb GETENERG -j3
+    mv GETENERG SPQR_ENERG_$VERSION
+    
+    make -f Make_no_mpi clean
+    touch Maketemp ; rm Maketemp
+    echo "CFLAGS = -c -O3 -DFROZEN -DTANN" > Maketemp
+    cat Make_no_mpi >> Maketemp
+    make -f  Maketemp T_ANN_JA -j3
+    mv T_ANN_JA SPQR_SA_$VERSION
+    
+
+    
+    rm Maketemp
 fi
 
 if [ "$#" -eq 1 ]
@@ -16,14 +47,44 @@ then
     if [ $1 = "-MPI" ]
     then
 	make -f Make_mpi clean
-	make -f Make_mpi MPIMC -j3
-	make -f Make_mpi T_ANN -j3
-	make -f Make_mpi PT -j3
-	make -f Make_mpi PFINDMIN -j3
-    elif [ $1 = "-NBIA" ]
-    then
-	make -f Make_nbia clean
-	make -f Make_nbia NBIANN -j3
+	rm MPI_SPQR_MC_$VERSION MPI_SPQR_SA_$VERSION
+	
+	make -f Make_mpi clean
+	touch Maketemp ; rm Maketemp
+	echo "CFLAGS = -c -O3 -DFROZEN " > Maketemp
+	cat Make_mpi >> Maketemp
+	make -f Maketemp MPIMC -j3
+	mv MPIMC MPI_SPQR_MC_$VERSION
+	
+	make -f Make_mpi clean
+	touch Maketemp ; rm Maketemp
+	echo "CFLAGS = -c -O3 -DFROZEN  -DTANN" > Maketemp
+	cat Make_mpi >> Maketemp
+	make -f Maketemp T_ANN -j3
+	mv T_ANN MPI_SPQR_SA_$VERSION
+	
+	make -f Make_mpi clean
+	touch Maketemp ; rm Maketemp
+	echo "CFLAGS = -c -O3 -DFROZEN  -DTANN -DERMSDR" > Maketemp
+	cat Make_mpi >> Maketemp
+	make -f Maketemp T_ANN -j3
+	mv T_ANN MPI_SPQR_ermsdSA_$VERSION
+	
+	make -f Make_mpi clean
+	touch Maketemp ; rm Maketemp
+	echo "CFLAGS = -c -O3 -DFROZEN  -DTANN -DWARMUP " > Maketemp
+	cat Make_mpi >> Maketemp
+	make -f Maketemp T_ANN -j3
+	mv T_ANN MPI_SPQR_wrmSA_$VERSION
+
+
+#	make -f Make_mpi clean
+#	touch Maketemp ; rm Maketemp
+#	echo "CFLAGS = -c -O3 -DFROZEN  " > Maketemp
+#	cat Make_mpi >> Maketemp
+#	make -f Maketemp SIM_TMPR -j3
+#	mv SIM_TMPR MPI_SPQR_STMP_$VERSION
+##	make -f Make_mpi PFINDMIN -j3
     else
 	echo "Invalid argument"
     fi

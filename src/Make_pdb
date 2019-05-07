@@ -1,0 +1,16 @@
+CC=gcc
+CFLAGS = -c -O3 -DXYZDEBUG -DFROZEN
+#CFLAGS = -c -O3 -DXYZDEBUG -DNOCTCS -DFROZEN -DWARMUP
+
+ %.o : %.c
+#	$(CC) $(CFLAGS) -o $@ -c -DXYZDEBUG -DFROZEN $<
+	$(CC) $(CFLAGS) -o $@ $<
+
+# %.o : %.c
+#	$(CC) $(CFLAGS) -o $@ -c  -DWARMUP -DWRMVERB -DFROZEN $<
+
+GETENERG :  get_energ.o    mc_cells.o  mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o
+	$(CC)  	get_energ.o    mc_cells.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o -o GETENERG -lm -O3 
+
+clean: 
+	rm *.o

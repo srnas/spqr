@@ -1,23 +1,23 @@
 #include "mc_energies.h"
 
-char *ew_gtl(FILE *source) {
-  static size_t st_l=0;
-  int n,i;
-  static char *sch_s=NULL;
-  while ((n=getline(&sch_s,&st_l,source))>0) {
-//    printf("%d %d %s",n,strlen(s),s);
-//    assert(s[n-1]=='\n');
-    if (sch_s[n-1]=='\n')
-      sch_s[n-1]='\0';
-    if (isalpha(sch_s[0]))
-      for(i=0;sch_s[i];++i)
-        if (isspace(sch_s[i]))
-          sch_s[i--]='\0';
-    if (sch_s[0]!='#')
-      break;
-    }
-  return n>0?sch_s:NULL;
-}
+/* char *ew_gtl(FILE *source) { */
+/*   static size_t st_l=0; */
+/*   int n,i; */
+/*   static char *sch_s=NULL; */
+/*   while ((n=getline(&sch_s,&st_l,source))>0) { */
+/* //    printf("%d %d %s",n,strlen(s),s); */
+/* //    assert(s[n-1]=='\n'); */
+/*     if (sch_s[n-1]=='\n') */
+/*       sch_s[n-1]='\0'; */
+/*     if (isalpha(sch_s[0])) */
+/*       for(i=0;sch_s[i];++i) */
+/*         if (isspace(sch_s[i])) */
+/*           sch_s[i--]='\0'; */
+/*     if (sch_s[0]!='#') */
+/*       break; */
+/*     } */
+/*   return n>0?sch_s:NULL; */
+/* } */
 
 void MC_initialize_energy_parameters(int mpi_id){
   int i,j,stf;
@@ -76,23 +76,26 @@ void MC_initialize_energy_parameters(int mpi_id){
   /* mc_ang_k[0]=DEFAULT_ANG_K; */
   /* mc_ang_th[0]=DEFAULT_ANG_TH; */
   
-  mc_chk_freq=DEFAULT_CHK_FREQ;
+  //mc_chk_freq=DEFAULT_CHK_FREQ;
   
   /*   dih_k[0][0]=0; */
   /*   dih_phi[0][0]=0; */
   /*   dih_n[0][0]=0; */
 
-  mc_r_cut=DEFAULT_MC_RCUT;
-  mc_wc_rcut=DEFAULT_MC_RCUT;
-  mc_bph_rcut=DEFAULT_MC_RCUT;
-  mc_nb_rcut=DEFAULT_MC_RCUT;
-  mc_n_types=N_BASES;
-  mc_n_bond_types=DEFAULT_MC_N_BOND_TYPES;
-  vl_skin=DEFAULT_VL_SKIN;
+  /* mc_r_cut=DEFAULT_MC_RCUT; */
+  /* mc_wc_rcut=DEFAULT_MC_RCUT; */
+  /* mc_bph_rcut=DEFAULT_MC_RCUT; */
+  /* mc_nb_rcut=DEFAULT_MC_RCUT; */
+  /* mc_n_types=N_BASES; */
+  //mc_n_bond_types=DEFAULT_MC_N_BOND_TYPES;
+  //vl_skin=DEFAULT_VL_SKIN;
 
-  MC_read_energy_parameters();
-  MC_initialize_tabulated_energies(mpi_id);
+  //MC_read_energy_parameters();
+  
+  
+  //MC_initialize_tabulated_energies(mpi_id);
 
+  MC_read_bin_energy_tables();
 #ifdef WARMUP
   int ig, ip, idd;
   ph_pintra_ave[TYP_ADENINE][GLYC_A][PUCK_2][0]=-5.62207;  ph_pintra_ave[TYP_ADENINE][GLYC_A][PUCK_2][1]=-4.84927;  ph_pintra_ave[TYP_ADENINE][GLYC_A][PUCK_2][2]= 0.322851;
@@ -147,6 +150,7 @@ void MC_initialize_tabulated_energies(int mpi_id){
   int ntypsq=mc_n_types*mc_n_types;
   char ctemp1, ctemp2, ctemp3, ctemp4, ctemp5;
   //int typ_ind=mc_n_types*type1+type2;
+  int fscout;
   
   /* NON BONDED POTENTIAL WELLS */
   //printf("Reading table wells\n");
@@ -159,26 +163,34 @@ void MC_initialize_tabulated_energies(int mpi_id){
     exit(1);
   }
   else{
-     fscanf(table,"%c%c", &ctemp1, &ctemp2);
+     fscout=fscanf(table,"%c%c", &ctemp1, &ctemp2);
     //printf("reading st %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='b' || ctemp2 != 'b'){
       printf("Wrong syntax at table_wells.tab file (bb)!\n%c %c\n", ctemp1, ctemp2);
       exit(1);}
-    fscanf(table, "%lf", &(BB_PREF));
-    fscanf(table, "%lf", &(BB_PREF_A));
+    fscout=fscanf(table, "%lf", &(BB_PREF));
+    fscout=fscanf(table, "%lf", &(BB_PREF_A));
     
     //intf("%lf read \n", BB_PREF);
-    fscanf(table,"%c%c%c", &ctemp1, &ctemp2, &ctemp3);
+    fscout=fscanf(table,"%c%c%c", &ctemp1, &ctemp2, &ctemp3);
     //intf("read %c %c %c\n", ctemp1, ctemp2, ctemp3);
     //printf("reading st %c  %c\n", ctemp1, ctemp2);
     if(ctemp2!='g' || ctemp3 != 'l'){
       printf("Wrong syntax at table_wells.tab file (gl)!\n%c %c\n", ctemp1, ctemp2);
       exit(1);}
-    for(i=0;i<N_GLYC_STATES;i++)
-      fscanf(table, "%lf", &(glyc_well[i]));
+    
+    for(j=0;j<N_PUCK_STATES;j++)
+      for(i=0;i<N_GLYC_STATES;i++)
+	fscout=fscanf(table, "%lf", &(glp_well_R[i][j]));
+    
+    for(j=0;j<N_PUCK_STATES;j++)
+      for(i=0;i<N_GLYC_STATES;i++)
+	fscout=fscanf(table, "%lf", &(glp_well_Y[i][j]));
+    //for(i=0;i<N_PUCK_STATES;i++)
+    //fscout=fscanf(table, "%lf", &(puck_well_Y[i]));
     
     /* NON BONDED POTENTIAL WELLS */
-    fscanf(table,"%c%c%c%c", &ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    fscout=fscanf(table,"%c%c%c%c", &ctemp1, &ctemp2, &ctemp3, &ctemp4);
     //printf("reading st %c  %c\n", ctemp1, ctemp2);
     if(ctemp2!='s' || ctemp3 != 't' || ctemp4!='b'){
       printf("Wrong syntax at table_wells.tab file (st , 1)!\n%c %c %c %c\n", ctemp1, ctemp2, ctemp3, ctemp4);
@@ -186,7 +198,7 @@ void MC_initialize_tabulated_energies(int mpi_id){
     for(stf=0;stf<N_STFACES;stf++){
       for(i=0;i<N_BASES;i++)
 	for(j=0;j<N_BASES;j++){
-	  fscanf(table, "%lf", &(b_st_well[N_BASES*i+j][stf]));
+	  fscout=fscanf(table, "%lf", &(b_st_well[N_BASES*i+j][stf]));
 	}
     }
     /* for(i=0;i<N_BASES;i++) */
@@ -200,14 +212,14 @@ void MC_initialize_tabulated_energies(int mpi_id){
     /*   for(j=0;j<N_BASES;j++) printf("%lf ", b_st_well[N_BASES*j+i]); */
     /*   printf("\n");} */
     /*************************************/
-    fscanf(table,"%c%c%c",&ctemp3, &ctemp1, &ctemp2);
+    fscout=fscanf(table,"%c%c%c",&ctemp3, &ctemp1, &ctemp2);
     //printf("reading st %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='s' || ctemp2 != 't'){
       printf("Wrong syntax at table_wells.tab file (st , 2)!\n%c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table, "%lf", &(nb_st_well[N_BASES*i+j]));
+	fscout=fscanf(table, "%lf", &(nb_st_well[N_BASES*i+j]));
       }
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
@@ -219,7 +231,7 @@ void MC_initialize_tabulated_energies(int mpi_id){
     /* for(i=0;i<N_BASES;i++){ */
     /*   for(j=0;j<N_BASES;j++) printf("%lf ", nb_st_well[N_BASES*j+i]); */
     /*   printf("\n");} */
-    fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
     //printf("reading wc %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='w' || ctemp2 != 'c'){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
@@ -228,35 +240,35 @@ void MC_initialize_tabulated_energies(int mpi_id){
       for(j=0;j<N_BASES;j++){
 	//for(k=0;k<WC_FACES;k++)
 	//for(l=k;l<WC_FACES;l++){
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]));
 	nb_wc_well[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]));
 	nb_wc_well[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]));
 	nb_wc_well[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well[N_BASES*i+j][2*WC_FACES+0];
 	//}
       }
     
     //BASE-PAIRING IN PARALLEL CONFORMATION
-    fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
     if(ctemp1!='w' || ctemp2 != 'P' ){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]));
 	nb_wc_well_F[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]));
 	nb_wc_well_F[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]));
 	nb_wc_well_F[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0];
 	//}
       }
@@ -278,24 +290,24 @@ void MC_initialize_tabulated_energies(int mpi_id){
     
     
     /************** BASE PHOSPHATE ***************/
-    fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
     //printf("reading wc %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='b' || ctemp2 != 'p'){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<WC_FACES;j++)
-	fscanf(table,"%lf", &(nb_bp_well[i][j]));
+	fscout=fscanf(table,"%lf", &(nb_bp_well[i][j]));
     /* for(i=0;i<N_BASES;i++)  */
     /*   for(j=0;j<WC_FACES;j++)  */
     /* 	printf("%lf   \n", nb_bp_well[i][j]);  */
     
-    fscanf(table, "%lf", &(nb_bp_spec_well[2][0]));
-    fscanf(table, "%lf", &(nb_bp_spec_well[2][1]));
-    fscanf(table, "%lf", &(nb_bp_spec_well[2][2]));
-    fscanf(table, "%lf", &(nb_bp_spec_well[3][0]));
-    fscanf(table, "%lf", &(nb_bp_spec_well[3][1]));
-    fscanf(table, "%lf", &(nb_bp_spec_well[3][2]));
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][0]));
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][1]));
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][2]));
+    /* fscout=fscanf(table, "%lf", &(nb_bp_spec_well[3][0])); */
+    /* fscout=fscanf(table, "%lf", &(nb_bp_spec_well[3][1])); */
+    /* fscout=fscanf(table, "%lf", &(nb_bp_spec_well[3][2])); */
     fclose(table);
   }
   
@@ -310,79 +322,79 @@ void MC_initialize_tabulated_energies(int mpi_id){
     exit(1);
   }
   else{
-    fscanf(table,"%c%c%c%c", &ctemp1,&ctemp2, &ctemp3, &ctemp4);
+    fscout=fscanf(table,"%c%c%c%c", &ctemp1,&ctemp2, &ctemp3, &ctemp4);
     //printf("reading wc %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
       printf("Wrong syntax at table_wc_secdih.tab file (wc)!\n %c %c %c %c", ctemp1, ctemp2, ctemp3, ctemp4);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]));
 	wc_secdih_min[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]));
 	wc_secdih_min[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]));
 	wc_secdih_min[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min[N_BASES*i+j][2*WC_FACES+0];
 	//}
       }
     
-    fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
     //printf("reading wc %c  %c\n", ctemp1, ctemp2);
     if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2]));
 	wc_secdih_max[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0]));
 	wc_secdih_max[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0]));
 	wc_secdih_max[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max[N_BASES*i+j][2*WC_FACES+0];
 	//}
       }
     
-    fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
     if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2]));
 	wc_secdih_min_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0]));
 	wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0]));
 	wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0];
       }
     
-    fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
     if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
       printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
       exit(1);}
     for(i=0;i<N_BASES;i++)
       for(j=0;j<N_BASES;j++){
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0]));
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1]));
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2]));
 	
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2]));
 	wc_secdih_max_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2];
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0]));
 	wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0];
-	fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0]));
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0]));
 	wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0];
       }
     fclose(table);
@@ -409,6 +421,10 @@ void MC_initialize_tabulated_energies(int mpi_id){
   //BUT WE USE THE PUCKERS
   //TYPE 0
   sprintf(tablename, "tab_energs/table_ssB1_p33.tab");
+#ifdef VERB
+  if(mpi_id==0)
+    printf("Reading backbone interactions...\n");
+#endif
   //FILE *table;
   if((table=fopen(tablename, "r"))==NULL){
     if(mpi_id==0)
@@ -416,14 +432,16 @@ void MC_initialize_tabulated_energies(int mpi_id){
     table_ssB1_N_33=0;
   }
   else{
+#ifdef VERB
     if(mpi_id==0)
-      printf("Reading backbone interaction: sugar-sugar (angle), pucks 3 3\n");
-    fscanf(table,"%d", &(table_ssB1_N_33));
-    fscanf(table,"%lf", &(table_ssB1_params_33[0]));
-    fscanf(table,"%lf", &(table_ssB1_params_33[1]));
+      printf("[ANGLE P3 P3] ");
+#endif
+    fscout=fscanf(table,"%d", &(table_ssB1_N_33));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_33[0]));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_33[1]));
     table_ssB1_33=(double *)malloc(sizeof(double)*table_ssB1_N_33);
     for(ener=0;ener<table_ssB1_N_33;ener++)
-      fscanf(table, "%lf", &(table_ssB1_33[ener]));
+      fscout=fscanf(table, "%lf", &(table_ssB1_33[ener]));
     fclose(table);
   }
 
@@ -436,14 +454,16 @@ void MC_initialize_tabulated_energies(int mpi_id){
     table_ssB1_N_32=0;
   }
   else{
+#ifdef VERB
     if(mpi_id==0)
-      printf("Reading backbone interaction: sugar-sugar (angle), pucks 3 3\n");
-    fscanf(table,"%d", &(table_ssB1_N_32));
-    fscanf(table,"%lf", &(table_ssB1_params_32[0]));
-    fscanf(table,"%lf", &(table_ssB1_params_32[1]));
+      printf("[ANGLE P3 P2] ");
+#endif
+    fscout=fscanf(table,"%d", &(table_ssB1_N_32));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_32[0]));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_32[1]));
     table_ssB1_32=(double *)malloc(sizeof(double)*table_ssB1_N_32);
     for(ener=0;ener<table_ssB1_N_32;ener++)
-      fscanf(table, "%lf", &(table_ssB1_32[ener]));
+      fscout=fscanf(table, "%lf", &(table_ssB1_32[ener]));
     fclose(table);
   }
   
@@ -456,14 +476,16 @@ void MC_initialize_tabulated_energies(int mpi_id){
     table_ssB1_N_23=0;
   }
   else{
+#ifdef VERB
     if(mpi_id==0)
-      printf("Reading backbone interaction: sugar-sugar (angle), pucks 3 3\n");
-    fscanf(table,"%d", &(table_ssB1_N_23));
-    fscanf(table,"%lf", &(table_ssB1_params_23[0]));
-    fscanf(table,"%lf", &(table_ssB1_params_23[1]));
+      printf("[ANGLE P2 P3] ");
+#endif
+    fscout=fscanf(table,"%d", &(table_ssB1_N_23));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_23[0]));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_23[1]));
     table_ssB1_23=(double *)malloc(sizeof(double)*table_ssB1_N_23);
     for(ener=0;ener<table_ssB1_N_23;ener++)
-      fscanf(table, "%lf", &(table_ssB1_23[ener]));
+      fscout=fscanf(table, "%lf", &(table_ssB1_23[ener]));
     fclose(table);
   }
 //TYPE 22
@@ -475,14 +497,16 @@ void MC_initialize_tabulated_energies(int mpi_id){
     table_ssB1_N_22=0;
   }
   else{
+#ifdef VERB
     if(mpi_id==0)
-      printf("Reading backbone interaction: sugar-sugar (angle), pucks 3 3\n");
-    fscanf(table,"%d", &(table_ssB1_N_22));
-    fscanf(table,"%lf", &(table_ssB1_params_22[0]));
-    fscanf(table,"%lf", &(table_ssB1_params_22[1]));
+      printf("[ANGLE P2 P2] ");
+#endif
+    fscout=fscanf(table,"%d", &(table_ssB1_N_22));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_22[0]));
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_22[1]));
     table_ssB1_22=(double *)malloc(sizeof(double)*table_ssB1_N_22);
     for(ener=0;ener<table_ssB1_N_22;ener++)
-      fscanf(table, "%lf", &(table_ssB1_22[ener]));
+      fscout=fscanf(table, "%lf", &(table_ssB1_22[ener]));
     fclose(table);
   }
   
@@ -492,6 +516,10 @@ void MC_initialize_tabulated_energies(int mpi_id){
   /* BASE - PHOSPHATE , INTRA NT */
   //glyc ANTI
   //puck3
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading INTRA-BP interactions...\n");
+#endif
   table_bpI_A3=(double **)malloc(sizeof(double *)*mc_n_types);
   for(i=0;i<N_BASES;i++){
     typ_ind=i;
@@ -504,15 +532,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_A3[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra BP for %d, ANTI.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_A3[typ_ind][0]), &(table_bpI_N_A3[typ_ind][1]), &(table_bpI_N_A3[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][0]), &(table_bpI_params_A3[typ_ind][1][0]), &(table_bpI_params_A3[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][1]), &(table_bpI_params_A3[typ_ind][1][1]), &(table_bpI_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d ANTI P3] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A3[typ_ind][0]), &(table_bpI_N_A3[typ_ind][1]), &(table_bpI_N_A3[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][0]), &(table_bpI_params_A3[typ_ind][1][0]), &(table_bpI_params_A3[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][1]), &(table_bpI_params_A3[typ_ind][1][1]), &(table_bpI_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_A3[typ_ind][0]*table_bpI_N_A3[typ_ind][1]*table_bpI_N_A3[typ_ind][2];
       table_bpI_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_A3[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_A3[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -530,15 +560,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_A2[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra BP for %d, ANTI.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_A2[typ_ind][0]), &(table_bpI_N_A2[typ_ind][1]), &(table_bpI_N_A2[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][0]), &(table_bpI_params_A2[typ_ind][1][0]), &(table_bpI_params_A2[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][1]), &(table_bpI_params_A2[typ_ind][1][1]), &(table_bpI_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d ANTI P2] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A2[typ_ind][0]), &(table_bpI_N_A2[typ_ind][1]), &(table_bpI_N_A2[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][0]), &(table_bpI_params_A2[typ_ind][1][0]), &(table_bpI_params_A2[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][1]), &(table_bpI_params_A2[typ_ind][1][1]), &(table_bpI_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_A2[typ_ind][0]*table_bpI_N_A2[typ_ind][1]*table_bpI_N_A2[typ_ind][2];
       table_bpI_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_A2[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_A2[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -557,15 +589,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_H3[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra SP for %d, HIGH ANTI.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_H3[typ_ind][0]), &(table_bpI_N_H3[typ_ind][1]), &(table_bpI_N_H3[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][0]), &(table_bpI_params_H3[typ_ind][1][0]), &(table_bpI_params_H3[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][1]), &(table_bpI_params_H3[typ_ind][1][1]), &(table_bpI_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d HIGH ANTI P3] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H3[typ_ind][0]), &(table_bpI_N_H3[typ_ind][1]), &(table_bpI_N_H3[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][0]), &(table_bpI_params_H3[typ_ind][1][0]), &(table_bpI_params_H3[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][1]), &(table_bpI_params_H3[typ_ind][1][1]), &(table_bpI_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_H3[typ_ind][0]*table_bpI_N_H3[typ_ind][1]*table_bpI_N_H3[typ_ind][2];
       table_bpI_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_H3[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_H3[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -582,15 +616,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_H2[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra SP for %d, HIGH ANTI.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_H2[typ_ind][0]), &(table_bpI_N_H2[typ_ind][1]), &(table_bpI_N_H2[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][0]), &(table_bpI_params_H2[typ_ind][1][0]), &(table_bpI_params_H2[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][1]), &(table_bpI_params_H2[typ_ind][1][1]), &(table_bpI_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d HIGH ANTI P2] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H2[typ_ind][0]), &(table_bpI_N_H2[typ_ind][1]), &(table_bpI_N_H2[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][0]), &(table_bpI_params_H2[typ_ind][1][0]), &(table_bpI_params_H2[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][1]), &(table_bpI_params_H2[typ_ind][1][1]), &(table_bpI_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_H2[typ_ind][0]*table_bpI_N_H2[typ_ind][1]*table_bpI_N_H2[typ_ind][2];
       table_bpI_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_H2[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_H2[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -608,15 +644,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_S3[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra SP for %d, SYN.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_S3[typ_ind][0]), &(table_bpI_N_S3[typ_ind][1]), &(table_bpI_N_S3[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][0]), &(table_bpI_params_S3[typ_ind][1][0]), &(table_bpI_params_S3[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][1]), &(table_bpI_params_S3[typ_ind][1][1]), &(table_bpI_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d SYN A3] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S3[typ_ind][0]), &(table_bpI_N_S3[typ_ind][1]), &(table_bpI_N_S3[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][0]), &(table_bpI_params_S3[typ_ind][1][0]), &(table_bpI_params_S3[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][1]), &(table_bpI_params_S3[typ_ind][1][1]), &(table_bpI_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_S3[typ_ind][0]*table_bpI_N_S3[typ_ind][1]*table_bpI_N_S3[typ_ind][2];
       table_bpI_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_S3[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_S3[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -633,15 +671,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
       table_bpI_N_S2[typ_ind][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading backbone intra SP for %d, SYN.\n", i);
-      fscanf(table,"%d%d%d", &(table_bpI_N_S2[typ_ind][0]), &(table_bpI_N_S2[typ_ind][1]), &(table_bpI_N_S2[typ_ind][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][0]), &(table_bpI_params_S2[typ_ind][1][0]), &(table_bpI_params_S2[typ_ind][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][1]), &(table_bpI_params_S2[typ_ind][1][1]), &(table_bpI_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	printf("[%d SYN P2] ", i);
+#endif
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S2[typ_ind][0]), &(table_bpI_N_S2[typ_ind][1]), &(table_bpI_N_S2[typ_ind][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][0]), &(table_bpI_params_S2[typ_ind][1][0]), &(table_bpI_params_S2[typ_ind][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][1]), &(table_bpI_params_S2[typ_ind][1][1]), &(table_bpI_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
       ntot=table_bpI_N_S2[typ_ind][0]*table_bpI_N_S2[typ_ind][1]*table_bpI_N_S2[typ_ind][2];
       table_bpI_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_bpI_S2[typ_ind][ener]));
+	fscout=fscanf(table, "%lf", &(table_bpI_S2[typ_ind][ener]));
       }
       fclose(table);
     }
@@ -650,6 +690,10 @@ void MC_initialize_tabulated_energies(int mpi_id){
   
   /* SUGAR - PHOSPHATE , INTER NT */
   //GLYC ANTI
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading INTER-BP interactions...\n");
+#endif
   table_bpB_A3=(double **)malloc(sizeof(double *)*ntypsq);
   for(i=0;i<N_BASES;i++){
     for(j=0;j<N_BASES;j++){
@@ -664,15 +708,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_A3[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_A3[typ_ind][0]), &(table_bpB_N_A3[typ_ind][1]), &(table_bpB_N_A3[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][0]), &(table_bpB_params_A3[typ_ind][1][0]), &(table_bpB_params_A3[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][1]), &(table_bpB_params_A3[typ_ind][1][1]), &(table_bpB_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d ANTI P3] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A3[typ_ind][0]), &(table_bpB_N_A3[typ_ind][1]), &(table_bpB_N_A3[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][0]), &(table_bpB_params_A3[typ_ind][1][0]), &(table_bpB_params_A3[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][1]), &(table_bpB_params_A3[typ_ind][1][1]), &(table_bpB_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_A3[typ_ind][0]*table_bpB_N_A3[typ_ind][1]*table_bpB_N_A3[typ_ind][2];
 	table_bpB_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_A3[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_A3[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -692,15 +738,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_A2[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_A2[typ_ind][0]), &(table_bpB_N_A2[typ_ind][1]), &(table_bpB_N_A2[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][0]), &(table_bpB_params_A2[typ_ind][1][0]), &(table_bpB_params_A2[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][1]), &(table_bpB_params_A2[typ_ind][1][1]), &(table_bpB_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d ANTI P2] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A2[typ_ind][0]), &(table_bpB_N_A2[typ_ind][1]), &(table_bpB_N_A2[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][0]), &(table_bpB_params_A2[typ_ind][1][0]), &(table_bpB_params_A2[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][1]), &(table_bpB_params_A2[typ_ind][1][1]), &(table_bpB_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_A2[typ_ind][0]*table_bpB_N_A2[typ_ind][1]*table_bpB_N_A2[typ_ind][2];
 	table_bpB_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_A2[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_A2[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -720,15 +768,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_H3[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_H3[typ_ind][0]), &(table_bpB_N_H3[typ_ind][1]), &(table_bpB_N_H3[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][0]), &(table_bpB_params_H3[typ_ind][1][0]), &(table_bpB_params_H3[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][1]), &(table_bpB_params_H3[typ_ind][1][1]), &(table_bpB_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d HIGH ANTI P3] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H3[typ_ind][0]), &(table_bpB_N_H3[typ_ind][1]), &(table_bpB_N_H3[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][0]), &(table_bpB_params_H3[typ_ind][1][0]), &(table_bpB_params_H3[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][1]), &(table_bpB_params_H3[typ_ind][1][1]), &(table_bpB_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_H3[typ_ind][0]*table_bpB_N_H3[typ_ind][1]*table_bpB_N_H3[typ_ind][2];
 	table_bpB_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_H3[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_H3[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -747,15 +797,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_H2[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_H2[typ_ind][0]), &(table_bpB_N_H2[typ_ind][1]), &(table_bpB_N_H2[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][0]), &(table_bpB_params_H2[typ_ind][1][0]), &(table_bpB_params_H2[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][1]), &(table_bpB_params_H2[typ_ind][1][1]), &(table_bpB_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d HIGH ANTI P2] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H2[typ_ind][0]), &(table_bpB_N_H2[typ_ind][1]), &(table_bpB_N_H2[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][0]), &(table_bpB_params_H2[typ_ind][1][0]), &(table_bpB_params_H2[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][1]), &(table_bpB_params_H2[typ_ind][1][1]), &(table_bpB_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_H2[typ_ind][0]*table_bpB_N_H2[typ_ind][1]*table_bpB_N_H2[typ_ind][2];
 	table_bpB_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_H2[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_H2[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -776,15 +828,17 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_S3[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_S3[typ_ind][0]), &(table_bpB_N_S3[typ_ind][1]), &(table_bpB_N_S3[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][0]), &(table_bpB_params_S3[typ_ind][1][0]), &(table_bpB_params_S3[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][1]), &(table_bpB_params_S3[typ_ind][1][1]), &(table_bpB_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d SYN P3] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S3[typ_ind][0]), &(table_bpB_N_S3[typ_ind][1]), &(table_bpB_N_S3[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][0]), &(table_bpB_params_S3[typ_ind][1][0]), &(table_bpB_params_S3[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][1]), &(table_bpB_params_S3[typ_ind][1][1]), &(table_bpB_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_S3[typ_ind][0]*table_bpB_N_S3[typ_ind][1]*table_bpB_N_S3[typ_ind][2];
 	table_bpB_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_S3[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_S3[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -803,25 +857,27 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_bpB_N_S2[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading backbone inter SP for %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_bpB_N_S2[typ_ind][0]), &(table_bpB_N_S2[typ_ind][1]), &(table_bpB_N_S2[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][0]), &(table_bpB_params_S2[typ_ind][1][0]), &(table_bpB_params_S2[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][1]), &(table_bpB_params_S2[typ_ind][1][1]), &(table_bpB_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d SYN P2] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S2[typ_ind][0]), &(table_bpB_N_S2[typ_ind][1]), &(table_bpB_N_S2[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][0]), &(table_bpB_params_S2[typ_ind][1][0]), &(table_bpB_params_S2[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][1]), &(table_bpB_params_S2[typ_ind][1][1]), &(table_bpB_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_bpB_N_S2[typ_ind][0]*table_bpB_N_S2[typ_ind][1]*table_bpB_N_S2[typ_ind][2];
 	table_bpB_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_bpB_S2[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_bpB_S2[typ_ind][ener]));
 	}
 	fclose(table);
       }
     }
   }
-  
-  
-  
-  
-  
+    
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading STACKING interactions...\n");
+#endif
   /* STACKING - BONDED */
   //s35
   table_nnB_0_s35=(double **)malloc(sizeof(double *)*ntypsq);
@@ -837,16 +893,18 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnB_N_0_s35[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnB_N_0_s35[typ_ind][0]), &(table_nnB_N_0_s35[typ_ind][1]), &(table_nnB_N_0_s35[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][0]), &(table_nnB_params_0_s35[typ_ind][1][0]), &(table_nnB_params_0_s35[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][1]), &(table_nnB_params_0_s35[typ_ind][1][1]), &(table_nnB_params_0_s35[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d s35] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s35[typ_ind][0]), &(table_nnB_N_0_s35[typ_ind][1]), &(table_nnB_N_0_s35[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][0]), &(table_nnB_params_0_s35[typ_ind][1][0]), &(table_nnB_params_0_s35[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][1]), &(table_nnB_params_0_s35[typ_ind][1][1]), &(table_nnB_params_0_s35[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	
 	ntot=table_nnB_N_0_s35[typ_ind][0]*table_nnB_N_0_s35[typ_ind][1]*table_nnB_N_0_s35[typ_ind][2];
 	table_nnB_0_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_0_s35[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s35[typ_ind][ener]));
 	}
      	fclose(table);
       }
@@ -866,16 +924,18 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnB_N_0_s53[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnB_N_0_s53[typ_ind][0]), &(table_nnB_N_0_s53[typ_ind][1]), &(table_nnB_N_0_s53[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][0]), &(table_nnB_params_0_s53[typ_ind][1][0]), &(table_nnB_params_0_s53[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][1]), &(table_nnB_params_0_s53[typ_ind][1][1]), &(table_nnB_params_0_s53[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d s53] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s53[typ_ind][0]), &(table_nnB_N_0_s53[typ_ind][1]), &(table_nnB_N_0_s53[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][0]), &(table_nnB_params_0_s53[typ_ind][1][0]), &(table_nnB_params_0_s53[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][1]), &(table_nnB_params_0_s53[typ_ind][1][1]), &(table_nnB_params_0_s53[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	
 	ntot=table_nnB_N_0_s53[typ_ind][0]*table_nnB_N_0_s53[typ_ind][1]*table_nnB_N_0_s53[typ_ind][2];
 	table_nnB_0_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_0_s53[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s53[typ_ind][ener]));
 	}
      	fclose(table);
       }
@@ -895,16 +955,18 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnB_N_0_s33[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnB_N_0_s33[typ_ind][0]), &(table_nnB_N_0_s33[typ_ind][1]), &(table_nnB_N_0_s33[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][0]), &(table_nnB_params_0_s33[typ_ind][1][0]), &(table_nnB_params_0_s33[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][1]), &(table_nnB_params_0_s33[typ_ind][1][1]), &(table_nnB_params_0_s33[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d s33] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s33[typ_ind][0]), &(table_nnB_N_0_s33[typ_ind][1]), &(table_nnB_N_0_s33[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][0]), &(table_nnB_params_0_s33[typ_ind][1][0]), &(table_nnB_params_0_s33[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][1]), &(table_nnB_params_0_s33[typ_ind][1][1]), &(table_nnB_params_0_s33[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	
 	ntot=table_nnB_N_0_s33[typ_ind][0]*table_nnB_N_0_s33[typ_ind][1]*table_nnB_N_0_s33[typ_ind][2];
 	table_nnB_0_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_0_s33[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s33[typ_ind][ener]));
 	}
      	fclose(table);
       }
@@ -924,23 +986,28 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnB_N_0_s55[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnB_N_0_s55[typ_ind][0]), &(table_nnB_N_0_s55[typ_ind][1]), &(table_nnB_N_0_s55[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][0]), &(table_nnB_params_0_s55[typ_ind][1][0]), &(table_nnB_params_0_s55[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][1]), &(table_nnB_params_0_s55[typ_ind][1][1]), &(table_nnB_params_0_s55[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d s55] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s55[typ_ind][0]), &(table_nnB_N_0_s55[typ_ind][1]), &(table_nnB_N_0_s55[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][0]), &(table_nnB_params_0_s55[typ_ind][1][0]), &(table_nnB_params_0_s55[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][1]), &(table_nnB_params_0_s55[typ_ind][1][1]), &(table_nnB_params_0_s55[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	
 	ntot=table_nnB_N_0_s55[typ_ind][0]*table_nnB_N_0_s55[typ_ind][1]*table_nnB_N_0_s55[typ_ind][2];
 	table_nnB_0_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_0_s55[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s55[typ_ind][ener]));
 	}
      	fclose(table);
       }
     }
   }
   //////////////////////////////////
-  
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading STACKING-DIHEDRAL interactions...\n");
+#endif
   table_nnB_1_s33=(double **)malloc(sizeof(double *)*ntypsq);
   for(i=0;i<N_BASES;i++){
     for(j=0;j<N_BASES;j++){
@@ -949,21 +1016,25 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s33.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No stacking-dihedral interaction between %d and %d.\n", i,j);
+	  printf("[NO %d %d 33] ", i,j);
+#endif
 	table_nnB_N_1_s33[typ_ind]=-1;
 	//table_nnB_N_1[typ_ind2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking-dihedral interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d", &(table_nnB_N_1_s33[typ_ind])); //N_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][0]));//D_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][1])); //ETAMIN
+	  printf("[%d %d 33] ", i,j);
+#endif
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s33[typ_ind])); //N_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][0]));//D_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][1])); //ETAMIN
 	ntot=table_nnB_N_1_s33[typ_ind];
 	table_nnB_1_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_1_s33[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s33[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -978,21 +1049,25 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s35.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No stacking-dihedral interaction between %d and %d.\n", i,j);
+	  printf("[NO %d %d 35] ", i,j);
+#endif
 	table_nnB_N_1_s35[typ_ind]=-1;
 	//table_nnB_N_1[typ_ind2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading stacking-dihedral interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d", &(table_nnB_N_1_s35[typ_ind])); //N_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][0]));//D_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][1])); //ETAMIN
+	  printf("[%d %d 35] ", i,j);
+#endif
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s35[typ_ind])); //N_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][0]));//D_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][1])); //ETAMIN
 	ntot=table_nnB_N_1_s35[typ_ind];
 	table_nnB_1_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_1_s35[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s35[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1007,21 +1082,23 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s53.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
-	if(mpi_id==0)
-	  printf("No stacking-dihedral interaction between %d and %d.\n", i,j);
+#ifdef VERB
+	if(mpi_id==0)printf("[NO %d %d 53] ", i,j);
+#endif
 	table_nnB_N_1_s53[typ_ind]=-1;
 	//table_nnB_N_1[typ_ind2]=-1;
       }
       else{
-	if(mpi_id==0)
-	  printf("Reading stacking-dihedral interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d", &(table_nnB_N_1_s53[typ_ind])); //N_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][0]));//D_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][1])); //ETAMIN
+	#ifdef VERB
+	if(mpi_id==0)printf("[%d %d 53] ", i,j);
+	#endif
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s53[typ_ind])); //N_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][0]));//D_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][1])); //ETAMIN
 	ntot=table_nnB_N_1_s53[typ_ind];
 	table_nnB_1_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_1_s53[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s53[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1036,29 +1113,33 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s55.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
-	if(mpi_id==0)
-	  printf("No stacking-dihedral interaction between %d and %d.\n", i,j);
+	#ifdef VERB
+	if(mpi_id==0)printf("[NO %d %d 55] ", i,j);
+	#endif
 	table_nnB_N_1_s55[typ_ind]=-1;
 	//table_nnB_N_1[typ_ind2]=-1;
       }
       else{
-	if(mpi_id==0)
-	  printf("Reading stacking-dihedral interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d", &(table_nnB_N_1_s55[typ_ind])); //N_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][0]));//D_ETA
-	fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][1])); //ETAMIN
+	#ifdef VERB
+	if(mpi_id==0)printf("[%d %d 55] ", i,j);
+	#endif
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s55[typ_ind])); //N_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][0]));//D_ETA
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][1])); //ETAMIN
 	ntot=table_nnB_N_1_s55[typ_ind];
 	table_nnB_1_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnB_1_s55[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s55[typ_ind][ener]));
 	}
 	fclose(table);
       }
     }
   }
   
-
-  
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading NON-BONDED STACKING interactions...\n");
+#endif
   /* STACKING -  NON-BONDED */
   //int nbtyp=1;
   table_nnN_0s3=(double **)malloc(sizeof(double *)*ntypsq);
@@ -1078,14 +1159,16 @@ void MC_initialize_tabulated_energies(int mpi_id){
       }
       else{
 	if(mpi_id==0)
-	  printf("Reading generic non-bonded stacking interaction between.\n");
-	fscanf(table,"%d%d%d", &(table_nnN_N_0s3[typ_ind][0]), &(table_nnN_N_0s3[typ_ind][1]), &(table_nnN_N_0s3[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][0]), &(table_nnN_params_0s3[typ_ind][1][0]), &(table_nnN_params_0s3[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][1]), &(table_nnN_params_0s3[typ_ind][1][1]), &(table_nnN_params_0s3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+#ifdef VERB
+	  printf("[%d %d s3] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s3[typ_ind][0]), &(table_nnN_N_0s3[typ_ind][1]), &(table_nnN_N_0s3[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][0]), &(table_nnN_params_0s3[typ_ind][1][0]), &(table_nnN_params_0s3[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][1]), &(table_nnN_params_0s3[typ_ind][1][1]), &(table_nnN_params_0s3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_nnN_N_0s3[typ_ind][0]*table_nnN_N_0s3[typ_ind][1]*table_nnN_N_0s3[typ_ind][2];
 	table_nnN_0s3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnN_0s3[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_0s3[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1108,16 +1191,18 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnN_N_0s5[typ_ind][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading generic non-bonded stacking_inv interaction.\n");
-	fscanf(table,"%d%d%d", &(table_nnN_N_0s5[typ_ind][0]), &(table_nnN_N_0s5[typ_ind][1]), &(table_nnN_N_0s5[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][0]), &(table_nnN_params_0s5[typ_ind][1][0]), &(table_nnN_params_0s5[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][1]), &(table_nnN_params_0s5[typ_ind][1][1]), &(table_nnN_params_0s5[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d s5] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s5[typ_ind][0]), &(table_nnN_N_0s5[typ_ind][1]), &(table_nnN_N_0s5[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][0]), &(table_nnN_params_0s5[typ_ind][1][0]), &(table_nnN_params_0s5[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][1]), &(table_nnN_params_0s5[typ_ind][1][1]), &(table_nnN_params_0s5[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_nnN_N_0s5[typ_ind][0]*table_nnN_N_0s5[typ_ind][1]*table_nnN_N_0s5[typ_ind][2];
 	table_nnN_0s5[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnN_0s5[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_0s5[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1126,6 +1211,10 @@ void MC_initialize_tabulated_energies(int mpi_id){
   
   
   /* WATSON-CRICK */
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading BASE-PAIR interactions...\n");
+#endif
   table_nnN_2=(double **)malloc(sizeof(double *)*ntypsq);
   for(i=0;i<N_BASES;i++){
     for(j=0;j<N_BASES;j++){
@@ -1135,7 +1224,9 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	//FILE *table;
 	if((table=fopen(tablename, "r"))==NULL){
 	  if(mpi_id==0)
-	    printf("No watson-crick interaction between %d and %d.\n", i,j);
+#ifdef VERB
+	    printf("[NO %d %d] ", i,j);
+#endif
 	  table_nnN_N_2[typ_ind][0]=-1;
 	  table_nnN_N_2[typ_ind][1]=-1;
 	  table_nnN_N_2[typ_ind][2]=-1;
@@ -1147,11 +1238,13 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	  //table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*10);
 	}
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnN_N_2[typ_ind][0]), &(table_nnN_N_2[typ_ind][1]), &(table_nnN_N_2[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][0]), &(table_nnN_params_2[typ_ind][1][0]), &(table_nnN_params_2[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][1]), &(table_nnN_params_2[typ_ind][1][1]), &(table_nnN_params_2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[%d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2[typ_ind][0]), &(table_nnN_N_2[typ_ind][1]), &(table_nnN_N_2[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][0]), &(table_nnN_params_2[typ_ind][1][0]), &(table_nnN_params_2[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][1]), &(table_nnN_params_2[typ_ind][1][1]), &(table_nnN_params_2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	
 	//intf("%d %d %d\n", table_nnN_N_2[typ_ind][0],table_nnN_N_2[typ_ind][1],table_nnN_N_2[typ_ind][2]);
 	ntot=table_nnN_N_2[typ_ind][0]*table_nnN_N_2[typ_ind][1]*table_nnN_N_2[typ_ind][2];
@@ -1161,7 +1254,7 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
 	
 	for(ener=0;ener<ntot*WC_FACES;ener++){
-	  fscanf(table, "%lf", &(table_nnN_2[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_2[typ_ind][ener]));
 	  //printf("%d  %lf\n", ener, table_nnN_2[typ_ind][ener]);
 	  //table_nnN_2[typ_ind2][ener]=table_nnN_2[typ_ind][ener];
 	}
@@ -1178,9 +1271,11 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnN_%d%d_2i.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No watson-crick_inv interaction between %d and %d.\n", i,j);
-	table_nnN_N_2_inv[typ_ind][0]=-1;
+	  printf("[NO inv %d %d] ", i,j);
+#endif
+		table_nnN_N_2_inv[typ_ind][0]=-1;
 	table_nnN_N_2_inv[typ_ind][1]=-1;
 	table_nnN_N_2_inv[typ_ind][2]=-1;
 	table_nnN_N_2_inv[typ_ind][3]=-1;
@@ -1189,18 +1284,20 @@ void MC_initialize_tabulated_energies(int mpi_id){
 	//table_nnN_N_2_inv[typ_ind2][2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick_inv interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnN_N_2_inv[typ_ind][0]), &(table_nnN_N_2_inv[typ_ind][1]), &(table_nnN_N_2_inv[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][0]), &(table_nnN_params_2_inv[typ_ind][1][0]), &(table_nnN_params_2_inv[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][1]), &(table_nnN_params_2_inv[typ_ind][1][1]), &(table_nnN_params_2_inv[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[inv %d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv[typ_ind][0]), &(table_nnN_N_2_inv[typ_ind][1]), &(table_nnN_N_2_inv[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][0]), &(table_nnN_params_2_inv[typ_ind][1][0]), &(table_nnN_params_2_inv[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][1]), &(table_nnN_params_2_inv[typ_ind][1][1]), &(table_nnN_params_2_inv[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_nnN_N_2_inv[typ_ind][0]*table_nnN_N_2_inv[typ_ind][1]*table_nnN_N_2_inv[typ_ind][2];
 	table_nnN_N_2_inv[typ_ind][3]=ntot;
 
 	table_nnN_2_inv[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
 	
 	for(ener=0;ener<ntot*WC_FACES;ener++){
-	  fscanf(table, "%lf", &(table_nnN_2_inv[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_inv[typ_ind][ener]));
 	  //table_nnN_2_inv[typ_ind2][ener]=table_nnN_2_inv[typ_ind][ener];
 	}
 	fclose(table);
@@ -1217,23 +1314,27 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnN_%d%d_3.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No watson-crick_dihedral interaction between %d and %d.\n", i,j);
+	  printf("[DIH %d %d] ", i,j);
+#endif	
 	table_nnN_N_3[typ_ind]=-1;
 	//table_nnN_N_3[typ_ind2]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick_dihedral interaction between %d and %d.\n", i,j);
-	fscanf(table,"%d", &(table_nnN_N_3[typ_ind])); //N_THETA
-	fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][0]));//D_THETA
-	fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][1])); //THETAMIN
+	  printf("[DIH %d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d", &(table_nnN_N_3[typ_ind])); //N_THETA
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][0]));//D_THETA
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][1])); //THETAMIN
 	ntot=table_nnN_N_3[typ_ind];
 	table_nnN_3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	//table_nnN_3[typ_ind2]=(double *)malloc(sizeof(double)*ntot);
 	
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnN_3[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_3[typ_ind][ener]));
 	  //table_nnN_3[typ_ind2][ener]=table_nnN_3[typ_ind][ener];
 	}
 	fclose(table);
@@ -1251,24 +1352,28 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnN_%d%d_2_F.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No watson-crick interaction between %d and %d in parallel conformation.\n", i,j);
+	  printf("[NO F %d %d] ", i,j);
+#endif  
 	table_nnN_N_2_F[typ_ind][0]=-1;
 	table_nnN_N_2_F[typ_ind][1]=-1;
 	table_nnN_N_2_F[typ_ind][2]=-1;
 	table_nnN_N_2_F[typ_ind][3]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick interaction between %d and %d in parallel conformation.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnN_N_2_F[typ_ind][0]), &(table_nnN_N_2_F[typ_ind][1]), &(table_nnN_N_2_F[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][0]), &(table_nnN_params_2_F[typ_ind][1][0]), &(table_nnN_params_2_F[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][1]), &(table_nnN_params_2_F[typ_ind][1][1]), &(table_nnN_params_2_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[F %d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_F[typ_ind][0]), &(table_nnN_N_2_F[typ_ind][1]), &(table_nnN_N_2_F[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][0]), &(table_nnN_params_2_F[typ_ind][1][0]), &(table_nnN_params_2_F[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][1]), &(table_nnN_params_2_F[typ_ind][1][1]), &(table_nnN_params_2_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_nnN_N_2_F[typ_ind][0]*table_nnN_N_2_F[typ_ind][1]*table_nnN_N_2_F[typ_ind][2];
 	table_nnN_N_2_F[typ_ind][3]=ntot;
 	table_nnN_2_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
 	for(ener=0;ener<ntot*WC_FACES;ener++){
-	  fscanf(table, "%lf", &(table_nnN_2_F[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_F[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1286,24 +1391,28 @@ void MC_initialize_tabulated_energies(int mpi_id){
       sprintf(tablename, "tab_energs/table_nnN_%d%d_2i_F.tab", i,j);
       //FILE *table;
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No watson-crick_inv interaction between %d and %d in parallel conformation.\n", i,j);
+	  printf("[NO F inv %d %d] ", i,j);
+#endif
 	table_nnN_N_2_inv_F[typ_ind][0]=-1;
 	table_nnN_N_2_inv_F[typ_ind][1]=-1;
 	table_nnN_N_2_inv_F[typ_ind][2]=-1;
 	table_nnN_N_2_inv_F[typ_ind][3]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick_inv interaction between %d and %d in parallel conformation.\n", i,j);
-	fscanf(table,"%d%d%d", &(table_nnN_N_2_inv_F[typ_ind][0]), &(table_nnN_N_2_inv_F[typ_ind][1]), &(table_nnN_N_2_inv_F[typ_ind][2])); //NX, NY, NZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][0]), &(table_nnN_params_2_inv_F[typ_ind][1][0]), &(table_nnN_params_2_inv_F[typ_ind][2][0]));//DX, DY, DZ
-	fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][1]), &(table_nnN_params_2_inv_F[typ_ind][1][1]), &(table_nnN_params_2_inv_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	  printf("[F inv %d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv_F[typ_ind][0]), &(table_nnN_N_2_inv_F[typ_ind][1]), &(table_nnN_N_2_inv_F[typ_ind][2])); //NX, NY, NZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][0]), &(table_nnN_params_2_inv_F[typ_ind][1][0]), &(table_nnN_params_2_inv_F[typ_ind][2][0]));//DX, DY, DZ
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][1]), &(table_nnN_params_2_inv_F[typ_ind][1][1]), &(table_nnN_params_2_inv_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
 	ntot=table_nnN_N_2_inv_F[typ_ind][0]*table_nnN_N_2_inv_F[typ_ind][1]*table_nnN_N_2_inv_F[typ_ind][2];
 	table_nnN_N_2_inv_F[typ_ind][3]=ntot;
 	table_nnN_2_inv_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
 	for(ener=0;ener<ntot*WC_FACES;ener++){
-	  fscanf(table, "%lf", &(table_nnN_2_inv_F[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_inv_F[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1325,20 +1434,24 @@ void MC_initialize_tabulated_energies(int mpi_id){
       typ_ind=N_BASES*i+j;
       sprintf(tablename, "tab_energs/table_nnN_%d%d_3_F.tab", i,j);
       if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("No watson-crick_dihedral interaction between %d and %d in parallel configuration.\n", i,j);
+	  printf("[NO F DIH %d %d] ", i,j);
+#endif
 	table_nnN_N_3_F[typ_ind]=-1;
       }
       else{
+#ifdef VERB
 	if(mpi_id==0)
-	  printf("Reading watson-crick_dihedral interaction between %d and %d in parallel conformation.\n", i,j);
-	fscanf(table,"%d", &(table_nnN_N_3_F[typ_ind])); //N_THETA
-	fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][0]));//D_THETA
-	fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][1])); //THETAMIN
+	  printf("[F DIH %d %d] ", i,j);
+#endif
+	fscout=fscanf(table,"%d", &(table_nnN_N_3_F[typ_ind])); //N_THETA
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][0]));//D_THETA
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][1])); //THETAMIN
 	ntot=table_nnN_N_3_F[typ_ind];
 	table_nnN_3_F[typ_ind]=(double *)malloc(sizeof(double)*ntot);
 	for(ener=0;ener<ntot;ener++){
-	  fscanf(table, "%lf", &(table_nnN_3_F[typ_ind][ener]));
+	  fscout=fscanf(table, "%lf", &(table_nnN_3_F[typ_ind][ener]));
 	}
 	fclose(table);
       }
@@ -1349,259 +1462,176 @@ void MC_initialize_tabulated_energies(int mpi_id){
 
 
 
-
-
+#ifdef VERB
+  if(mpi_id==0)
+    printf("\nReading BASE-PHOSPHATE interactions...\n");
+#endif
   // BASE-PHOSPHATE
   table_npN_0=(double **)malloc(sizeof(double *)*N_BASES);
   for(i=0;i<N_BASES;i++){
     sprintf(tablename, "tab_energs/table_npN_%d_0.tab", i);
     if((table=fopen(tablename, "r"))==NULL){
+#ifdef VERB
       if(mpi_id==0)
-	printf("No base-phosphate interaction for type %d.\n", i);
+	printf("[NO BPH %d] ", i);
+#endif
       table_npN_N_0[i][0]=-1;
       table_npN_N_0[i][1]=-1;
       table_npN_N_0[i][2]=-1;
     }
     else{
+#ifdef VERB
       if(mpi_id==0)
-	printf("Reading base-phosphate interaction for %d.\n", i);
-      fscanf(table,"%d%d%d", &(table_npN_N_0[i][0]), &(table_npN_N_0[i][1]), &(table_npN_N_0[i][2])); //NX, NY, NZ
-      fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][0]), &(table_npN_params_0[i][1][0]), &(table_npN_params_0[i][2][0]));//DX, DY, DZ
-      fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][1]), &(table_npN_params_0[i][1][1]), &(table_npN_params_0[i][2][1])); //XMIN, YMIN, ZMIN
+	printf("[BPH %d] ", i);
+#endif      
+      fscout=fscanf(table,"%d%d%d", &(table_npN_N_0[i][0]), &(table_npN_N_0[i][1]), &(table_npN_N_0[i][2])); //NX, NY, NZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][0]), &(table_npN_params_0[i][1][0]), &(table_npN_params_0[i][2][0]));//DX, DY, DZ
+      fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][1]), &(table_npN_params_0[i][1][1]), &(table_npN_params_0[i][2][1])); //XMIN, YMIN, ZMIN
       
       ntot=table_npN_N_0[i][0]*table_npN_N_0[i][1]*table_npN_N_0[i][2];
       
       //intf("type %d\t\t%d %d %d     %d\n", i, table_npN_N_0[i][0],table_npN_N_0[i][1],table_npN_N_0[i][2], ntot);
       table_npN_0[i]=(double *)malloc(sizeof(double)*ntot);
       for(ener=0;ener<ntot;ener++){
-	fscanf(table, "%lf", &(table_npN_0[i][ener]));
+	fscout=fscanf(table, "%lf", &(table_npN_0[i][ener]));
       }
       fclose(table);
     }
   }
+  if(mpi_id==0)
+    printf("\n");
 }
 
-void MC_read_energy_parameters(){
-  /* using Westphal's code from mpc_io.c */
-  int i, j;
-  FILE *energy_params;
-  char *s;
-  int nb_flag=0, b_flag=0;
+/* void MC_read_energy_parameters(){ */
+/*   /\* using Westphal's code from mpc_io.c *\/ */
+/*   int i, j; */
+/*   FILE *energy_params; */
+/*   char *s; */
+/*   int nb_flag=0, b_flag=0; */
   
-  energy_params=fopen("energies.pms", "r");
-  if(energy_params==NULL){
-    printf("No energy parameter file given. Using default values for energies,\n");
-  } else {
-    //printf("Reading energy parameters from file.\n");
-    while (s=ew_gtl(energy_params)) {
-      if(!strcmp(s, "MC_RCUT")) {
-	assert(s=ew_gtl(energy_params));
-	//assert(sscanf(s, "%lf", &mc_r_cut)==1);
-	assert(sscanf(s, "%lf%lf%lf%lf", &mc_r_cut, &mc_wc_rcut, &mc_bph_rcut, &mc_nb_rcut)==4);
-      }
-      /* if(!strcmp(s, "MC_NTYPES")) { */
-      /* 	assert(s=ew_gtl(energy_params)); */
-      /* 	assert(sscanf(s, "%d\n", &mc_n_types)==1); */
-      /* 	nb_flag=1; */
-      /* 	if(mc_n_types>N_MAX_TYPES){ */
-      /* 	  fprintf(stderr, "MC_NTYPES can not be greater than %d by default. Change value of N_MAX_TYPES in mc_energies.h.\n", N_MAX_TYPES); */
-      /* 	  exit(ERR_INPUT); */
-      /* 	} */
-      /* } */
-      if(!strcmp(s, "MC_N_BOND_TYPES")) {
-	assert(s=ew_gtl(energy_params));
-#ifdef DIHEDRALS
-	assert(sscanf(s, "%d%d%d\n", &mc_n_bond_types, &mc_n_ang_types,&mc_n_dih_types)==3);
-#else
-	assert(sscanf(s, "%d%d\n", &mc_n_bond_types, &mc_n_ang_types)==2);
-#endif
-	b_flag=1;
-      }
-      if(!strcmp(s, "VL_SKIN")) {
-	assert(s=ew_gtl(energy_params));
-	assert(sscanf(s, "%lf\n", &vl_skin)==1);
-      }
-      if(!strcmp(s, "MC_BETWEEN_CHECKPOINTS")) {
-	assert(s=ew_gtl(energy_params));
-	assert(sscanf(s, "%d\n", &mc_chk_freq)==1);
-      }
-      /* if(!strcmp(s, "LJ_EPSILON")) { */
-      /* 	//assert(s=ew_gtl(energy_params)); */
-      /* 	if(nb_flag==0){ */
-      /* 	  fprintf(stderr,"MC_NTYPES not set properly. Define it BEFORE LJ_EPSILON and LJ_SIGMA in energys.prm.\n"); */
-      /* 	  exit(ERR_INPUT); */
-      /* 	} */
-      /* 	for(i=0;i<mc_n_types;i++){ */
-      /* 	  if(!fscanf(energy_params, "%lf ", &(mc_lj_eps[i][i]))){ */
-      /* 	    fprintf(stderr, "Wrong LJ_EPSILON input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	  } */
-      /* 	} */
-      /* 	for(i=0;i<mc_n_types;i++) */
-      /* 	  for(j=i+1;j<mc_n_types;j++){ */
-      /* 	    if(!fscanf(energy_params, "%lf ", &(mc_lj_eps[i][j]))){ */
-      /* 	    fprintf(stderr, "Wrong LJ_EPSILON input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	    } */
-      /* 	    mc_lj_eps[j][i]=mc_lj_eps[i][j]; */
-      /* 	  } */
-      /* 	//assert(sscanf(s, "\n")==1); */
-      /* } */
-      /* if(!strcmp(s, "LJ_SIGMA")) { */
-      /* 	//assert(s=ew_gtl(energy_params)); */
-      /* 	if(nb_flag==0){ */
-      /* 	  fprintf(stderr, "MC_NTYPES not set properly. Define it BEFORE LJ_EPSILON and LJ_SIGMA in energies.pms.\n"); */
-      /* 	  exit(ERR_INPUT); */
-      /* 	} */
-      /* 	for(i=0;i<mc_n_types;i++){ */
-      /* 	  if(!fscanf(energy_params, "%lf ", &(mc_lj_sig[i][i]))){ */
-      /* 	    fprintf(stderr, "Wrong LJ_SIGMA input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	  } */
-      /* 	}  */
-      /* 	for(i=0;i<mc_n_types;i++) */
-      /* 	  for(j=i+1;j<mc_n_types;j++){ */
-      /* 	    if(!fscanf(energy_params, "%lf ", &(mc_lj_sig[i][j]))){ */
-      /* 	    fprintf(stderr, "Wrong LJ_SIGMA input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	    } */
-      /* 	    mc_lj_sig[j][i]=mc_lj_sig[i][j]; */
-      /* 	  } */
-      /* } */
-  
-      /* if(!strcmp(s, "HARM_K")) { */
-      /* 	if(b_flag==0){ */
-      /* 	  fprintf(stderr, "MC_N_BOND_NTYPES not set properly. Define it BEFORE HARM_K and HARM_R in energies.pms.\n"); */
-      /* 	  exit(ERR_INPUT); */
-      /* 	} */
-      /* 	for(i=0;i<mc_n_bond_types;i++){ */
-      /* 	  //for(i=0;i<mc_n_types;i++){ */
-      /* 	  if(!fscanf(energy_params, "%lf ", &(mc_harm_k[i]))){ */
-      /* 	    fprintf(stderr, "Wrong HARM_K input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	  } */
-      /* 	} */
-      /* 	//assert(sscanf(s, "%lf ", &(mc_harm_k[i]))==1); */
-      /* 	//assert(sscanf(s, "\n")==1); */
-      /* } */
-      /* if(!strcmp(s, "HARM_R")) { */
-      /* 	//assert(s=ew_gtl(energy_params)); */
-      /* 	if(b_flag==0){ */
-      /* 	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE HARM_K and HARM_R in energies.pms.\n"); */
-      /* 	  exit(ERR_INPUT); */
-      /* 	} */
-      /* 	for(i=0;i<mc_n_bond_types;i++) */
-      /* 	  if(!fscanf(energy_params, "%lf ", &(mc_harm_r[i]))){ */
-      /* 	    fprintf(stderr, "Wrong HARM_R input at energies.pms.\n"); */
-      /* 	    exit(ERR_INPUT); */
-      /* 	  } */
-      /* 	//assert(sscanf(s, "%lf ", &(mc_harm_r[i]))==1); */
-      /* 	//assert(sscanf(s, "\n")==1); */
-      /* } */
-      if(!strcmp(s, "ANG_K")) {
-	//assert(s=ew_gtl(energy_params));
-	if(b_flag==0){
-	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE ANG_K in energies.pms.\n");
-	  exit(ERR_INPUT);
-	}
-	for(i=0;i<mc_n_ang_types;i++)
-	  if(!fscanf(energy_params, "%lf ", &(mc_ang_k[i]))){
-	    fprintf(stderr, "Wrong ANG_K input at energies.pms.\n");
-	    exit(ERR_INPUT);
-	  }
-      }
-      if(!strcmp(s, "ANG_TH")) {
-	//assert(s=ew_gtl(energy_params));
-	if(b_flag==0){
-	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE ANG_TH in energies.pms.\n");
-	  exit(ERR_INPUT);
-	}
-	for(i=0;i<mc_n_ang_types;i++)
-	  if(!fscanf(energy_params, "%lf ", &(mc_ang_th[i]))){
-	    fprintf(stderr, "Wrong ANG_TH input at energies.pms.\n");
-	    exit(ERR_INPUT);
-	  }
-      }
-      
-#ifdef DIHEDRALS
-      if(!strcmp(s, "DIH_K")) {
-	//assert(s=ew_gtl(energy_params));
-	if(b_flag==0){
-	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE DIH_K in energies.pms.\n");
-	  exit(ERR_INPUT);
-	}
-	for(i=0;i<mc_n_dih_types;i++)
-	  if(!fscanf(energy_params, "%lf ", &(mc_dih_k[i]))){
-	    fprintf(stderr, "Wrong DIH_K input at energies.pms.\n");
-	    exit(ERR_INPUT);
-	  }
-      }
-      if(!strcmp(s, "DIH_PHI")) {
-	//assert(s=ew_gtl(energy_params));
-	if(b_flag==0){
-	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE DIH_PHI in energies.pms.\n");
-	  exit(ERR_INPUT);
-	}
-	for(i=0;i<mc_n_dih_types;i++)
-	  if(!fscanf(energy_params, "%lf ", &(mc_dih_phi[i]))){
-	    fprintf(stderr, "Wrong DIH_PHI input at energies.pms.\n");
-	    exit(ERR_INPUT);
-	  }
-      }
-      if(!strcmp(s, "DIH_N")) {
-	//assert(s=ew_gtl(energy_params));
-	if(b_flag==0){
-	  fprintf(stderr,"MC_N_BOND_NTYPES not set properly. Define it BEFORE DIH_N in energies.pms.\n");
-	  exit(ERR_INPUT);
-	}
-	for(i=0;i<mc_n_dih_types;i++)
-	  if(!fscanf(energy_params, "%lf ", &(mc_dih_n[i]))){
-	    fprintf(stderr, "Wrong DIH_N input at energies.pms.\n");
-	    exit(ERR_INPUT);
-	  }
-      }
-#endif
-    }
-    fclose(energy_params);
-  }
-}
+/*   energy_params=fopen("energies.pms", "r"); */
+/*   if(energy_params==NULL){ */
+/*     printf("No energy parameter file given. Using default values for energies,\n"); */
+/*   } else { */
+   
+/*     fclose(energy_params); */
+/*   } */
+/* } */
 
-double MC_calc_intra_energy(int nt_c, int *flag){
-  double d_vec[DIM], r_vec[DIM], self_e, glyc_e;
+double MC_calc_intra_energy(int nt_c, int *flag_G1, int *flag_G2, double *self_e_G1, double *self_e_G2){
+  double temp;
+/* #ifdef FROZEN */
+/*   if(fr_is_mobile[nt_c]==FR_MOB_FROZ){ */
+/*     *flag_G1=0; */
+/*     temp=0; */
+/*   } */
+/*   else */
+/* #endif */
+    
+  double d_vec[DIM], r_vec[DIM],  glp_e_G1=0, glp_e_G2=0;
   int at_c=N_PARTS_PER_NT*nt_c;
-  
+  //if(nt_c==44) printf("start\n");
   
   d_vec[0]=get_unf_coo_temp_x(at_c+IPHO)  -  get_unf_coo_temp_x(at_c+IBAS);
   d_vec[1]=get_unf_coo_temp_y(at_c+IPHO)  -  get_unf_coo_temp_y(at_c+IBAS);
   d_vec[2]=get_unf_coo_temp_z(at_c+IPHO)  -  get_unf_coo_temp_z(at_c+IBAS);
-  //d_vec[2]=get_unf_coo_temp_z(at_c+IPHO)  -  get_unf_coo_temp_z(at_c+ISUG);
   proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-  self_e=MC_calc_BP_intra(mc_types[at_c], r_vec, mc_temp_glyc[nt_c], mc_temp_puck[nt_c], flag);
+  *self_e_G1=MC_calc_BP_intra(mc_types[at_c], r_vec, mc_temp_glyc[nt_c], mc_temp_puck[nt_c], flag_G1);
+  *self_e_G2=0;
+  if(mc_temp_glyc[nt_c]==GLYC_A)      *self_e_G2=MC_calc_BP_intra(mc_types[at_c], r_vec, GLYC_H, mc_temp_puck[nt_c], flag_G2);
+  else if(mc_temp_glyc[nt_c]==GLYC_H) *self_e_G2=MC_calc_BP_intra(mc_types[at_c], r_vec, GLYC_A, mc_temp_puck[nt_c], flag_G2);
+  else {*flag_G2=1;*self_e_G2=0;} //this is for the SYN case
 #ifdef WRMVERB
-  if(self_e>=0)printf("# P %d\n# N %d\n", nt_c, nt_c);
+  if(*self_e_G1>=0)printf("# P %d\n# N %d\n", nt_c, nt_c);
+  //printf("INTRA %d  %lf \n", nt_c, *self_e_G1);
 #endif
 #ifdef XYZDEBUG
-  if(*flag==1){
+  if(*flag_G1==1){
     printf("CLASH: intra %d\t%lf %lf %lf\n", nt_c, r_vec[0], r_vec[1], r_vec[2]);
   }
 #endif
+  if(is_purine(nt_c)){
+    glp_e_G1=-glp_well_R[mc_temp_glyc[nt_c]][mc_temp_puck[nt_c]];
+    if(mc_temp_glyc[nt_c]==GLYC_A)      glp_e_G2=-glp_well_R[GLYC_H][mc_temp_puck[nt_c]];
+    else if(mc_temp_glyc[nt_c]==GLYC_H) glp_e_G2=-glp_well_R[GLYC_A][mc_temp_puck[nt_c]];
+  }else{
+    glp_e_G1=-glp_well_Y[mc_temp_glyc[nt_c]][mc_temp_puck[nt_c]];
+    if(mc_temp_glyc[nt_c]==GLYC_A)      glp_e_G2=-glp_well_Y[GLYC_H][mc_temp_puck[nt_c]];
+    else if(mc_temp_glyc[nt_c]==GLYC_H) glp_e_G2=-glp_well_Y[GLYC_A][mc_temp_puck[nt_c]];
+  }
   
-  glyc_e = -glyc_well[mc_temp_glyc[nt_c]];
-#ifdef NEW_BIA
-  if(mc_target_temp>1.0)
-    self_e*=(mc_target_temp);
-#endif
-  return self_e + glyc_e;
+  *self_e_G1+=glp_e_G1;
+  *self_e_G2+=glp_e_G2;
+  temp=*self_e_G1;
+  //if(nt_c==44)
+  //printf("%lf %lf %lf   %lf %lf\t%d %d\n", d_vec[0], d_vec[1], d_vec[2], *self_e_G1, *self_e_G2, *flag_G1, *flag_G2);
+    //exit(1);
+    // }
+  return temp;
 }
 
 
 
-double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *mc_flag){
+int MC_eval_AH_inter(int nt_c, double *bond_bp, int *mc_flag, int temp_flag_G1, int temp_flag_G2, int iflag_G1, int iflag_G2, double Eintra_G1, double Eintra_G2, double bond_bp_G1, double bond_bp_G2, int *gly_flag){
+  int ret=-1;
+  if(glp_is_flippable[nt_c]==GLP_BOTH || glp_is_flippable[nt_c]==GLP_GLYC){
+    //printf("I shouldnt be here!\n %d  has flippable %d\n", nt_c, glp_is_flippable[nt_c]); exit(1);
+    if(temp_flag_G1==0 && temp_flag_G2==0 && iflag_G1==0 && iflag_G2==0){
+      //now we decide which state prevails : the one with the lowest energy!
+      if(Eintra_G1 + bond_bp_G1 <= Eintra_G2 + bond_bp_G2){
+	*bond_bp=bond_bp_G1;
+	*gly_flag=mc_temp_glyc[nt_c];
+	ret=0;
+      }
+      else{
+	*bond_bp=bond_bp_G2;
+	if(mc_temp_glyc[nt_c]==GLYC_A)
+	  *gly_flag=GLYC_H;
+	if(mc_temp_glyc[nt_c]==GLYC_H)
+	  *gly_flag=GLYC_A;
+	ret =1;
+      }
+    }
+    else if(temp_flag_G1==0 && iflag_G1==0){
+      *bond_bp=bond_bp_G1;
+      *gly_flag=mc_temp_glyc[nt_c];
+      ret=0;
+    }
+    else if(temp_flag_G2==0 && iflag_G2==0 ){
+      *bond_bp=bond_bp_G2;
+      if(mc_temp_glyc[nt_c]==GLYC_A)
+	*gly_flag=GLYC_H;
+      if(mc_temp_glyc[nt_c]==GLYC_H)
+	*gly_flag=GLYC_A;
+      ret=1;
+    }
+    else{
+      printf("In A-H transition, this should not happen. I am quitting.\n");
+      exit(1);
+    }
+  }
+  else{
+    *bond_bp=bond_bp_G1;
+    *gly_flag=mc_temp_glyc[nt_c];	
+    ret=0;
+    //for safety
+    if(temp_flag_G1!=0){
+      *mc_flag=7;
+      ret=-1;
+    }
+  }
+  return ret;
+}
+
+
+double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *mc_flag, int iflag_G1, int iflag_G2, double Eintra_G1, double Eintra_G2, 
+			     int iflag_G1_PRE, int iflag_G2_PRE, double Eintra_G1_PRE, double Eintra_G2_PRE, int *gly_flag,int *gly_flag_PRE, double *ermsd_temp_sq){
   /* we receive the nt number, so we look for its atom index */
   double mc_ev_glob_rcut_sq=EV_GLOB_RCUT*EV_GLOB_RCUT;
   int at_c=nt_c*N_PARTS_PER_NT;
+  int at_neigh;
   int b, at_b; 
- //double e_bond;
+  //double e_bond;
   int temp_flag=0;
   double dist, d_vec[DIM], d_vec1[DIM], d_vec2[DIM];
   double bonded_energy=0.0;
@@ -1622,50 +1652,53 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
   int flag_ss=0;
   double phpos[DIM];
   int this_typ;
-      
+  int temp_flag_G1=0, temp_flag_G2=0;
+  double bond_bp_G1=0, bond_bp_G2=0;
+  int temp_flag_G1_PRE=0, temp_flag_G2_PRE=0;
+  double bond_bp_G1_PRE=0, bond_bp_G2_PRE=0;
+  int eval_both;
   *mc_flag=0;
   /* stretching (radial) potential */
-  
   for(b=0;b<mc_nbonds[nt_c][0];b++){
     nt_neigh=mc_bondlist[nt_c][b];
-    //first, we see if they are stacked!
-    at_b=nt_neigh*N_PARTS_PER_NT;
-    typ_ind = N_BASES*mc_types[at_c] + mc_types[at_b];
-    typ_ind2= N_BASES*mc_types[at_b] + mc_types[at_c];
-    d_vec[0]=get_unf_coo_x(rx, at_b) - get_unf_coo_temp_x(at_c);
-    d_vec[1]=get_unf_coo_y(ry, at_b) - get_unf_coo_temp_y(at_c);
-    d_vec[2]=get_unf_coo_z(rz, at_b) - get_unf_coo_temp_z(at_c);
-    //(rx[ba]+mc_pbox[ba][0]*box_l[0]) - (mc_temp_x[0]+mc_temp_pbox[0][0]*box_l[0]);
-    
-    dist=sqrt(d_vec[0]*d_vec[0]+d_vec[1]*d_vec[1]+d_vec[2]*d_vec[2]);
-    proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-    proj_on_nt_inv(d_vec, rx, ry,rz, nt_neigh, r_vec_inv);
-    eta=0;//calc_st_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt_neigh); 
-    
-    temp_flag=0;
-    eta2=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt_neigh); 
-    /* STACKING DEPENDS ON THE GLYC CONFORMATION - AA IS BONDED, ANYTHING ELSE IS NONBONDED */ 
-    if(fabs(eta2)<STANG || fabs(eta2) > M_PI-STANG)
-      bond_st=MC_calc_nnB_stacking(typ_ind, typ_ind2, r_vec, r_vec_inv, eta, &temp_flag);
-    else {bond_st=0;temp_flag=1;}
-    
-    
-    /* else { */
-    /*   //printf("%d %d other stacking case\n", nt_c, nt_neigh); */
-    /*   bond_st=MC_calc_nnN_stacking(typ_ind,typ_ind2, r_vec, r_vec_inv, &temp_flag); // NO PAIR SPECIFIC!! */
-    /* } */
-
-    
-    if(temp_flag==0){
+    //before first, we see if at least one of them can move!
+    if(fr_is_mobile[nt_c]!=FR_MOB_FROZ || fr_is_mobile[nt_neigh]!=FR_MOB_FROZ){
+      //first, we see if they are stacked!
+      at_b=nt_neigh*N_PARTS_PER_NT;
+      bond_ev=0.0;
+      typ_ind = N_BASES*mc_types[at_c] + mc_types[at_b];
+      typ_ind2= N_BASES*mc_types[at_b] + mc_types[at_c];
+      d_vec[0]=get_unf_coo_x(rx, at_b) - get_unf_coo_temp_x(at_c);
+      d_vec[1]=get_unf_coo_y(ry, at_b) - get_unf_coo_temp_y(at_c);
+      d_vec[2]=get_unf_coo_z(rz, at_b) - get_unf_coo_temp_z(at_c);
+      dist=sqrt(d_vec[0]*d_vec[0]+d_vec[1]*d_vec[1]+d_vec[2]*d_vec[2]);
+      proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
+      proj_on_nt_inv(d_vec, rx, ry,rz, nt_neigh, r_vec_inv);
+      
+#ifdef ERMSDR
+      if(G_groups[nt_c][nt_neigh] > -1 ){
+      *ermsd_temp_sq+=MC_get_pair_ermsd(r_vec[0]/ERMSDX    , r_vec[1]/ERMSDY    , r_vec[2]/ERMSDZ    , G_ref[nt_c][nt_neigh][0], G_ref[nt_c][nt_neigh][1], G_ref[nt_c][nt_neigh][2], G_ref[nt_c][nt_neigh][3]);
+      *ermsd_temp_sq+=MC_get_pair_ermsd(r_vec_inv[0]/ERMSDX, r_vec_inv[1]/ERMSDY, r_vec_inv[2]/ERMSDZ, G_ref[nt_neigh][nt_c][0], G_ref[nt_neigh][nt_c][1], G_ref[nt_neigh][nt_c][2], G_ref[nt_neigh][nt_c][3]);
+    }
+#endif
+#ifndef NOCTCS
+      eta=0;//calc_st_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt_neigh); 
+      temp_flag=0;
+      eta2=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt_neigh); 
+      /* STACKING DEPENDS ON THE GLYC CONFORMATION - AA IS BONDED, ANYTHING ELSE IS NONBONDED */ 
+      if(fabs(eta2)<STANG || fabs(eta2) > M_PI-STANG)
+	bond_st=MC_calc_nnB_stacking(typ_ind, typ_ind2, r_vec, r_vec_inv, eta, &temp_flag);
+      else {bond_st=0;temp_flag=1;}
+      if(temp_flag==0){
       bonded_energy+=bond_st;
     }
-  
-    
-    /** BASE - BASE **/
-    t_vec[0]=get_unf_coo_x(rx, at_b) - get_unf_coo_temp_x(at_c);
-    t_vec[1]=get_unf_coo_y(ry, at_b) - get_unf_coo_temp_y(at_c);
-    t_vec[2]=get_unf_coo_z(rz, at_b) - get_unf_coo_temp_z(at_c);
-    if(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2] <mc_ev_glob_rcut_sq){
+#endif
+
+      /** BASE - BASE **/
+      t_vec[0]=get_unf_coo_x(rx, at_b) - get_unf_coo_temp_x(at_c);
+      t_vec[1]=get_unf_coo_y(ry, at_b) - get_unf_coo_temp_y(at_c);
+      t_vec[2]=get_unf_coo_z(rz, at_b) - get_unf_coo_temp_z(at_c);
+      if(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2] <mc_ev_glob_rcut_sq){
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
       proj_on_nt_inv(t_vec, rx,ry,rz, nt_neigh, r_vec_inv);
       b_ev_temp1=energy_hardcore(r_vec,     EV_BASE1, EV_BASE2, EV_BASE3,0,0,0);
@@ -1676,31 +1709,31 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 #ifndef WARMUP
       if(b_ev_temp1>MC_CAP || b_ev_temp2>MC_CAP) {*mc_flag=2;
 #ifdef XYZDEBUG
-	printf("NB CLASH (base-base): %d  %d\t%lf %lf %lf\n", nt_c, nt_neigh, r_vec[0], r_vec[1], r_vec[2]);
+      printf("NB CLASH (base-base) (in bonded): %d  %d\t%lf %lf %lf\n", nt_c, nt_neigh, r_vec[0], r_vec[1], r_vec[2]);
 #else
-	return bonded_energy;
+      return bonded_energy;
 #endif
-      }
+    }
 #endif
       //printf("%lf %lf %lf %lf\n", r_vec[0], r_vec[1], r_vec[2], sqrt(r_vec[0]*r_vec[0]+r_vec[1]*r_vec[1]+r_vec[2]*r_vec[2]))
       bond_ev+=(b_ev_temp1+b_ev_temp2);
     }
-    /** PHOSPHATE-SUGAR **/
-    t_vec[0]=get_unf_coo_x(rx, at_b+IPHO) - get_unf_coo_temp_x(at_c+ISUG);
-    t_vec[1]=get_unf_coo_y(ry, at_b+IPHO) - get_unf_coo_temp_y(at_c+ISUG);
-    t_vec[2]=get_unf_coo_z(rz, at_b+IPHO) - get_unf_coo_temp_z(at_c+ISUG);
-    if(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2] <mc_ev_glob_rcut_sq){
+      /** PHOSPHATE-SUGAR **/
+      t_vec[0]=get_unf_coo_x(rx, at_b+IPHO) - get_unf_coo_temp_x(at_c+ISUG);
+      t_vec[1]=get_unf_coo_y(ry, at_b+IPHO) - get_unf_coo_temp_y(at_c+ISUG);
+      t_vec[2]=get_unf_coo_z(rz, at_b+IPHO) - get_unf_coo_temp_z(at_c+ISUG);
+      if(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2] <mc_ev_glob_rcut_sq){
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
       proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
       
       if(nt_neigh-nt_c==1){//connected through direct bond - bonded parameters
-	b_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUGR, EV_PHOSUGR, EV_PHOSUGR, 0,0,0);
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHOR, EV_SUGPHOR, EV_SUGPHOR, 0,0,0);
-      }
+      b_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUGB, EV_PHOSUGB, EV_PHOSUGB, 0,0,0);
+      b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHOB, EV_SUGPHOB, EV_SUGPHOB, 0,0,0);
+    }
       else{
-	b_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6); // phosp wrt sugar
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, EV_SUGPHO4, EV_SUGPHO5, EV_SUGPHO6); // base wrt pho
-      }
+      b_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, 0,0,0); // phosp wrt sugar
+      b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, 0,0,0); // base wrt pho
+    }
 #ifdef WRMVERB
       if(b_ev_temp1>0 || b_ev_temp2>0) printf("# P %d\n# S %d\n", nt_neigh, nt_c);
 #endif
@@ -1708,8 +1741,8 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 #ifndef WARMUP
       if(b_ev_temp1>MC_CAP || b_ev_temp2>MC_CAP) {*mc_flag=14;
 #ifdef XYZDEBUG
-	//printf("B CLASH (phosp-sugar): %d  %d\n", nt_neigh, nt_c);
-	printf("B CLASH (phosp-sugar  %lf %lf): %d  %d\n\t%lf %lf %lf   (%lf %lf %lf %lf %lf %lf)\n", b_ev_temp1, b_ev_temp2, nt_neigh, nt_c, r_vec[0], r_vec[1], r_vec[2],  EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6);
+	printf("B CLASH (phosp-sugar): %d  %d\n", nt_neigh, nt_c);
+	//printf("B CLASH (phosp-sugar  %lf %lf): %d  %d\n\t%lf %lf %lf   (%lf %lf %lf %lf %lf %lf)\n", b_ev_temp1, b_ev_temp2, nt_neigh, nt_c, r_vec[0], r_vec[1], r_vec[2],  EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6);
 	printf("\t %lf %lf %lf   (%lf %lf %lf)\n", r_vec_inv[0], r_vec_inv[1], r_vec_inv[2],EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3);
 #endif
       }
@@ -1724,12 +1757,12 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
       proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
       if(nt_c-nt_neigh==1){
-	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHOR, EV_SUGPHOR, EV_SUGPHOR, 0,0,0); // base  wrt phosp
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUGR, EV_PHOSUGR, EV_PHOSUGR, 0,0,0); // phosp wrt base
+	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHOB, EV_SUGPHOB, EV_SUGPHOB, 0,0,0); // sugar wrt phosp
+	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUGB, EV_PHOSUGB, EV_PHOSUGB, 0,0,0); // phosp wrt sugar
       }
       else {
-	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, EV_SUGPHO4, EV_SUGPHO5, EV_SUGPHO6); // base  wrt phosp
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6); // phosp wrt base
+	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, 0,0,0); // sugar  wrt phosp
+	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, 0,0,0 ); // phosp wrt base
       }
 #ifdef WRMVERB
       if(b_ev_temp1>0 || b_ev_temp2>0) printf("# P %d\n# S %d\n", nt_c, nt_neigh);
@@ -1739,7 +1772,7 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       if(b_ev_temp1>MC_CAP || b_ev_temp2>MC_CAP) {*mc_flag=15;
 #ifdef XYZDEBUG
 	printf("B CLASH (sugar-phosp  %lf %lf): %d  %d\n\t%lf %lf %lf   (%lf %lf %lf)\n", b_ev_temp1, b_ev_temp2, nt_c,nt_neigh, r_vec[0], r_vec[1], r_vec[2], EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3);
-	printf("\t %lf %lf %lf   (%lf %lf %lf %lf %lf %lf)\n", r_vec_inv[0], r_vec_inv[1], r_vec_inv[2], EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6);
+	//printf("\t %lf %lf %lf   (%lf %lf %lf %lf %lf %lf)\n", r_vec_inv[0], r_vec_inv[1], r_vec_inv[2], EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6);
 #endif
       }
 #endif
@@ -1757,11 +1790,11 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       
       if(is_purine(nt_c)){
 	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPUR1, EV_SUGPUR2, EV_SUGPUR3,  EV_SUGPUR4, EV_SUGPUR5, EV_SUGPUR6 ); // sugar wrt base
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PURSUG1, EV_PURSUG2, EV_PURSUG3,  EV_PURSUG4, EV_PURSUG5, EV_PURSUG6 ); //EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
+	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PURSUG1, EV_PURSUG2, EV_PURSUG3,  0,0,0 ); //EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
       }
       else{//f(is_pyrimidine(nt_c)){
 	b_ev_temp1=energy_hardcore(r_vec    , EV_SUGPYR1, EV_SUGPYR2, EV_SUGPYR3,  EV_SUGPYR4, EV_SUGPYR5, EV_SUGPYR6 ); // sugar wrt base
-	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3,  EV_PYRSUG4, EV_PYRSUG5, EV_PYRSUG6 ); //EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
+	b_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3,  0,0,0 ); //EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
       }
 #ifdef WRMVERB
       if(b_ev_temp1>0 || b_ev_temp2>0) printf("# N %d\n# N %d\n", nt_c, nt_neigh);
@@ -1775,8 +1808,6 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 #endif 
       }
 #endif
-      
-      
       bond_ev+=(b_ev_temp1+b_ev_temp2);
     }
     /** BASE-SUGAR **/    
@@ -1787,12 +1818,12 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
       proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
       if(is_purine(nt_neigh)){
-	b_ev_temp1=energy_hardcore(r_vec    , EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, EV_PURSUG4, EV_PURSUG5, EV_PURSUG6); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
+	b_ev_temp1=energy_hardcore(r_vec    , EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, 0,0,0); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
 	b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPUR1, EV_SUGPUR2, EV_SUGPUR3, EV_SUGPUR4, EV_SUGPUR5, EV_SUGPUR6); // sugar wrt base
       }
       else{
 	//  }    else if(is_pyrimidine(nt_neigh)){
-	b_ev_temp1=energy_hardcore(r_vec    , EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, EV_PYRSUG4, EV_PYRSUG5, EV_PYRSUG6); //EV_PYRRSUG4, EV_PYRRSUG5, EV_PYRRSUG6); // base  wrt sugar
+	b_ev_temp1=energy_hardcore(r_vec    , EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, 0,0,0); //EV_PYRRSUG4, EV_PYRRSUG5, EV_PYRRSUG6); // base  wrt sugar
 	b_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPYR1, EV_SUGPYR2, EV_SUGPYR3, EV_SUGPYR4, EV_SUGPYR5, EV_SUGPYR6); // sugar wrt base
       }
 #ifdef WRMVERB
@@ -1853,7 +1884,7 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
     if(flag_ss==1){
       flag_ss=0;
       //bond_ss=MC_CAP-1;
-      bond_ss=MC_CAP*(acos(cos_ang_SS)-ss_ang_ave)*(acos(cos_ang_SS)-ss_ang_ave);
+      bond_ss=MC_CAP*(acos(cos_ang_SS)-ss_ang_ave)*(acos(cos_ang_SS)-ss_ang_ave)+MC_CAP;
     }
 #endif
     if(flag_ss==1) {*mc_flag=5;// printf("%d %d     %lf\n", nt_c,nt_neigh, dist);
@@ -1866,7 +1897,8 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
     }
     
     /** PHOSPHATE-BASE - only from i to i+1 **/
-    if(nt_c<nt_neigh){//nt_up=nt_c;nt_do=nt_neigh;
+    /* however, we count here the interaction with both neighbors : nt_c-1 and nt_c+1 */
+    if(nt_c<nt_neigh){//nt_up=nt_c;nt_do=nt_neigh;             //only in this case we check for possible transition A->H
       // EV between P of nt_c and B of nt_neigh
       // tab between P of nt_neigh and B of nt_c
       t_vec[0]=get_unf_coo_x(rx, at_b+IBAS) - get_unf_coo_temp_x(at_c+IPHO);
@@ -1876,18 +1908,14 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 	proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
 	proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
 	if(is_purine(nt_neigh)){
-	  b_ev_temp1=energy_hardcore(r_vec    , EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,EV_PURPHO4, EV_PURPHO5, EV_PURPHO6); // base  wrt phosp
+	  b_ev_temp1=energy_hardcore(r_vec    , EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,0,0,0); // base  wrt phosp
 	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOPUR1, EV_PHOPUR2, EV_PHOPUR3,EV_PHOPUR4, EV_PHOPUR5, EV_PHOPUR6); // phosp wrt base
 	}
 	else{
-	  b_ev_temp1=energy_hardcore(r_vec    , EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3,EV_PYRPHO4, EV_PYRPHO5, EV_PYRPHO6); // base  wrt phosp
+	  b_ev_temp1=energy_hardcore(r_vec    , EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3,0,0,0); // base  wrt phosp
 	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOPYR1, EV_PHOPYR2, EV_PHOPYR3,EV_PHOPYR4, EV_PHOPYR5, EV_PHOPYR6); // phosp wrt base
 	}
-	//}      else if(is_pyrimidine(nt_neigh)){
-	//b_ev_temp1=energy_hardcore(r_vec    , EV_BASYPHO1, EV_BASYPHO2, EV_BASYPHO3,0,0,0); // base  wrt phosp
-	//b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOBASY1, EV_PHOBASY2, EV_PHOBASY3,0,0,0); // phosp wrt base
-	//}
-	//printf("in pb %d  case 1, %lf %lf\t%lf %lf %lf   |  %lf %lf %lf\n", nt_c, b_ev_temp1, b_ev_temp2, r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2]);
+	
 #ifdef WRMVERB
 	if(b_ev_temp1>0 || b_ev_temp2>0) printf("# P %d\n# N %d\n", nt_c, nt_neigh);
 #endif
@@ -1898,7 +1926,7 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 #else
 	  return bonded_energy;
 #endif 	
-	}//{printf("im in case 2\t %d %d \t %lf %lf %lf    %lf\n", nt_c, nt_neigh, t_vec[0], t_vec[1], t_vec[2], sqrt(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2]));*mc_flag=6;}
+	}
 #endif
 	bond_ev+=(b_ev_temp1+b_ev_temp2);
       }
@@ -1906,36 +1934,48 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       t_vec[1]=get_unf_coo_y(ry, at_b+IPHO) - get_unf_coo_temp_y(at_c+IBAS);
       t_vec[2]=get_unf_coo_z(rz, at_b+IPHO) - get_unf_coo_temp_z(at_c+IBAS);
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-      temp_flag=0;
-      //printf("INTER  %d   ", nt_c);
-      bond_bp=MC_calc_BP_inter(typ_ind, r_vec,mc_temp_glyc[nt_c], mc_temp_puck[nt_c], &temp_flag);
+      temp_flag_G1=0;
+      temp_flag_G2=0;
+      bond_bp_G1=MC_calc_BP_inter(typ_ind, r_vec,mc_temp_glyc[nt_c], mc_temp_puck[nt_c], &temp_flag_G1);
+      
+#ifndef WARMUP
+      if(glp_is_flippable[nt_c]==GLP_BOTH || glp_is_flippable[nt_c]==GLP_GLYC){
+	if(mc_temp_glyc[nt_c]==GLYC_A)      bond_bp_G2=MC_calc_BP_inter(typ_ind, r_vec, GLYC_H, mc_temp_puck[nt_c], &temp_flag_G2);
+	else if(mc_temp_glyc[nt_c]==GLYC_H) bond_bp_G2=MC_calc_BP_inter(typ_ind, r_vec, GLYC_A, mc_temp_puck[nt_c], &temp_flag_G2);
+	else if(mc_temp_glyc[nt_c]==GLYC_S) temp_flag_G2=1;
+      }
+#endif
+      
 #ifdef WARMUP
-      if(temp_flag==1){
-	temp_flag=0;
-	//energ_ret=MC_CAP-1;
-	//typ_ind = N_BASES*mc_types[at_c]    + mc_types[at_ne];//N_BASES*type1+type2;
+      if(temp_flag_G1==1){
+	temp_flag_G1=0;
 	this_typ=mc_types[at_c];
 	phpos[0]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_c]][mc_temp_puck[nt_c]][0];phpos[1]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_c]][mc_temp_puck[nt_c]][1];phpos[2]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_c]][mc_temp_puck[nt_c]][2];
-	bond_bp=MC_CAP*((r_vec[0]-phpos[0])*(r_vec[0]-phpos[0])+(r_vec[1]-phpos[1])*(r_vec[1]-phpos[1])+(r_vec[2]-phpos[2])*(r_vec[2]-phpos[2]));
-	//printf("   %lf %lf %lf    %lf %lf %lf\n", r_vec[0], r_vec[1], r_vec[2], phpos[0], phpos[1], phpos[2]);
-	//*(r_vec[0]*r_vec[0]+r_vec[1]*r_vec[1]+r_vec[2]*r_vec[2]);typ_ind
+	bond_bp_G1=MC_CAP*((r_vec[0]-phpos[0])*(r_vec[0]-phpos[0])+(r_vec[1]-phpos[1])*(r_vec[1]-phpos[1])+(r_vec[2]-phpos[2])*(r_vec[2]-phpos[2]))+MC_CAP;
 	
       }
-      
-#endif
-      
-      
+      bond_bp=bond_bp_G1;
+#endif      
 #ifdef WRMVERB
-      if(bond_bp>=0) printf("# P %d\n# N %d\n", nt_c, nt_neigh);
+      if(bond_bp_G1>=0) printf("# P %d\n# N %d\n", nt_c, nt_neigh);
 #endif
-      if(temp_flag==1){ *mc_flag=7;
+      if(((glp_is_flippable[nt_c]==GLP_FIXED || glp_is_flippable[nt_c]==GLP_PUCK) && (iflag_G1!=0 || temp_flag_G1!=0)) ){ *mc_flag=7;
 #ifdef XYZDEBUG
 	printf("BB CLASH (phosp-base, inter 1): %d  %d\t%lf %lf %lf  \t%lf %lf %lf\n", nt_neigh, nt_c, r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2]);
 #else
 	return bonded_energy;
-#endif 	   
+#endif
       }
-      //{printf("Inter PB interaction EXPLODED A\n%d %d   %lf %lf %lf\t%lf %lf %lf\n", nt_c, nt_neigh, t_vec[0], t_vec[1], t_vec[2], r_vec[0], r_vec[1], r_vec[2]);exit(-1);}
+      
+      //WE HAVE TO DECIDE FOR THE GLYCOSIDIC, BETWEEN G1 AND G2. Also, discard all the mixed-cases.
+      if((temp_flag_G1!=0 || iflag_G1!=0) && (temp_flag_G2!=0 || iflag_G2!=0)){*mc_flag=20; return bonded_energy;}//these are the forbidden cases
+      
+      ///HERE EVALL!!!
+#ifndef WARMUP
+      eval_both=MC_eval_AH_inter(nt_c, &bond_bp, mc_flag, temp_flag_G1, temp_flag_G2, iflag_G1, iflag_G2, Eintra_G1, Eintra_G2, bond_bp_G1, bond_bp_G2,gly_flag);
+      if(eval_both==-1) return bonded_energy;
+#endif
+      //printf("inter 1 : %lf\n", bond_bp);
     }
     else if(nt_c>nt_neigh){//nt_up=nt_neigh;nt_do=nt_c;
       // EV between P of nt_neigh and B of nt_c
@@ -1948,15 +1988,13 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
 	proj_on_nt_inv(t_vec, rx,ry,rz,nt_neigh, r_vec_inv);
 	if(is_purine(nt_c)){
 	  b_ev_temp1=energy_hardcore(r_vec    , EV_PHOPUR1, EV_PHOPUR2, EV_PHOPUR3,EV_PHOPUR4, EV_PHOPUR5, EV_PHOPUR6); // base  wrt phosp  - we are now projecting on the SR of the base!
-	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,EV_PURPHO4, EV_PURPHO5, EV_PURPHO6); // phosp wrt base
+	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,0,0,0); // phosp wrt base
 	}
 	else{
 	  b_ev_temp1=energy_hardcore(r_vec    , EV_PHOPYR1, EV_PHOPYR2, EV_PHOPYR3,EV_PHOPYR4, EV_PHOPYR5, EV_PHOPYR6); // base  wrt phosp  - we are now projecting on the SR of the base!
-	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3,EV_PYRPHO4, EV_PYRPHO5, EV_PYRPHO6); // phosp wrt base
+	  b_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3,0,0,0); // phosp wrt base
 	}
-	
-	
-	
+
 #ifdef WRMVERB
 	if(b_ev_temp1>0 || b_ev_temp2>0) printf("# N %d\n# P %d\n", nt_c, nt_neigh);
 #endif
@@ -1976,65 +2014,60 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
       t_vec[1]=get_unf_coo_y(ry, at_b+IBAS) - get_unf_coo_temp_y(at_c+IPHO);
       t_vec[2]=get_unf_coo_z(rz, at_b+IBAS) - get_unf_coo_temp_z(at_c+IPHO);
       proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
-      temp_flag=0;
+      
+      //HERE WE MUST MAKE THE OTHER SELECTION
+      
+      temp_flag_G1_PRE=0;
+      temp_flag_G2_PRE=0;
       //printf("INTER  %d   ", nt_c);
-      bond_bp=MC_calc_BP_inter(typ_ind2, r_vec_inv, mc_glyc[nt_neigh], mc_puck[nt_neigh], &temp_flag);
+      bond_bp_G1_PRE=MC_calc_BP_inter(typ_ind2, r_vec_inv, mc_glyc[nt_neigh], mc_puck[nt_neigh], &temp_flag_G1_PRE);
+#ifndef WARMUP
+      if(glp_is_flippable[nt_neigh]==GLP_BOTH || glp_is_flippable[nt_neigh]==GLP_GLYC){
+	if(mc_temp_glyc[nt_neigh]==GLYC_A)      bond_bp_G2_PRE=MC_calc_BP_inter(typ_ind2, r_vec_inv, GLYC_H, mc_temp_puck[nt_neigh], &temp_flag_G2_PRE);
+	else if(mc_temp_glyc[nt_neigh]==GLYC_H) bond_bp_G2_PRE=MC_calc_BP_inter(typ_ind2, r_vec_inv, GLYC_A, mc_temp_puck[nt_neigh], &temp_flag_G2_PRE);
+	else if(mc_temp_glyc[nt_neigh]==GLYC_S) temp_flag_G2_PRE=1;
+      }
+#endif
 
 #ifdef WARMUP
-      if(temp_flag==1){
-	temp_flag=0;
-	//energ_ret=MC_CAP-1;
-	//typ_ind = N_BASES*mc_types[at_c]    + mc_types[at_ne];//N_BASES*type1+type2;
-	this_typ=mc_types[at_b];
+      if(temp_flag_G1_PRE==1){
+	temp_flag_G1_PRE=0;
+	this_typ=mc_types[nt_neigh*N_PARTS_PER_NT];
 	phpos[0]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_neigh]][mc_temp_puck[nt_neigh]][0];phpos[1]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_neigh]][mc_temp_puck[nt_neigh]][1];phpos[2]=ph_pinter_ave[this_typ][mc_temp_glyc[nt_neigh]][mc_temp_puck[nt_neigh]][2];
-	bond_bp=MC_CAP*((r_vec[0]-phpos[0])*(r_vec[0]-phpos[0])+(r_vec[1]-phpos[1])*(r_vec[1]-phpos[1])+(r_vec[2]-phpos[2])*(r_vec[2]-phpos[2]));
-	//printf("   %lf %lf %lf    %lf %lf %lf\n", r_vec[0], r_vec[1], r_vec[2], phpos[0], phpos[1], phpos[2]);
-	//*(r_vec[0]*r_vec[0]+r_vec[1]*r_vec[1]+r_vec[2]*r_vec[2]);typ_ind
+	bond_bp_G1_PRE=MC_CAP*(SQ(r_vec_inv[0]-phpos[0])+SQ(r_vec_inv[1]-phpos[1])+SQ(r_vec_inv[2]-phpos[2]))+MC_CAP;
       }
-      
-#endif
-
-
+      bond_bp=bond_bp_G1_PRE;
+#endif      
 #ifdef WRMVERB
-      if(bond_bp>=0) printf("# P %d\n# N %d\n", nt_c, nt_neigh);
-#endif  
-      if(temp_flag==1){*mc_flag=9; 
+      if(bond_bp_G1_PRE>=0) printf("# P %d\n# N %d\n", nt_neigh, nt_c);
+#endif
+      if(((glp_is_flippable[nt_neigh]==GLP_FIXED || glp_is_flippable[nt_neigh]==GLP_PUCK) && ((fr_is_mobile[nt_neigh]!=FR_MOB_FROZ && iflag_G1_PRE!=0) || temp_flag_G1_PRE!=0)) ){ *mc_flag=9;
 #ifdef XYZDEBUG
-	printf("BB CLASH (base-phosp, inter 2): %d  %d\t%lf %lf %lf  \t%lf %lf %lf\n", nt_neigh, nt_c, r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2]);
+      printf("BB CLASH (base-phosp, inter 2): %d  %d\t%lf %lf %lf  \t%lf %lf %lf\n", nt_neigh, nt_c, r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2]);
 #else
 	return bonded_energy;
+#endif 	   
+      }
+      //WE HAVE TO DECIDE FOR THE GLYCOSIDIC, BETWEEN G1 AND G2. Also, discard all the mixed-cases.
+    if( (temp_flag_G1_PRE!=0 || (fr_is_mobile[nt_neigh]!=FR_MOB_FROZ &&  iflag_G1_PRE!=0)) && (temp_flag_G2_PRE!=0 || ( fr_is_mobile[nt_neigh]!=FR_MOB_FROZ && iflag_G2_PRE!=0)) ){*mc_flag=20; return bonded_energy;}//these are the forbidden cases
+    
+#ifndef WARMUP
+    ///HERE EVALL!!!
+    eval_both=MC_eval_AH_inter(nt_neigh, &bond_bp, mc_flag, temp_flag_G1_PRE, temp_flag_G2_PRE, iflag_G1_PRE, iflag_G2_PRE, Eintra_G1_PRE, Eintra_G2_PRE, bond_bp_G1_PRE, bond_bp_G2_PRE,gly_flag_PRE);
+    if(eval_both==-1) return bonded_energy;
 #endif
-      }//{printf("Inter PS interaction EXPLODED B\n%d %d   %lf %lf %lf\t%lf %lf %lf  %d %d\n", nt_c, nt_neigh, t_vec[0], t_vec[1], t_vec[2], r_vec[0], r_vec[1], r_vec[2], mc_types[N_PARTS_PER_NT*nt_c]    ,mc_types[N_PARTS_PER_NT*nt_neigh]			      );exit(-1);}
-      
-      
-      
     }
     else {printf("BOND BROKEN\n");exit(-2);}
-    // if(nt_c-nt_neigh == -1 ) { // neighbor is on top of central - phosp neighbor and sugar central
-    /* t_vec[0]=(rx[ba+IPHO]+mc_pbox[ba+IPHO][0]*box_l[0]) - (mc_temp_x[ISUG]+mc_temp_pbox[ISUG][0]*box_l[0]); */
-    /* t_vec[1]=(ry[ba+IPHO]+mc_pbox[ba+IPHO][1]*box_l[1]) - (mc_temp_y[ISUG]+mc_temp_pbox[ISUG][1]*box_l[1]); */
-    /* t_vec[2]=(rz[ba+IPHO]+mc_pbox[ba+IPHO][2]*box_l[2]) - (mc_temp_z[ISUG]+mc_temp_pbox[ISUG][2]*box_l[2]); */
-    /* calc_rel_pos(t_vec, r_vec); */
-    /* calc_rel_pos_inv(t_vec, nt_neigh,rx,ry,rz, r_vec_inv); */
-    /* b_ev_temp1=energy_hardcore(r_vec    , SIG_PHOSUG, SIG_PHOSUG, SIG_PHOSUG); // phosp wrt sugar */
-    /* b_ev_temp2=energy_hardcore(r_vec_inv, SIG_PHOSUG, SIG_PHOSUG, SIG_PHOSUG); // sugar wrt phosp */
-    /* if(b_ev_temp1>MC_CAP || b_ev_temp2>MC_CAP) *mc_flag=6;// {printf("im in case 1\n"); *mc_flag=6;} */
-    /* bond_ev+=(b_ev_temp1+b_ev_temp2); */
-    //}
-    //else if(nt_c - nt_neigh == 1){
     
-    //    }
     /** PHOSPHATE-PHOSPHATE **/
-    //calc_min_vec(rx[N_PARTS_PER_NT*nt_neigh+IPHO], ry[N_PARTS_PER_NT*nt_neigh+IPHO], rz[N_PARTS_PER_NT*nt_neigh+IPHO], mc_temp_x[IPHO], mc_temp_y[IPHO], mc_temp_z[IPHO], t_vec, &r);
     t_vec[0]=get_unf_coo_x(rx, at_b+IPHO) - get_unf_coo_temp_x(at_c+IPHO);
-    //(rx[ba+IPHO]+mc_pbox[ba+IPHO][0]*box_l[0]) - (mc_temp_x[IPHO]+mc_temp_pbox[IPHO][0]*box_l[0]);
     t_vec[1]=get_unf_coo_y(ry, at_b+IPHO) - get_unf_coo_temp_y(at_c+IPHO);
     t_vec[2]=get_unf_coo_z(rz, at_b+IPHO) - get_unf_coo_temp_z(at_c+IPHO);
     if(t_vec[0]*t_vec[0]+t_vec[1]*t_vec[1]+t_vec[2]*t_vec[2] <mc_ev_glob_rcut_sq){
       proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
       proj_on_nt_inv(t_vec,rx,ry,rz,  nt_neigh,r_vec_inv);
-      b_ev_temp1=energy_hardcore(r_vec    , EV_PHOS1, EV_PHOS2, EV_PHOS3,EV_PHOS4, EV_PHOS5, EV_PHOS6); // sugar wrt phosp
-      b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOS1, EV_PHOS2, EV_PHOS3,EV_PHOS4, EV_PHOS5, EV_PHOS6); // phosp wrt sugar
+      b_ev_temp1=energy_hardcore(r_vec    , EV_PHOS1, EV_PHOS2, EV_PHOS3,0,0,0); // sugar wrt phosp
+      b_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOS1, EV_PHOS2, EV_PHOS3,0,0,0); // phosp wrt sugar
 #ifdef WRMVERB
       if(b_ev_temp1>0 || b_ev_temp2>0) printf("# P %d\n# P %d\n", nt_c, nt_neigh);
 #endif
@@ -2053,11 +2086,8 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
     //printf("bp  %d : %lf\n", nt_c, bond_bp);
     
     //HEREFLAG
-    backbone_e=bond_ss + bond_bp + bond_ev;
-#ifdef NEW_BIA
-    if(mc_target_temp>1.0)
-      backbone_e*=(mc_target_temp);
-#endif
+    
+    backbone_e=bond_ss + bond_ev + bond_bp;
     bonded_energy+=backbone_e;
     //} 
     //else{
@@ -2074,8 +2104,12 @@ double MC_calc_bonded_energy(int nt_c, double *rx, double *ry, double *rz, int *
     /* hr=mc_harm_r[mc_bondlist[nt_c][mc_nbonds[nt_c][0]+b]]; */
     /* e_bond=energy_harmonic(dist, hr, hk); */
     /* bonded_energy+=e_bond; */
+/* #ifdef FROZEN */
+/*     } */
+/* #endif  */
+    }
   }
-
+  
   return bonded_energy;
 }
 
@@ -2122,7 +2156,7 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
   double r_vec[DIM], r_vec_inv[DIM], t_vec[DIM], theta, r;
   double sigma[DIM];
   double nb_ev_temp1, nb_ev_temp2;
-  int temp_flag_wc=0, temp_flag_st=0;
+  int temp_flag_wc=0, temp_flag_st=1;
   int typ_ind, typ_ind2;
   double ori_o[DIM], ori_n[DIM];
   double eta2;
@@ -2137,11 +2171,11 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
     proj_on_nt_inv(t_vec, rx,ry,rz, nt_neigh,r_vec_inv);
     if(is_purine(nt_c)){
       nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGPUR1, EV_SUGPUR2, EV_SUGPUR3, EV_SUGPUR4, EV_SUGPUR5, EV_SUGPUR6 ); // sugar wrt base
-      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, EV_PURSUG4, EV_PURSUG5, EV_PURSUG6 );//EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
+      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, 0,0,0 );//EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
     }
     else{
       nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGPYR1, EV_SUGPYR2, EV_SUGPYR3, EV_SUGPYR4, EV_SUGPYR5, EV_SUGPYR6 ); // sugar wrt base
-      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, EV_PYRSUG4, EV_PYRSUG5, EV_PYRSUG6 );//EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
+      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, 0,0,0 );//EV_BASRSUG4, EV_BASRSUG5, EV_BASRSUG6 ); // base  wrt sugar
     }
 #ifdef WRMVERB
     if(nb_ev_temp1>0 || nb_ev_temp2>0) printf("# N %d\n# N %d\n", nt_c, nt_neigh);
@@ -2161,11 +2195,11 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
     if(is_purine(nt_neigh)){
-      nb_ev_temp1=energy_hardcore(r_vec    , EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, EV_PURSUG4, EV_PURSUG5, EV_PURSUG6); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
+      nb_ev_temp1=energy_hardcore(r_vec    , EV_PURSUG1, EV_PURSUG2, EV_PURSUG3, 0,0,0); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
       nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPUR1, EV_SUGPUR2, EV_SUGPUR3, EV_SUGPUR4, EV_SUGPUR5, EV_SUGPUR6); // sugar wrt base
     }
     else{
-      nb_ev_temp1=energy_hardcore(r_vec    , EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, EV_PYRSUG4, EV_PYRSUG5, EV_PYRSUG6); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
+      nb_ev_temp1=energy_hardcore(r_vec    , EV_PYRSUG1, EV_PYRSUG2, EV_PYRSUG3, 0,0,0); //EV_PURRSUG4, EV_PURRSUG5, EV_PURRSUG6); // base  wrt sugar
       nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPYR1, EV_SUGPYR2, EV_SUGPYR3, EV_SUGPYR4, EV_SUGPYR5, EV_SUGPYR6); // sugar wrt base
     }
 #ifdef WRMVERB
@@ -2185,8 +2219,8 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
   if(r<EV_GLOB_RCUT){
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
-    nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGSUG1, EV_SUGSUG2, EV_SUGSUG3,  EV_SUGSUG4, EV_SUGSUG5, EV_SUGSUG6); // base  wrt sugar
-    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGSUG1, EV_SUGSUG2, EV_SUGSUG3,  EV_SUGSUG4, EV_SUGSUG5, EV_SUGSUG6); // sugar wrt base
+    nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGSUG1, EV_SUGSUG2, EV_SUGSUG3,  0,0,0); // base  wrt sugar
+    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGSUG1, EV_SUGSUG2, EV_SUGSUG3,  0,0,0); // sugar wrt base
 #ifdef WRMVERB
     if(nb_ev_temp1>0 || nb_ev_temp2>0) printf("# N %d\n# N %d\n", nt_c, nt_neigh);
 #endif
@@ -2205,11 +2239,11 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
     if(is_purine(nt_neigh)){
-      nb_ev_temp1=energy_hardcore(r_vec    , EV_PURPHO1, EV_PURPHO2, EV_PURPHO3, EV_PURPHO4, EV_PURPHO5, EV_PURPHO6 ); // base  wrt phosp
+      nb_ev_temp1=energy_hardcore(r_vec    , EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,0,0,0 );                               // base  wrt phosp
       nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOPUR1, EV_PHOPUR2, EV_PHOPUR3, EV_PHOPUR4, EV_PHOPUR5, EV_PHOPUR6 ); // phosp wrt base
     }
     else{
-      nb_ev_temp1=energy_hardcore(r_vec    , EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3, EV_PYRPHO4, EV_PYRPHO5, EV_PYRPHO6 ); // base  wrt phosp
+      nb_ev_temp1=energy_hardcore(r_vec    , EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3, 0,0,0 ); // base  wrt phosp
       nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOPYR1, EV_PHOPYR2, EV_PHOPYR3, EV_PHOPYR4, EV_PHOPYR5, EV_PHOPYR6 ); // phosp wrt base
     }
 #ifdef WRMVERB
@@ -2231,11 +2265,11 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
     proj_on_nt_inv(t_vec, rx,ry,rz,nt_neigh, r_vec_inv);
     if(is_purine(nt_c)){
       nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOPUR1, EV_PHOPUR2, EV_PHOPUR3, EV_PHOPUR4, EV_PHOPUR5, EV_PHOPUR6 ); // phosp wrt base
-      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PURPHO1, EV_PURPHO2, EV_PURPHO3, EV_PURPHO4, EV_PURPHO5, EV_PURPHO6 ); // base  wrt phosp
+      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PURPHO1, EV_PURPHO2, EV_PURPHO3,0,0,0 ); // base  wrt phosp
     }
     else{
       nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOPYR1, EV_PHOPYR2, EV_PHOPYR3, EV_PHOPYR4, EV_PHOPYR5, EV_PHOPYR6 ); // phosp wrt base
-      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3, EV_PYRPHO4, EV_PYRPHO5, EV_PYRPHO6 ); // base  wrt phosp
+      nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PYRPHO1, EV_PYRPHO2, EV_PYRPHO3 ,0,0,0 ); // base  wrt phosp
     }
     
 #ifdef WRMVERB
@@ -2256,8 +2290,8 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
   if(r<EV_GLOB_RCUT){
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec, rx,ry,rz,nt_neigh, r_vec_inv);
-    nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, EV_SUGPHO4, EV_SUGPHO5, EV_SUGPHO6); // base wrt pho
-    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6); // phosp wrt sugar
+    nb_ev_temp1=energy_hardcore(r_vec    , EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, 0,0,0); // base wrt pho
+    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, 0,0,0); // phosp wrt sugar
     
     //nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG, EV_PHOSUG, EV_PHOSUG); // sugar wrt phosp
     //nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG, EV_PHOSUG, EV_PHOSUG); // phosp wrt sugar
@@ -2278,8 +2312,8 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
   if(r<EV_GLOB_RCUT){
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec,rx,ry,rz, nt_neigh, r_vec_inv);
-    nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, EV_PHOSUG4, EV_PHOSUG5, EV_PHOSUG6); // phosp wrt sugar
-    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, EV_SUGPHO4, EV_SUGPHO5, EV_SUGPHO6); // base wrt pho
+    nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG1, EV_PHOSUG2, EV_PHOSUG3, 0,0,0); // phosp wrt sugar
+    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_SUGPHO1, EV_SUGPHO2, EV_SUGPHO3, 0,0,0); // base wrt pho
     //nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOSUG, EV_PHOSUG, EV_PHOSUG); // sugar wrt phosp
     //nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOSUG, EV_PHOSUG, EV_PHOSUG); // phosp wrt sugar
 #ifdef WRMVERB
@@ -2299,8 +2333,8 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
   if(r<EV_GLOB_RCUT){
     proj_on_nt(t_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(t_vec, rx,ry,rz, nt_neigh,r_vec_inv);
-    nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOS1, EV_PHOS2, EV_PHOS3,EV_PHOS4, EV_PHOS5, EV_PHOS6 ); // sugar wrt phosp
-    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOS1, EV_PHOS2, EV_PHOS3,EV_PHOS4, EV_PHOS5, EV_PHOS6 ); // phosp wrt sugar
+    nb_ev_temp1=energy_hardcore(r_vec    , EV_PHOS1, EV_PHOS2, EV_PHOS3,0,0,0 ); // sugar wrt phosp
+    nb_ev_temp2=energy_hardcore(r_vec_inv, EV_PHOS1, EV_PHOS2, EV_PHOS3,0,0,0 ); // phosp wrt sugar
 #ifdef WRMVERB
     if(nb_ev_temp1>0 || nb_ev_temp2>0) printf("# P %d\n# P %d\n", nt_c, nt_neigh);
 #endif
@@ -2316,6 +2350,8 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
 #ifdef STWCBONDED
   return nbe;
 #endif
+
+
   if(dist<EV_GLOB_RCUT){ 
     /** BASE-BASE - STACKING AND EV  - WC IS CALCULATED ELSEWHERE **/
     temp_flag_wc=0;
@@ -2323,47 +2359,46 @@ double MC_calc_non_bonded_energy(int nt_c, double *rx, double *ry, double *rz, i
     typ_ind2=N_BASES*mc_types[at_ne]+ mc_types[at_c];
     proj_on_nt(d_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(d_vec,rx, ry,rz, nt_neigh, r_vec_inv);
+        
     /* theta=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z,rx,ry,rz,nt_c,nt_neigh);  */
     /* nbe_wc = MC_calc_nnN_watscric(typ_ind, r_vec, r_vec_inv, theta, &temp_flag_wc); */
     /* if(temp_flag_wc==0) */
     /*   nbe+=nbe_wc; */
     
-    temp_flag_st=0;
-    //printf("%d %d    %lf %lf %lf   %lf %lf %lf       %lf   \t", nt_c, nt_neigh, r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2], sqrt(r_vec[0]*r_vec[0]+r_vec[1]*r_vec[1]+r_vec[2]*r_vec[2]));
+
+    temp_flag_st=1;
+#ifndef NOCTCS  
     eta2=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z, rx,ry,rz,nt_c,nt_neigh); 
     /* STACKING DEPENDS ON THE GLYC CONFORMATION - AA IS BONDED, ANYTHING ELSE IS NONBONDED */ 
     nbe_st=0;
     if(fabs(eta2)<STANG || fabs(eta2) > M_PI-STANG)
       nbe_st = MC_calc_nnN_stacking(typ_ind,typ_ind2, r_vec, r_vec_inv, &temp_flag_st); // NO PAIR SPECIFIC!!
-  
-  /* norex_vec_prod(dist_1d(mc_temp_x[1], mc_temp_x[0],0),dist_1d(mc_temp_y[1], mc_temp_y[0],1),dist_1d(mc_temp_z[1], mc_temp_z[0],2),dist_1d(mc_temp_x[2], mc_temp_x[0],0),dist_1d(mc_temp_y[2], mc_temp_y[0],1),dist_1d(mc_temp_z[2], mc_temp_z[0],2),ori_n); */
-  /* norex_vec_prod(dist_1d(rx[nt_neigh*N_PARTS_PER_NT+1], rx[nt_neigh*N_PARTS_PER_NT+0],0),dist_1d(ry[nt_neigh*N_PARTS_PER_NT+1], ry[nt_neigh*N_PARTS_PER_NT+0],1),dist_1d(rz[nt_neigh*N_PARTS_PER_NT+1], rz[nt_neigh*N_PARTS_PER_NT+0],2),dist_1d(rx[nt_neigh*N_PARTS_PER_NT+2], rx[nt_neigh*N_PARTS_PER_NT+0],0),dist_1d(ry[nt_neigh*N_PARTS_PER_NT+2], ry[nt_neigh*N_PARTS_PER_NT+0],1),dist_1d(rz[nt_neigh*N_PARTS_PER_NT+2], rz[nt_neigh*N_PARTS_PER_NT+0],2),ori_o); */
-  /* st_theta=acos(dot_prod(ori_n, ori_o)); */
-  /* if(st_theta>st_theta_0) temp_flag_st=1; */
-  
-  if(temp_flag_st==0)
-    nbe+=nbe_st;
+    if(temp_flag_st==0)
+      nbe+=nbe_st;
+#endif
   
   nb_ev_temp1=energy_hardcore(r_vec,     EV_BASE1, EV_BASE2, EV_BASE3,0,0,0);
   nb_ev_temp2=energy_hardcore(r_vec_inv, EV_BASE1, EV_BASE2, EV_BASE3,0,0,0);
 #ifdef WRMVERB
-    if(nb_ev_temp1>0 || nb_ev_temp2>0) printf("# N %d\n# N %d\n", nt_c, nt_neigh);
+  if(nb_ev_temp1>0 || nb_ev_temp2>0) printf("# N %d\n# N %d\n", nt_c, nt_neigh);
 #endif  
+  //if(nt_c==1 && nt_neigh==43)
+  //printf("%lf  %lf %lf  %d %d\n",(nb_ev_temp1+nb_ev_temp2), nb_ev_temp1,nb_ev_temp2, temp_flag_st, temp_flag_wc);
+
   //if((nb_ev_temp1>MC_CAP ||nb_ev_temp2>MC_CAP) && temp_flag_wc != 0 && temp_flag_st != 0) *mc_flag=16;
 #ifndef WARMUP
   if((nb_ev_temp1>MC_CAP ||nb_ev_temp2>MC_CAP)) {*mc_flag=19;
 #ifdef XYZDEBUG
-    printf("NB CLASH (base-base): %d  %d\n", nt_c,nt_neigh);
+    printf("NB CLASH (base-base) (non-bonded): %d  %d\n", nt_c,nt_neigh);
 #endif
   }
 #endif
-  if(temp_flag_st !=0 && temp_flag_wc != 0)
+  //if(temp_flag_st !=0 && temp_flag_wc != 0)
+  if(temp_flag_st !=0)
     nb_ev+=(nb_ev_temp1+nb_ev_temp2);
-  
-}
+  }
   return nbe+nb_ev;
-}									
-
+}
 
 int get_stacking_ind(int a, int b){
   int RET;
@@ -2420,40 +2455,13 @@ double MC_calc_nnN_stacking(int typ_ind, int typ_ind_2, double *r_vec, double *r
   if(r_vec_inv[2]>0) nbe2=calc_nnN_tab_stacking_s3(r_vec_inv, typ_ind_2);
   else nbe2=calc_nnN_tab_stacking_s5(r_vec_inv, typ_ind_2);
   
-  if(nbe1==0 || nbe2==0) *flag=1; //in this case, there is no interaction energy
-    
-  
-  /* if(table_nnN_N_0[typ_ind][0]>0){ */
-  /*   nbe1=calc_nnN_tab_stacking(r_vec,typ_ind); // stacking */
-  /*   nbe2=calc_nnN_tab_stacking_inv(r_vec,typ_ind); // stacking */
-  /*   if(nbe1 == 0 && nbe2==0){ */
-  /*     *flag=1; */
-  /*   } */
-  /*   nbe=nbe1+nbe2; */
-  /*   if(nbe1!=0 && nbe2!=0) {printf ("NB STACKING NOT WELL DEFINED!!\n"); exit(1);} */
-  /* } */
-  /* if(table_nnN_N_0_inv[typ_ind_2][0]>0){ */
-  /*   nbe1i=calc_nnN_tab_stacking_inv(r_vec_inv,typ_ind_2); // stacking */
-  /*   nbe2i=calc_nnN_tab_stacking(r_vec_inv,typ_ind_2); // stacking */
-
-  /*   if(nbe1i == 0 && nbe2i == 0){ */
-  /*     *flag=1; */
-
-  /*  } */
-
-  /*   nbei=nbe1i+nbe2i; */
-  /*   if(nbe1i!=0 && nbe2i!=0) {printf ("NB STACKING NOT WELL DEFINED!!\n"); exit(1);} */
-  /* } */
-
+  //if(nbe1==0 || nbe2==0 || nb_st_well[typ_ind]==0) *flag=1; //in this case, there is no interaction energy
+  *flag=1; //default case, there is no interaction energy
   double tot_nb_st=0;
   if(nbe1!=0 && nbe2!=0 && nb_st_well[typ_ind]!=0){
     tot_nb_st=nbe1+nbe2;
     tot_nb_st-=nb_st_well[typ_ind];
-#ifdef BI_ANNEALING
-    tot_nb_st*=bia_lambda;
-    if(tot_nb_st<bia_cap)
-      tot_nb_st=bia_cap;
-#endif
+    *flag=0; //here, there is interaction energy!
   }
   
   return tot_nb_st;
@@ -2765,13 +2773,13 @@ double MC_calc_BP_intra(int typ_ind, double *r_vec, int glyc, int puck, int *fla
   if(*flag==1){
     *flag=0;
     phpos[0]=ph_pintra_ave[typ_ind][glyc][puck][0];phpos[1]=ph_pintra_ave[typ_ind][glyc][puck][1];phpos[2]=ph_pintra_ave[typ_ind][glyc][puck][2];
-    energ_ret=MC_CAP*((r_vec[0]-phpos[0])*(r_vec[0]-phpos[0])+(r_vec[1]-phpos[1])*(r_vec[1]-phpos[1])+(r_vec[2]-phpos[2])*(r_vec[2]-phpos[2]));
+    energ_ret=MC_CAP*((r_vec[0]-phpos[0])*(r_vec[0]-phpos[0])+(r_vec[1]-phpos[1])*(r_vec[1]-phpos[1])+(r_vec[2]-phpos[2])*(r_vec[2]-phpos[2]))+MC_CAP;
     //printf("   %lf %lf %lf    %lf %lf %lf     %d  %d  %d\n", r_vec[0], r_vec[1], r_vec[2], phpos[0], phpos[1], phpos[2], typ_ind, glyc, puck);
     //energ_ret=MC_CAP-1;
     //*(r_vec[0]*r_vec[0]+r_vec[1]*r_vec[1]+r_vec[2]*r_vec[2]);
   }
 #endif
-
+  //printf("%d %d %d (%d %d %d - %d %d %d)   %lf\n", xin, yin, zin, table_bpI_N_A3[typ_ind][0], table_bpI_N_A3[typ_ind][1], table_bpI_N_A3[typ_ind][2], table_bpI_N_H3[typ_ind][0], table_bpI_N_H3[typ_ind][1], table_bpI_N_H3[typ_ind][2], energ_ret);
   return energ_ret; 
 }
 
@@ -2941,6 +2949,7 @@ double MC_calc_BP_inter(int typ_ind, double *r_vec, int glyc, int puck, int *fla
     break;
   }
   energ_ret=BB_PREF*ret;
+  //if(energ_ret==0) *flag=10;
   return energ_ret;
 }
 
@@ -3135,3 +3144,2824 @@ void MC_free_energy_params(){
   
   
 }
+
+
+/*************** TO READ TABLES FROM BINARY FILE *************************/
+
+void MC_read_write_energy_tables(){
+  size_t binnum=sizeof(float);
+  mc_n_types=N_BASES;
+  FILE *outfile;
+  char tablename[256];
+  char outname[256];
+  int i,j, typ_ind, ener, ntot, stf;
+  int fscout;
+  //int ntypsq=mc_n_types*mc_n_types;
+  int ntypsq=N_BASES*N_BASES;
+  char ctemp1, ctemp2, ctemp3, ctemp4, ctemp5;
+  sprintf(outname, "intrac.btb");
+  if((outfile=fopen(outname, "wb"))==NULL){
+    printf("ERROR: Could not open %s file for writing tables.\n", outname);
+    exit(ERR_WRITING);
+  }
+  
+  /* NON BONDED POTENTIAL WELLS */
+  sprintf(tablename, "tab_energs/table_wells.tab");
+  FILE *table;
+  if((table=fopen(tablename,"r"))==NULL){
+    printf("file not found!\n");
+    exit(1);
+  }
+  else{
+    fscout=fscanf(table,"%c%c", &ctemp1, &ctemp2);
+    if(ctemp1!='b' || ctemp2 != 'b'){
+      printf("Wrong syntax at table_wells.tab file (bb)!\n%c %c\n", ctemp1, ctemp2);
+      exit(1);}
+    fscout=fscanf(table, "%lf", &(BB_PREF));
+    fwrite(&BB_PREF, binnum, 1, outfile); 
+    fscout=fscanf(table, "%lf", &(BB_PREF_A));
+    fwrite(&BB_PREF_A, binnum, 1, outfile);
+    fscout=fscanf(table,"%c%c%c", &ctemp1, &ctemp2, &ctemp3);
+    if(ctemp2!='g' || ctemp3 != 'l'){
+      printf("Wrong syntax at table_wells.tab file (gl)!\n%c %c\n", ctemp1, ctemp2);
+      exit(1);
+    }
+    for(j=0;j<N_PUCK_STATES;j++)
+      for(i=0;i<N_GLYC_STATES;i++){
+	fscout=fscanf(table, "%lf", &(glp_well_R[i][j]));
+	fwrite(&(glp_well_R[i][j]), binnum, 1, outfile);
+      }
+    for(j=0;j<N_PUCK_STATES;j++)
+      for(i=0;i<N_GLYC_STATES;i++){
+	fscout=fscanf(table, "%lf", &(glp_well_Y[i][j]));
+	fwrite(&(glp_well_Y[i][j]), binnum, 1, outfile);
+      }    
+    
+    /* NON BONDED POTENTIAL WELLS */
+    fscout=fscanf(table,"%c%c%c%c", &ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    if(ctemp2!='s' || ctemp3 != 't' || ctemp4!='b'){
+      printf("Wrong syntax at table_wells.tab file (st , 1)!\n%c %c %c %c\n", ctemp1, ctemp2, ctemp3, ctemp4);
+      exit(1);}
+    for(stf=0;stf<N_STFACES;stf++){
+      for(i=0;i<N_BASES;i++)
+	for(j=0;j<N_BASES;j++){
+	  fscout=fscanf(table, "%lf", &(b_st_well[N_BASES*i+j][stf]));
+	  fwrite(&(b_st_well[N_BASES*i+j][stf]), binnum, 1, outfile);
+	}
+    }
+    fscout=fscanf(table,"%c%c%c",&ctemp3, &ctemp1, &ctemp2);
+    if(ctemp1!='s' || ctemp2 != 't'){
+      printf("Wrong syntax at table_wells.tab file (st , 2)!\n%c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table, "%lf", &(nb_st_well[N_BASES*i+j]));
+	fwrite(&(nb_st_well[N_BASES*i+j]), binnum, 1, outfile);
+      }
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	if(nb_st_well[N_BASES*i+j]!=nb_st_well[N_BASES*j+i]){
+	  printf("Non-bonded matrix (stacking) is not symmetric!\n");
+	  exit(1);
+	}
+      }
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    if(ctemp1!='w' || ctemp2 != 'c'){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+	nb_wc_well[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+	nb_wc_well[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+	nb_wc_well[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well[N_BASES*i+j][2*WC_FACES+0];
+      }
+    
+    //BASE-PAIRING IN PARALLEL CONFORMATION
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    if(ctemp1!='w' || ctemp2 != 'P' ){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+	nb_wc_well_F[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+	nb_wc_well_F[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+	nb_wc_well_F[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0];
+      }
+    
+    /************** BASE PHOSPHATE ***************/
+    fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+    //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+    if(ctemp1!='b' || ctemp2 != 'p'){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<WC_FACES;j++){
+	fscout=fscanf(table,"%lf", &(nb_bp_well[i][j]));
+	fwrite(&(nb_bp_well[i][j]), binnum, 1, outfile);
+      }
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][0]));
+    fwrite(&(nb_bp_spec_well[2][0]), binnum, 1, outfile);
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][1]));
+    fwrite(&(nb_bp_spec_well[2][1]), binnum, 1, outfile);
+    fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][2]));
+    fwrite(&(nb_bp_spec_well[2][2]), binnum, 1, outfile);
+    fclose(table);
+  }
+  
+  /************************ BASE-PAIR SECOND DIHEDRALS **************************/
+  
+  sprintf(tablename, "tab_energs/table_wc_secdih.tab");
+  if((table=fopen(tablename,"r"))==NULL){
+    printf("file not found!\n");
+    printf("No potential wells for non bonded interactions loaded.\n");
+    exit(1);
+  }
+  else{
+    fscout=fscanf(table,"%c%c%c%c", &ctemp1,&ctemp2, &ctemp3, &ctemp4);
+    //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+    if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
+      printf("Wrong syntax at table_wc_secdih.tab file (wc)!\n %c %c %c %c", ctemp1, ctemp2, ctemp3, ctemp4);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+	wc_secdih_min[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+	wc_secdih_min[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+	wc_secdih_min[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min[N_BASES*i+j][2*WC_FACES+0];
+      }
+    
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+    if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+	wc_secdih_max[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_max[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_max[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max[N_BASES*i+j][2*WC_FACES+0];
+      }
+    
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+	wc_secdih_min_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0];
+      }
+    
+    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+    if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
+      printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+      exit(1);}
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+	
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+	wc_secdih_max_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2];
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0];
+	fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0]));
+	fwrite(&(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+	wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0];
+      }
+    fclose(table);
+  }
+  
+  /*** BACKBONE ***/
+  /* SUGAR - PHOSPHATE - SUGAR */
+  //we have to read the nine GLYCOSIDIC states : AA (0) , AH (1) , AS (2) , HA (3) , HH (4) , HS (5) , SA (6) , SH (7) , SS (8)
+  //BUT WE USE THE PUCKERS
+  //TYPE 0
+  sprintf(tablename, "tab_energs/table_ssB1_p33.tab");
+  if((table=fopen(tablename, "r"))==NULL){
+    printf("No backbone interaction between sugars.\n");
+    table_ssB1_N_33=0;
+  }
+  else{
+    printf("[ANGLE P3 P3] ");
+    fscout=fscanf(table,"%d", &(table_ssB1_N_33));
+    fwrite(&(table_ssB1_N_33 ), sizeof(int), 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_33[0]));
+    fwrite(&(table_ssB1_params_33[0] ), binnum, 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_33[1]));
+    fwrite(&(table_ssB1_params_33[1] ), binnum, 1, outfile);
+    table_ssB1_33=(double *)malloc(sizeof(double)*table_ssB1_N_33);
+    for(ener=0;ener<table_ssB1_N_33;ener++){
+      fscout=fscanf(table, "%lf", &(table_ssB1_33[ener]));
+      fwrite(&(table_ssB1_33[ener] ), binnum, 1, outfile);
+    }
+    fclose(table);
+  }
+  
+  //TYPE 32
+  sprintf(tablename, "tab_energs/table_ssB1_p32.tab");
+  //FILE *table;
+  if((table=fopen(tablename, "r"))==NULL){
+    printf("No backbone interaction between sugars.\n");
+    table_ssB1_N_32=0;
+    exit(ERR_INPUT);
+  }
+  else{
+    printf("[ANGLE P3 P2] ");
+    fscout=fscanf(table,"%d", &(table_ssB1_N_32));
+    fwrite(&(table_ssB1_N_32 ), sizeof(int), 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_32[0]));
+    fwrite(&(table_ssB1_params_32[0] ), binnum, 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_32[1]));
+    fwrite(&(table_ssB1_params_32[1] ), binnum, 1, outfile);
+    table_ssB1_32=(double *)malloc(sizeof(double)*table_ssB1_N_32);
+    for(ener=0;ener<table_ssB1_N_32;ener++){
+      fscout=fscanf(table, "%lf", &(table_ssB1_32[ener]));
+      fwrite(&(table_ssB1_32[ener] ), binnum, 1, outfile);
+    }
+    fclose(table);
+  }
+  
+  //TYPE 23
+  sprintf(tablename, "tab_energs/table_ssB1_p23.tab");
+  if((table=fopen(tablename, "r"))==NULL){
+    printf("No backbone interaction between sugars.\n");
+    table_ssB1_N_23=0;
+    exit(ERR_INPUT);
+  }
+  else{
+    printf("[ANGLE P2 P3] ");
+    fscout=fscanf(table,"%d", &(table_ssB1_N_23));
+    fwrite(&(table_ssB1_N_23 ), sizeof(int), 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_23[0]));
+    fwrite(&(table_ssB1_params_23[0] ), binnum, 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_23[1]));
+    fwrite(&(table_ssB1_params_23[1] ), binnum, 1, outfile);
+    
+    table_ssB1_23=(double *)malloc(sizeof(double)*table_ssB1_N_23);
+    for(ener=0;ener<table_ssB1_N_23;ener++){
+      fscout=fscanf(table, "%lf", &(table_ssB1_23[ener]));
+      fwrite(&(table_ssB1_23[ener] ), binnum, 1, outfile);
+    }
+    fclose(table);
+  }
+  //TYPE 22
+  sprintf(tablename, "tab_energs/table_ssB1_p22.tab");
+  if((table=fopen(tablename, "r"))==NULL){
+    printf("No backbone interaction between sugars.\n");
+    table_ssB1_N_22=0;
+    exit(ERR_INPUT);
+  }
+  else{
+    printf("[ANGLE P2 P2] ");
+    fscout=fscanf(table,"%d", &(table_ssB1_N_22));
+    fwrite(&(table_ssB1_N_22 ), sizeof(int), 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_22[0]));
+    fwrite(&(table_ssB1_params_22[0] ), binnum, 1, outfile);
+    fscout=fscanf(table,"%lf", &(table_ssB1_params_22[1]));
+    fwrite(&(table_ssB1_params_22[1] ), binnum, 1, outfile);
+    table_ssB1_22=(double *)malloc(sizeof(double)*table_ssB1_N_22);
+    for(ener=0;ener<table_ssB1_N_22;ener++){
+      fscout=fscanf(table, "%lf", &(table_ssB1_22[ener]));
+      fwrite(&(table_ssB1_22[ener] ), binnum, 1, outfile);
+    }
+    fclose(table);
+  }
+  
+  /* BASE - PHOSPHATE , INTRA NT */
+  //glyc ANTI
+  //puck3
+  printf("\nReading INTRA-BP interactions...\n");
+  table_bpI_A3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gA3.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra BP interaction for %d, glycosidic conformation ANTI.\n", i);
+      table_bpI_N_A3[typ_ind][0]=-1;
+      table_bpI_N_A3[typ_ind][1]=-1;
+      table_bpI_N_A3[typ_ind][2]=-1;
+      exit(ERR_INPUT);
+    }
+    else{
+      printf("[%d ANTI P3] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A3[typ_ind][0]), &(table_bpI_N_A3[typ_ind][1]), &(table_bpI_N_A3[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_A3[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_A3[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_A3[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][0]), &(table_bpI_params_A3[typ_ind][1][0]), &(table_bpI_params_A3[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_A3[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A3[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A3[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][1]), &(table_bpI_params_A3[typ_ind][1][1]), &(table_bpI_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_A3[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A3[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A3[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpI_N_A3[typ_ind][0]*table_bpI_N_A3[typ_ind][1]*table_bpI_N_A3[typ_ind][2];
+      table_bpI_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_A3[typ_ind][ener]));
+	fwrite(&(table_bpI_A3[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  
+  //puck2
+  table_bpI_A2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gA2.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra BP interaction for %d, glycosidic conformation ANTI.\n", i);
+      table_bpI_N_A2[typ_ind][0]=-1;
+      table_bpI_N_A2[typ_ind][1]=-1;
+      table_bpI_N_A2[typ_ind][2]=-1;
+    }
+    else{
+      printf("[%d ANTI P2] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A2[typ_ind][0]), &(table_bpI_N_A2[typ_ind][1]), &(table_bpI_N_A2[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_A2[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_A2[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_A2[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][0]), &(table_bpI_params_A2[typ_ind][1][0]), &(table_bpI_params_A2[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_A2[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A2[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A2[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][1]), &(table_bpI_params_A2[typ_ind][1][1]), &(table_bpI_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_A2[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A2[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_A2[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpI_N_A2[typ_ind][0]*table_bpI_N_A2[typ_ind][1]*table_bpI_N_A2[typ_ind][2];
+      table_bpI_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_A2[typ_ind][ener]));
+	fwrite(&(table_bpI_A2[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  
+  //glyc HIGH ANTI
+  table_bpI_H3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gH3.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra SP interaction for %d, glycosidic conformation HIGH ANTI.\n", i);
+      table_bpI_N_H3[typ_ind][0]=-1;
+      table_bpI_N_H3[typ_ind][1]=-1;
+      table_bpI_N_H3[typ_ind][2]=-1;
+      exit(ERR_INPUT);
+    }
+    else{
+      printf("[%d HIGH ANTI P3] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H3[typ_ind][0]), &(table_bpI_N_H3[typ_ind][1]), &(table_bpI_N_H3[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_H3[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_H3[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_H3[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][0]), &(table_bpI_params_H3[typ_ind][1][0]), &(table_bpI_params_H3[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_H3[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H3[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H3[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][1]), &(table_bpI_params_H3[typ_ind][1][1]), &(table_bpI_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_H3[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H3[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H3[typ_ind][2][1] ), binnum, 1, outfile);
+      
+      ntot=table_bpI_N_H3[typ_ind][0]*table_bpI_N_H3[typ_ind][1]*table_bpI_N_H3[typ_ind][2];
+      table_bpI_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_H3[typ_ind][ener]));
+	fwrite(&(table_bpI_H3[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  table_bpI_H2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gH2.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra SP interaction for %d, glycosidic conformation HIGH ANTI.\n", i);
+      table_bpI_N_H2[typ_ind][0]=-1;
+      table_bpI_N_H2[typ_ind][1]=-1;
+      table_bpI_N_H2[typ_ind][2]=-1;
+    }
+    else{
+      printf("[%d HIGH ANTI P2] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H2[typ_ind][0]), &(table_bpI_N_H2[typ_ind][1]), &(table_bpI_N_H2[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_H2[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_H2[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_H2[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][0]), &(table_bpI_params_H2[typ_ind][1][0]), &(table_bpI_params_H2[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_H2[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H2[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H2[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][1]), &(table_bpI_params_H2[typ_ind][1][1]), &(table_bpI_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_H2[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H2[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_H2[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpI_N_H2[typ_ind][0]*table_bpI_N_H2[typ_ind][1]*table_bpI_N_H2[typ_ind][2];
+      table_bpI_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_H2[typ_ind][ener]));
+	fwrite(&(table_bpI_H2[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  //glyc SYN
+  table_bpI_S3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gS3.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra SP interaction for %d, glycosidic conformation SYN.\n", i);
+      table_bpI_N_S3[typ_ind][0]=-1;
+      table_bpI_N_S3[typ_ind][1]=-1;
+      table_bpI_N_S3[typ_ind][2]=-1;
+    }
+    else{
+      printf("[%d SYN A3] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S3[typ_ind][0]), &(table_bpI_N_S3[typ_ind][1]), &(table_bpI_N_S3[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_S3[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_S3[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_S3[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][0]), &(table_bpI_params_S3[typ_ind][1][0]), &(table_bpI_params_S3[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_S3[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S3[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S3[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][1]), &(table_bpI_params_S3[typ_ind][1][1]), &(table_bpI_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_S3[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S3[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S3[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpI_N_S3[typ_ind][0]*table_bpI_N_S3[typ_ind][1]*table_bpI_N_S3[typ_ind][2];
+      table_bpI_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_S3[typ_ind][ener]));
+	fwrite(&(table_bpI_S3[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  table_bpI_S2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    sprintf(tablename, "tab_energs/table_bpI_%d_gS2.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("No backbone intra SP interaction for %d, glycosidic conformation SYN.\n", i);
+      table_bpI_N_S2[typ_ind][0]=-1;
+      table_bpI_N_S2[typ_ind][1]=-1;
+      table_bpI_N_S2[typ_ind][2]=-1;
+    }
+    else{
+      printf("[%d SYN P2] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S2[typ_ind][0]), &(table_bpI_N_S2[typ_ind][1]), &(table_bpI_N_S2[typ_ind][2])); //NX, NY, NZ
+      fwrite(&(table_bpI_N_S2[typ_ind][0] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_S2[typ_ind][1] ), sizeof(int), 1, outfile);
+      fwrite(&(table_bpI_N_S2[typ_ind][2] ), sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][0]), &(table_bpI_params_S2[typ_ind][1][0]), &(table_bpI_params_S2[typ_ind][2][0]));//DX, DY, DZ
+      fwrite(&(table_bpI_params_S2[typ_ind][0][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S2[typ_ind][1][0] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S2[typ_ind][2][0] ), binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][1]), &(table_bpI_params_S2[typ_ind][1][1]), &(table_bpI_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_bpI_params_S2[typ_ind][0][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S2[typ_ind][1][1] ), binnum, 1, outfile);
+      fwrite(&(table_bpI_params_S2[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpI_N_S2[typ_ind][0]*table_bpI_N_S2[typ_ind][1]*table_bpI_N_S2[typ_ind][2];
+      table_bpI_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_bpI_S2[typ_ind][ener]));
+	fwrite(&(table_bpI_S2[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  
+  /* SUGAR - PHOSPHATE , INTER NT */
+  //GLYC ANTI
+  printf("\nReading INTER-BP interactions...\n");
+  table_bpB_A3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gA3.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_A3[typ_ind][0]=-1;
+	table_bpB_N_A3[typ_ind][1]=-1;
+	table_bpB_N_A3[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d ANTI P3] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A3[typ_ind][0]), &(table_bpB_N_A3[typ_ind][1]), &(table_bpB_N_A3[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_A3[typ_ind][0] ), sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_A3[typ_ind][1] ), sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_A3[typ_ind][2] ), sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][0]), &(table_bpB_params_A3[typ_ind][1][0]), &(table_bpB_params_A3[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_A3[typ_ind][0][0] ), binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A3[typ_ind][1][0] ), binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A3[typ_ind][2][0] ), binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][1]), &(table_bpB_params_A3[typ_ind][1][1]), &(table_bpB_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_A3[typ_ind][0][1] ), binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A3[typ_ind][1][1] ), binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A3[typ_ind][2][1] ), binnum, 1, outfile);
+	ntot=table_bpB_N_A3[typ_ind][0]*table_bpB_N_A3[typ_ind][1]*table_bpB_N_A3[typ_ind][2];
+	table_bpB_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_A3[typ_ind][ener]));
+	  fwrite(&(table_bpB_A3[typ_ind][ener] ), binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  table_bpB_A2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gA2.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_A2[typ_ind][0]=-1;
+	table_bpB_N_A2[typ_ind][1]=-1;
+	table_bpB_N_A2[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d ANTI P2] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A2[typ_ind][0]), &(table_bpB_N_A2[typ_ind][1]), &(table_bpB_N_A2[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_A2[typ_ind][0]) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_A2[typ_ind][1]) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_A2[typ_ind][2]) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][0]), &(table_bpB_params_A2[typ_ind][1][0]), &(table_bpB_params_A2[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_A2[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A2[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A2[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][1]), &(table_bpB_params_A2[typ_ind][1][1]), &(table_bpB_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_A2[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A2[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_A2[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_A2[typ_ind][0]*table_bpB_N_A2[typ_ind][1]*table_bpB_N_A2[typ_ind][2];
+	table_bpB_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_A2[typ_ind][ener]));
+	  fwrite(&(table_bpB_A2[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  //GLYC HIGH ANTI
+  table_bpB_H3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gH3.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_H3[typ_ind][0]=-1;
+	table_bpB_N_H3[typ_ind][1]=-1;
+	table_bpB_N_H3[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d HIGH ANTI P3] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H3[typ_ind][0]), &(table_bpB_N_H3[typ_ind][1]), &(table_bpB_N_H3[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_H3[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_H3[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_H3[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][0]), &(table_bpB_params_H3[typ_ind][1][0]), &(table_bpB_params_H3[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_H3[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H3[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H3[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][1]), &(table_bpB_params_H3[typ_ind][1][1]), &(table_bpB_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_H3[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H3[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H3[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_H3[typ_ind][0]*table_bpB_N_H3[typ_ind][1]*table_bpB_N_H3[typ_ind][2];
+	table_bpB_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_H3[typ_ind][ener]));
+	  fwrite(&(table_bpB_H3[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  table_bpB_H2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gH2.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_H2[typ_ind][0]=-1;
+	table_bpB_N_H2[typ_ind][1]=-1;
+	table_bpB_N_H2[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d HIGH ANTI P2] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H2[typ_ind][0]), &(table_bpB_N_H2[typ_ind][1]), &(table_bpB_N_H2[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_H2[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_H2[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_H2[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][0]), &(table_bpB_params_H2[typ_ind][1][0]), &(table_bpB_params_H2[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_H2[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H2[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H2[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][1]), &(table_bpB_params_H2[typ_ind][1][1]), &(table_bpB_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_H2[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H2[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_H2[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_H2[typ_ind][0]*table_bpB_N_H2[typ_ind][1]*table_bpB_N_H2[typ_ind][2];
+	table_bpB_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_H2[typ_ind][ener]));
+	  fwrite(&(table_bpB_H2[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  //GLYC SYN
+  table_bpB_S3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gS3.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_S3[typ_ind][0]=-1;
+	table_bpB_N_S3[typ_ind][1]=-1;
+	table_bpB_N_S3[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d SYN P3] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S3[typ_ind][0]), &(table_bpB_N_S3[typ_ind][1]), &(table_bpB_N_S3[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_S3[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_S3[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_S3[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][0]), &(table_bpB_params_S3[typ_ind][1][0]), &(table_bpB_params_S3[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_S3[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S3[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S3[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][1]), &(table_bpB_params_S3[typ_ind][1][1]), &(table_bpB_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_S3[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S3[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S3[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_S3[typ_ind][0]*table_bpB_N_S3[typ_ind][1]*table_bpB_N_S3[typ_ind][2];
+	table_bpB_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_S3[typ_ind][ener]));
+	  fwrite(&(table_bpB_S3[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  table_bpB_S2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_bpB_%d%d_gS2.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+	table_bpB_N_S2[typ_ind][0]=-1;
+	table_bpB_N_S2[typ_ind][1]=-1;
+	table_bpB_N_S2[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d SYN P2] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S2[typ_ind][0]), &(table_bpB_N_S2[typ_ind][1]), &(table_bpB_N_S2[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_bpB_N_S2[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_S2[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_bpB_N_S2[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][0]), &(table_bpB_params_S2[typ_ind][1][0]), &(table_bpB_params_S2[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_bpB_params_S2[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S2[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S2[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][1]), &(table_bpB_params_S2[typ_ind][1][1]), &(table_bpB_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_bpB_params_S2[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S2[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_bpB_params_S2[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_S2[typ_ind][0]*table_bpB_N_S2[typ_ind][1]*table_bpB_N_S2[typ_ind][2];
+	table_bpB_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_bpB_S2[typ_ind][ener]));
+	  fwrite(&(table_bpB_S2[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  printf("\nReading STACKING interactions...\n");
+  /* STACKING - BONDED */
+  //s35
+  table_nnB_0_s35=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s35.tab", i,j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No stacking interaction between %d and %d.\n", i,j);
+	table_nnB_N_0_s35[typ_ind][0]=-1;
+	table_nnB_N_0_s35[typ_ind][1]=-1;
+	table_nnB_N_0_s35[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s35] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s35[typ_ind][0]), &(table_nnB_N_0_s35[typ_ind][1]), &(table_nnB_N_0_s35[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnB_N_0_s35[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s35[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s35[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][0]), &(table_nnB_params_0_s35[typ_ind][1][0]), &(table_nnB_params_0_s35[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnB_params_0_s35[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s35[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s35[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][1]), &(table_nnB_params_0_s35[typ_ind][1][1]), &(table_nnB_params_0_s35[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnB_params_0_s35[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s35[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s35[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_0_s35[typ_ind][0]*table_nnB_N_0_s35[typ_ind][1]*table_nnB_N_0_s35[typ_ind][2];
+	table_nnB_0_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s35[typ_ind][ener]));
+	  fwrite(&(table_nnB_0_s35[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  //S53
+  table_nnB_0_s53=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s53.tab", i,j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No stacking interaction between %d and %d.\n", i,j);
+	table_nnB_N_0_s53[typ_ind][0]=-1;
+	table_nnB_N_0_s53[typ_ind][1]=-1;
+	table_nnB_N_0_s53[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s53] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s53[typ_ind][0]), &(table_nnB_N_0_s53[typ_ind][1]), &(table_nnB_N_0_s53[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnB_N_0_s53[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s53[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s53[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][0]), &(table_nnB_params_0_s53[typ_ind][1][0]), &(table_nnB_params_0_s53[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnB_params_0_s53[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s53[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s53[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][1]), &(table_nnB_params_0_s53[typ_ind][1][1]), &(table_nnB_params_0_s53[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnB_params_0_s53[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s53[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s53[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_0_s53[typ_ind][0]*table_nnB_N_0_s53[typ_ind][1]*table_nnB_N_0_s53[typ_ind][2];
+	table_nnB_0_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s53[typ_ind][ener]));
+	  fwrite(&(table_nnB_0_s53[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  //S33
+  table_nnB_0_s33=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s33.tab", i,j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No stacking interaction between %d and %d.\n", i,j);
+	table_nnB_N_0_s33[typ_ind][0]=-1;
+	table_nnB_N_0_s33[typ_ind][1]=-1;
+	table_nnB_N_0_s33[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s33] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s33[typ_ind][0]), &(table_nnB_N_0_s33[typ_ind][1]), &(table_nnB_N_0_s33[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnB_N_0_s33[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s33[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s33[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][0]), &(table_nnB_params_0_s33[typ_ind][1][0]), &(table_nnB_params_0_s33[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnB_params_0_s33[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s33[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s33[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][1]), &(table_nnB_params_0_s33[typ_ind][1][1]), &(table_nnB_params_0_s33[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnB_params_0_s33[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s33[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s33[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_0_s33[typ_ind][0]*table_nnB_N_0_s33[typ_ind][1]*table_nnB_N_0_s33[typ_ind][2];
+	table_nnB_0_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s33[typ_ind][ener]));
+	  fwrite(&(table_nnB_0_s33[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  //S55
+  table_nnB_0_s55=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s55.tab", i,j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No stacking interaction between %d and %d.\n", i,j);
+	table_nnB_N_0_s55[typ_ind][0]=-1;
+	table_nnB_N_0_s55[typ_ind][1]=-1;
+	table_nnB_N_0_s55[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s55] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s55[typ_ind][0]), &(table_nnB_N_0_s55[typ_ind][1]), &(table_nnB_N_0_s55[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnB_N_0_s55[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s55[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnB_N_0_s55[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][0]), &(table_nnB_params_0_s55[typ_ind][1][0]), &(table_nnB_params_0_s55[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnB_params_0_s55[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s55[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s55[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][1]), &(table_nnB_params_0_s55[typ_ind][1][1]), &(table_nnB_params_0_s55[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnB_params_0_s55[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s55[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnB_params_0_s55[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_0_s55[typ_ind][0]*table_nnB_N_0_s55[typ_ind][1]*table_nnB_N_0_s55[typ_ind][2];
+	table_nnB_0_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_0_s55[typ_ind][ener]));
+	  fwrite(&(table_nnB_0_s55[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  //////////////////////////////////
+  printf("\nReading STACKING-DIHEDRAL interactions...\n");
+  table_nnB_1_s33=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s33.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO %d %d 33] ", i,j);
+	table_nnB_N_1_s33[typ_ind]=-1;
+	//table_nnB_N_1[typ_ind2]=-1;
+	//exit(ERR_INPUT);
+      }
+      else{
+	printf("[%d %d 33] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s33[typ_ind])); //N_ETA
+	fwrite(&(table_nnB_N_1_s33[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][0]));//D_ETA
+	fwrite(&(table_nnB_params_1_s33[typ_ind][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][1])); //ETAMIN
+	fwrite(&(table_nnB_params_1_s33[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_1_s33[typ_ind];
+	table_nnB_1_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s33[typ_ind][ener]));
+	  fwrite(&(table_nnB_1_s33[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnB_1_s35=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s35.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO %d %d 35] ", i,j);
+	table_nnB_N_1_s35[typ_ind]=-1;
+	//table_nnB_N_1[typ_ind2]=-1;
+	//exit(ERR_INPUT);
+      }
+      else{
+	printf("[%d %d 35] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s35[typ_ind])); //N_ETA
+	fwrite(&(table_nnB_N_1_s35[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][0]));//D_ETA
+	fwrite(&(table_nnB_params_1_s35[typ_ind][0] ) , binnum, 1,  outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][1])); //ETAMIN
+	fwrite(&(table_nnB_params_1_s35[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_1_s35[typ_ind];
+	table_nnB_1_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s35[typ_ind][ener]));
+	  fwrite(&(table_nnB_1_s35[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnB_1_s53=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s53.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO %d %d 53] ", i,j);
+	table_nnB_N_1_s53[typ_ind]=-1;
+	//table_nnB_N_1[typ_ind2]=-1;
+	//exit(ERR_INPUT);
+      }
+      else{
+	printf("[%d %d 53] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s53[typ_ind])); //N_ETA
+	fwrite(&(table_nnB_N_1_s53[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][0]));//D_ETA
+	fwrite(&(table_nnB_params_1_s53[typ_ind][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][1])); //ETAMIN
+	fwrite(&(table_nnB_params_1_s53[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_1_s53[typ_ind];
+	table_nnB_1_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s53[typ_ind][ener]));
+	  fwrite(&(table_nnB_1_s53[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnB_1_s55=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s55.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO %d %d 55] ", i,j);
+	table_nnB_N_1_s55[typ_ind]=-1;
+	//table_nnB_N_1[typ_ind2]=-1;
+	//exit(ERR_INPUT);
+      }
+      else{
+	printf("[%d %d 55] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnB_N_1_s55[typ_ind])); //N_ETA
+	fwrite(&(table_nnB_N_1_s55[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][0]));//D_ETA
+	fwrite(&(table_nnB_params_1_s55[typ_ind][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][1])); //ETAMIN
+	fwrite(&(table_nnB_params_1_s55[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnB_N_1_s55[typ_ind];
+	table_nnB_1_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnB_1_s55[typ_ind][ener]));
+	  fwrite(&(table_nnB_1_s55[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  printf("\nReading NON-BONDED STACKING interactions...\n");
+  /* STACKING -  NON-BONDED */
+  //int nbtyp=1;
+  table_nnN_0s3=(double **)malloc(sizeof(double *)*ntypsq);
+  //typ_ind=0;
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      /*     //typ_ind2=N_BASES*j+i; */
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_0s3.tab", i, j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No generic non-bonded stacking interaction.\n");
+	table_nnN_N_0s3[typ_ind][0]=-1;
+	table_nnN_N_0s3[typ_ind][1]=-1;
+	table_nnN_N_0s3[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s3] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s3[typ_ind][0]), &(table_nnN_N_0s3[typ_ind][1]), &(table_nnN_N_0s3[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_0s3[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_0s3[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_0s3[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][0]), &(table_nnN_params_0s3[typ_ind][1][0]), &(table_nnN_params_0s3[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_0s3[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s3[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s3[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][1]), &(table_nnN_params_0s3[typ_ind][1][1]), &(table_nnN_params_0s3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_0s3[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s3[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s3[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_0s3[typ_ind][0]*table_nnN_N_0s3[typ_ind][1]*table_nnN_N_0s3[typ_ind][2];
+	table_nnN_0s3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_0s3[typ_ind][ener]));
+	  fwrite(&(table_nnN_0s3[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnN_0s5=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //typ_ind=0;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_0s5.tab", i, j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("No generic non-bonded stacking_inv interaction.\n");
+	table_nnN_N_0s5[typ_ind][0]=-1;
+	table_nnN_N_0s5[typ_ind][1]=-1;
+	table_nnN_N_0s5[typ_ind][2]=-1;
+      }
+      else{
+	printf("[%d %d s5] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s5[typ_ind][0]), &(table_nnN_N_0s5[typ_ind][1]), &(table_nnN_N_0s5[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_0s5[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_0s5[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_0s5[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][0]), &(table_nnN_params_0s5[typ_ind][1][0]), &(table_nnN_params_0s5[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_0s5[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s5[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s5[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][1]), &(table_nnN_params_0s5[typ_ind][1][1]), &(table_nnN_params_0s5[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_0s5[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s5[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_0s5[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_0s5[typ_ind][0]*table_nnN_N_0s5[typ_ind][1]*table_nnN_N_0s5[typ_ind][2];
+	table_nnN_0s5[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_0s5[typ_ind][ener]));
+	  fwrite(&(table_nnN_0s5[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  /* WATSON-CRICK */
+  printf("\nReading BASE-PAIR interactions...\n");
+  table_nnN_2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_2.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO %d %d] ", i,j);
+	table_nnN_N_2[typ_ind][0]=-1;
+	table_nnN_N_2[typ_ind][1]=-1;
+	table_nnN_N_2[typ_ind][2]=-1;
+	table_nnN_N_2[typ_ind][3]=-1;
+	//table_nnN_N_2[typ_ind2][0]=-1;
+	//table_nnN_N_2[typ_ind2][1]=-1;
+	//table_nnN_N_2[typ_ind2][2]=-1;
+	//table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*10);
+      }
+      else{
+	printf("[%d %d] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2[typ_ind][0]), &(table_nnN_N_2[typ_ind][1]), &(table_nnN_N_2[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_2[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][0]), &(table_nnN_params_2[typ_ind][1][0]), &(table_nnN_params_2[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_2[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][1]), &(table_nnN_params_2[typ_ind][1][1]), &(table_nnN_params_2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_2[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_2[typ_ind][0]*table_nnN_N_2[typ_ind][1]*table_nnN_N_2[typ_ind][2];
+	table_nnN_N_2[typ_ind][3]=ntot;
+	table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+	for(ener=0;ener<ntot*WC_FACES;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_2[typ_ind][ener]));
+	  fwrite(&(table_nnN_2[typ_ind][ener] ) , binnum, 1, outfile);
+	  //table_nnN_2[typ_ind2][ener]=table_nnN_2[typ_ind][ener];
+	}
+	fclose(table);
+      }
+    }
+  }
+  table_nnN_2_inv=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_2i.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO inv %d %d] ", i,j);
+	table_nnN_N_2_inv[typ_ind][0]=-1;
+	table_nnN_N_2_inv[typ_ind][1]=-1;
+	table_nnN_N_2_inv[typ_ind][2]=-1;
+	table_nnN_N_2_inv[typ_ind][3]=-1;
+	//table_nnN_N_2_inv[typ_ind2][0]=-1;
+	//table_nnN_N_2_inv[typ_ind2][1]=-1;
+	//table_nnN_N_2_inv[typ_ind2][2]=-1;
+      }
+      else{
+	printf("[inv %d %d] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv[typ_ind][0]), &(table_nnN_N_2_inv[typ_ind][1]), &(table_nnN_N_2_inv[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_2_inv[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_inv[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_inv[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][0]), &(table_nnN_params_2_inv[typ_ind][1][0]), &(table_nnN_params_2_inv[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_2_inv[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][1]), &(table_nnN_params_2_inv[typ_ind][1][1]), &(table_nnN_params_2_inv[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_2_inv[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_2_inv[typ_ind][0]*table_nnN_N_2_inv[typ_ind][1]*table_nnN_N_2_inv[typ_ind][2];
+	table_nnN_N_2_inv[typ_ind][3]=ntot;
+	table_nnN_2_inv[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+	for(ener=0;ener<ntot*WC_FACES;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_inv[typ_ind][ener]));
+	  //table_nnN_2_inv[typ_ind2][ener]=table_nnN_2_inv[typ_ind][ener];
+	  fwrite(&(table_nnN_2_inv[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  //printf("n max types : %d\n", N_MAX_TYPES);
+  table_nnN_3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_3.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO DIH %d %d] ", i,j);
+	table_nnN_N_3[typ_ind]=-1;
+	//table_nnN_N_3[typ_ind2]=-1;
+	exit(ERR_INPUT);
+      }
+      else{
+	printf("[DIH %d %d] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnN_N_3[typ_ind])); //N_THETA
+	fwrite(&(table_nnN_N_3[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][0]));//D_THETA
+	fwrite(&(table_nnN_params_3[typ_ind][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][1])); //THETAMIN
+	fwrite(&(table_nnN_params_3[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_3[typ_ind];
+	table_nnN_3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	//table_nnN_3[typ_ind2]=(double *)malloc(sizeof(double)*ntot);
+	
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_3[typ_ind][ener]));
+	  fwrite(&(table_nnN_3[typ_ind][ener] ) , binnum, 1, outfile);
+	  //table_nnN_3[typ_ind2][ener]=table_nnN_3[typ_ind][ener];
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  /* for the case of parallel orientations */
+  
+  table_nnN_2_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_2_F.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO F %d %d] ", i,j);
+	table_nnN_N_2_F[typ_ind][0]=-1;
+	table_nnN_N_2_F[typ_ind][1]=-1;
+	table_nnN_N_2_F[typ_ind][2]=-1;
+	table_nnN_N_2_F[typ_ind][3]=-1;
+      }
+      else{
+	printf("[F %d %d] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_F[typ_ind][0]), &(table_nnN_N_2_F[typ_ind][1]), &(table_nnN_N_2_F[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_2_F[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_F[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_F[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][0]), &(table_nnN_params_2_F[typ_ind][1][0]), &(table_nnN_params_2_F[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_2_F[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_F[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_F[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][1]), &(table_nnN_params_2_F[typ_ind][1][1]), &(table_nnN_params_2_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_2_F[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_F[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_F[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_2_F[typ_ind][0]*table_nnN_N_2_F[typ_ind][1]*table_nnN_N_2_F[typ_ind][2];
+	table_nnN_N_2_F[typ_ind][3]=ntot;
+	table_nnN_2_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+	for(ener=0;ener<ntot*WC_FACES;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_F[typ_ind][ener]));
+	  fwrite(&(table_nnN_2_F[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnN_2_inv_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_2i_F.tab", i,j);
+      //FILE *table;
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO F inv %d %d] ", i,j);
+	table_nnN_N_2_inv_F[typ_ind][0]=-1;
+	table_nnN_N_2_inv_F[typ_ind][1]=-1;
+	table_nnN_N_2_inv_F[typ_ind][2]=-1;
+	table_nnN_N_2_inv_F[typ_ind][3]=-1;
+      }
+      else{
+	printf("[F inv %d %d] ", i,j);
+	fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv_F[typ_ind][0]), &(table_nnN_N_2_inv_F[typ_ind][1]), &(table_nnN_N_2_inv_F[typ_ind][2])); //NX, NY, NZ
+	fwrite(&(table_nnN_N_2_inv_F[typ_ind][0] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_inv_F[typ_ind][1] ) , sizeof(int), 1, outfile);
+	fwrite(&(table_nnN_N_2_inv_F[typ_ind][2] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][0]), &(table_nnN_params_2_inv_F[typ_ind][1][0]), &(table_nnN_params_2_inv_F[typ_ind][2][0]));//DX, DY, DZ
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][0][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][1][0] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][2][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][1]), &(table_nnN_params_2_inv_F[typ_ind][1][1]), &(table_nnN_params_2_inv_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][0][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][1][1] ) , binnum, 1, outfile);
+	fwrite(&(table_nnN_params_2_inv_F[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_2_inv_F[typ_ind][0]*table_nnN_N_2_inv_F[typ_ind][1]*table_nnN_N_2_inv_F[typ_ind][2];
+	table_nnN_N_2_inv_F[typ_ind][3]=ntot;
+	table_nnN_2_inv_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+	for(ener=0;ener<ntot*WC_FACES;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_2_inv_F[typ_ind][ener]));
+	  fwrite(&(table_nnN_2_inv_F[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  
+  table_nnN_3_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      sprintf(tablename, "tab_energs/table_nnN_%d%d_3_F.tab", i,j);
+      if((table=fopen(tablename, "r"))==NULL){
+	printf("[NO F DIH %d %d] ", i,j);
+	table_nnN_N_3_F[typ_ind]=-1;
+	exit(ERR_INPUT);
+      }
+      else{
+	printf("[F DIH %d %d] ", i,j);
+	fscout=fscanf(table,"%d", &(table_nnN_N_3_F[typ_ind])); //N_THETA
+	fwrite(&(table_nnN_N_3_F[typ_ind] ) , sizeof(int), 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][0]));//D_THETA
+	fwrite(&(table_nnN_params_3_F[typ_ind][0] ) , binnum, 1, outfile);
+	fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][1])); //THETAMIN
+	fwrite(&(table_nnN_params_3_F[typ_ind][1] ) , binnum, 1, outfile);
+	ntot=table_nnN_N_3_F[typ_ind];
+	table_nnN_3_F[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  fscout=fscanf(table, "%lf", &(table_nnN_3_F[typ_ind][ener]));
+	  fwrite(&(table_nnN_3_F[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	fclose(table);
+      }
+    }
+  }
+  /***********************/
+  
+  printf("\nReading BASE-PHOSPHATE interactions...\n");
+  // BASE-PHOSPHATE
+  table_npN_0=(double **)malloc(sizeof(double *)*N_BASES);
+  for(i=0;i<N_BASES;i++){
+    sprintf(tablename, "tab_energs/table_npN_%d_0.tab", i);
+    if((table=fopen(tablename, "r"))==NULL){
+      printf("[NO BPH %d] ", i);
+      table_npN_N_0[i][0]=-1;
+      table_npN_N_0[i][1]=-1;
+      table_npN_N_0[i][2]=-1;
+    }
+    else{
+      printf("[BPH %d] ", i);
+      fscout=fscanf(table,"%d%d%d", &(table_npN_N_0[i][0]), &(table_npN_N_0[i][1]), &(table_npN_N_0[i][2])); //NX, NY, NZ
+      fwrite(&(table_npN_N_0[i][0] ) , sizeof(int), 1, outfile);
+      fwrite(&(table_npN_N_0[i][1] ) , sizeof(int), 1, outfile);
+      fwrite(&(table_npN_N_0[i][2] ) , sizeof(int), 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][0]), &(table_npN_params_0[i][1][0]), &(table_npN_params_0[i][2][0]));//DX, DY, DZ
+      fwrite(&(table_npN_params_0[i][0][0] ) , binnum, 1, outfile);
+      fwrite(&(table_npN_params_0[i][1][0] ) , binnum, 1, outfile);
+      fwrite(&(table_npN_params_0[i][2][0] ) , binnum, 1, outfile);
+      fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][1]), &(table_npN_params_0[i][1][1]), &(table_npN_params_0[i][2][1])); //XMIN, YMIN, ZMIN
+      fwrite(&(table_npN_params_0[i][0][1] ) , binnum, 1, outfile);
+      fwrite(&(table_npN_params_0[i][1][1] ) , binnum, 1, outfile);
+      fwrite(&(table_npN_params_0[i][2][1] ) , binnum, 1, outfile);
+      ntot=table_npN_N_0[i][0]*table_npN_N_0[i][1]*table_npN_N_0[i][2];
+      table_npN_0[i]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	fscout=fscanf(table, "%lf", &(table_npN_0[i][ener]));
+	fwrite(&(table_npN_0[i][ener] ) , binnum, 1, outfile);
+      }
+      fclose(table);
+    }
+  }
+  printf("\n");
+  fclose(outfile);
+}
+
+
+
+
+
+void MC_read_bin_energy_tables(){
+  mc_n_types=N_BASES;
+  size_t binnum=sizeof(double);
+  FILE *outfile;
+  char tablename[256];
+  char outname[256];
+  int i,j, typ_ind, ener, ntot, stf;
+  int ntypsq=mc_n_types*mc_n_types;
+  char ctemp1, ctemp2, ctemp3, ctemp4, ctemp5;
+  size_t frout;
+  char ENAME[MAX_BUFFER];
+  strcpy(ENAME,ENERG_PATH);
+  strcat(ENAME,"/intrac.btb");
+  
+  strcpy(outname, ENAME);
+  if((outfile=fopen(outname, "rb"))==NULL){
+    printf("ERROR: Could not open %s file for reading tables.\n", outname);
+    exit(ERR_INPUT);
+  }
+  
+  /* NON BONDED POTENTIAL WELLS */
+  //sprintf(tablename, "tab_energs/table_wells.tab");
+  //FILE *table;
+  //if((table=fopen(tablename,"r"))==NULL){
+  //  printf("file not found!\n");
+  //  exit(1);
+  // }
+  //else{
+  //fscout=fscanf(table,"%c%c", &ctemp1, &ctemp2);
+  //if(ctemp1!='b' || ctemp2 != 'b'){
+  //  printf("Wrong syntax at table_wells.tab file (bb)!\n%c %c\n", ctemp1, ctemp2);
+  //  exit(1);}
+  //fscout=fscanf(table, "%lf", &(BB_PREF));
+  frout=fread(&BB_PREF, binnum, 1, outfile); 
+  //fscout=fscanf(table, "%lf", &(BB_PREF_A));
+  frout=fread(&BB_PREF_A, binnum, 1, outfile);
+  //fscout=fscanf(table,"%c%c%c", &ctemp1, &ctemp2, &ctemp3);
+  //if(ctemp2!='g' || ctemp3 != 'l'){
+  //   printf("Wrong syntax at table_wells.tab file (gl)!\n%c %c\n", ctemp1, ctemp2);
+  //   exit(1);
+  // }
+  for(j=0;j<N_PUCK_STATES;j++)
+    for(i=0;i<N_GLYC_STATES;i++){
+      //fscout=fscanf(table, "%lf", &(glp_well_R[i][j]));
+      frout=fread(&(glp_well_R[i][j]), binnum, 1, outfile);
+    }
+  for(j=0;j<N_PUCK_STATES;j++)
+    for(i=0;i<N_GLYC_STATES;i++){
+      //fscout=fscanf(table, "%lf", &(glp_well_Y[i][j]));
+      frout=fread(&(glp_well_Y[i][j]), binnum, 1, outfile);
+    }
+  
+  /* NON BONDED POTENTIAL WELLS */
+  //fscout=fscanf(table,"%c%c%c%c", &ctemp1, &ctemp2, &ctemp3, &ctemp4);
+  //if(ctemp2!='s' || ctemp3 != 't' || ctemp4!='b'){
+  //  printf("Wrong syntax at table_wells.tab file (st , 1)!\n%c %c %c %c\n", ctemp1, ctemp2, ctemp3, ctemp4);
+  //  exit(1);}
+  for(stf=0;stf<N_STFACES;stf++){
+    for(i=0;i<N_BASES;i++)
+      for(j=0;j<N_BASES;j++){
+	//fscout=fscanf(table, "%lf", &(b_st_well[N_BASES*i+j][stf]));
+	frout=fread(&(b_st_well[N_BASES*i+j][stf]), binnum, 1, outfile);
+      }
+  }
+  //fscout=fscanf(table,"%c%c%c",&ctemp3, &ctemp1, &ctemp2);
+  //if(ctemp1!='s' || ctemp2 != 't'){
+  //  printf("Wrong syntax at table_wells.tab file (st , 2)!\n%c %c %c", ctemp1, ctemp2, ctemp3);
+  //  exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table, "%lf", &(nb_st_well[N_BASES*i+j]));
+      frout=fread(&(nb_st_well[N_BASES*i+j]), binnum, 1, outfile);
+    }
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      if(nb_st_well[N_BASES*i+j]!=nb_st_well[N_BASES*j+i]){
+	printf("Non-bonded matrix (stacking) is not symmetric!\n");
+	exit(1);
+      }
+    }
+  //fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+  //if(ctemp1!='w' || ctemp2 != 'c'){
+  //printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+      nb_wc_well[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+      nb_wc_well[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(nb_wc_well[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+      nb_wc_well[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well[N_BASES*i+j][2*WC_FACES+0];
+    }
+    
+  //BASE-PAIRING IN PARALLEL CONFORMATION
+  //fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+  //if(ctemp1!='w' || ctemp2 != 'P' ){
+  //  printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //  exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+      nb_wc_well_F[N_BASES*j+i][2*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+      nb_wc_well_F[N_BASES*j+i][0*WC_FACES+1]=nb_wc_well_F[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+      nb_wc_well_F[N_BASES*j+i][0*WC_FACES+2]=nb_wc_well_F[N_BASES*i+j][2*WC_FACES+0];
+    }
+  
+  /************** BASE PHOSPHATE ***************/
+  //fscout=fscanf(table,"%c%c%c", &ctemp3,&ctemp1, &ctemp2);
+  //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+  //if(ctemp1!='b' || ctemp2 != 'p'){
+  //printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<WC_FACES;j++){
+      //fscout=fscanf(table,"%lf", &(nb_bp_well[i][j]));
+      frout=fread(&(nb_bp_well[i][j]), binnum, 1, outfile);
+    }
+  //fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][0]));
+  frout=fread(&(nb_bp_spec_well[2][0]), binnum, 1, outfile);
+  //fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][1]));
+  frout=fread(&(nb_bp_spec_well[2][1]), binnum, 1, outfile);
+  //fscout=fscanf(table, "%lf", &(nb_bp_spec_well[2][2]));
+  frout=fread(&(nb_bp_spec_well[2][2]), binnum, 1, outfile);
+  //fclose(table);
+  //}
+  
+  /************************ BASE-PAIR SECOND DIHEDRALS **************************/
+  
+  //sprintf(tablename, "tab_energs/table_wc_secdih.tab");
+  //if((table=fopen(tablename,"r"))==NULL){
+  //  printf("file not found!\n");
+  //printf("No potential wells for non bonded interactions loaded.\n");
+  // exit(1);
+  //}
+  //else{
+  //fscout=fscanf(table,"%c%c%c%c", &ctemp1,&ctemp2, &ctemp3, &ctemp4);
+  //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+  //if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
+  //printf("Wrong syntax at table_wc_secdih.tab file (wc)!\n %c %c %c %c", ctemp1, ctemp2, ctemp3, ctemp4);
+  //  exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][0*WC_FACES+0]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+1]), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][2*WC_FACES+2]), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+2]), binnum, 1, outfile);
+      wc_secdih_min[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][1*WC_FACES+0]), binnum, 1, outfile);
+      wc_secdih_min[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min[N_BASES*i+j][2*WC_FACES+0]), binnum, 1, outfile);
+      wc_secdih_min[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min[N_BASES*i+j][2*WC_FACES+0];
+    }
+  //fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+  //printf("reading wc %c  %c\n", ctemp1, ctemp2);
+  //if(ctemp1!='A' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
+  //  printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //  exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+      wc_secdih_max[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_max[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_max[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max[N_BASES*i+j][2*WC_FACES+0];
+    }
+  //    fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+  //if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'i' || ctemp4!='n'){
+  //printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+      wc_secdih_min_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_min_F[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_min_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_min_F[N_BASES*i+j][2*WC_FACES+0];
+    }
+  //fscout=fscanf(table,"%c%c%c%c%c", &ctemp5,&ctemp1, &ctemp2, &ctemp3, &ctemp4);
+  //if(ctemp1!='P' || ctemp2 != 'm' || ctemp3 != 'a' || ctemp4!='x'){
+  //printf("Wrong syntax at table_wells.tab file (wc)!\n %c %c %c", ctemp1, ctemp2, ctemp3);
+  //exit(1);}
+  for(i=0;i<N_BASES;i++)
+    for(j=0;j<N_BASES;j++){
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][0*WC_FACES+0] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+1] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+2] ), binnum, 1, outfile);
+      
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2] ), binnum, 1, outfile);
+      wc_secdih_max_F[N_BASES*j+i][2*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+2];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+1]=wc_secdih_max_F[N_BASES*i+j][1*WC_FACES+0];
+      //fscout=fscanf(table,"%lf", &(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0]));
+      frout=fread(&(wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0] ), binnum, 1, outfile);
+      wc_secdih_max_F[N_BASES*j+i][0*WC_FACES+2]=wc_secdih_max_F[N_BASES*i+j][2*WC_FACES+0];
+    }
+  //    fclose(table);
+  //}
+  
+  /*** BACKBONE ***/
+  /* SUGAR - PHOSPHATE - SUGAR */
+  //we have to read the nine GLYCOSIDIC states : AA (0) , AH (1) , AS (2) , HA (3) , HH (4) , HS (5) , SA (6) , SH (7) , SS (8)
+  //BUT WE USE THE PUCKERS
+  //TYPE 0
+  //sprintf(tablename, "tab_energs/table_ssB1_p33.tab");
+  //if((table=fopen(tablename, "r"))==NULL){
+  //printf("No backbone interaction between sugars.\n");
+  //table_ssB1_N_33=0;
+  //}
+  //else{
+  //printf("[ANGLE P3 P3] ");
+  //fscout=fscanf(table,"%d", &(table_ssB1_N_33));
+  frout=fread(&(table_ssB1_N_33 ), sizeof(int), 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_33[0]));
+  frout=fread(&(table_ssB1_params_33[0] ), binnum, 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_33[1]));
+  frout=fread(&(table_ssB1_params_33[1] ), binnum, 1, outfile);
+  table_ssB1_33=(double *)malloc(sizeof(double)*table_ssB1_N_33);
+  for(ener=0;ener<table_ssB1_N_33;ener++){
+    //fscout=fscanf(table, "%lf", &(table_ssB1_33[ener]));
+    frout=fread(&(table_ssB1_33[ener] ), binnum, 1, outfile);
+  }
+  //fclose(table);
+  //}
+  
+  //TYPE 32
+  //sprintf(tablename, "tab_energs/table_ssB1_p32.tab");
+  //FILE *table;
+  //if((table=fopen(tablename, "r"))==NULL){
+  //printf("No backbone interaction between sugars.\n");
+  //table_ssB1_N_32=0;
+  //}
+  //else{
+  //printf("[ANGLE P3 P2] ");
+  //fscout=fscanf(table,"%d", &(table_ssB1_N_32));
+  frout=fread(&(table_ssB1_N_32 ), sizeof(int), 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_32[0]));
+  frout=fread(&(table_ssB1_params_32[0] ), binnum, 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_32[1]));
+  frout=fread(&(table_ssB1_params_32[1] ), binnum, 1, outfile);
+  table_ssB1_32=(double *)malloc(sizeof(double)*table_ssB1_N_32);
+  for(ener=0;ener<table_ssB1_N_32;ener++){
+    //fscout=fscanf(table, "%lf", &(table_ssB1_32[ener]));
+    frout=fread(&(table_ssB1_32[ener] ), binnum, 1, outfile);
+  }
+  //fclose(table);
+  //}
+  
+  //TYPE 23
+  //sprintf(tablename, "tab_energs/table_ssB1_p23.tab");
+  //if((table=fopen(tablename, "r"))==NULL){
+  //printf("No backbone interaction between sugars.\n");
+  //table_ssB1_N_23=0;
+  //}
+  //else{
+  //printf("[ANGLE P2 P3] ");
+  //fscout=fscanf(table,"%d", &(table_ssB1_N_23));
+  frout=fread(&(table_ssB1_N_23 ), sizeof(int), 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_23[0]));
+  frout=fread(&(table_ssB1_params_23[0] ), binnum, 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_23[1]));
+  frout=fread(&(table_ssB1_params_23[1] ), binnum, 1, outfile);
+  
+  table_ssB1_23=(double *)malloc(sizeof(double)*table_ssB1_N_23);
+  for(ener=0;ener<table_ssB1_N_23;ener++){
+    //fscout=fscanf(table, "%lf", &(table_ssB1_23[ener]));
+    frout=fread(&(table_ssB1_23[ener] ), binnum, 1, outfile);
+  }
+  //fclose(table);
+  //}
+  //TYPE 22
+  //sprintf(tablename, "tab_energs/table_ssB1_p22.tab");
+  //if((table=fopen(tablename, "r"))==NULL){
+  // printf("No backbone interaction between sugars.\n");
+  // table_ssB1_N_22=0;
+  //}
+  //else{
+  //printf("[ANGLE P2 P2] ");
+  //fscout=fscanf(table,"%d", &(table_ssB1_N_22));
+  frout=fread(&(table_ssB1_N_22 ), sizeof(int), 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_22[0]));
+  frout=fread(&(table_ssB1_params_22[0] ), binnum, 1, outfile);
+  //fscout=fscanf(table,"%lf", &(table_ssB1_params_22[1]));
+  frout=fread(&(table_ssB1_params_22[1] ), binnum, 1, outfile);
+  table_ssB1_22=(double *)malloc(sizeof(double)*table_ssB1_N_22);
+  for(ener=0;ener<table_ssB1_N_22;ener++){
+    //fscout=fscanf(table, "%lf", &(table_ssB1_22[ener]));
+    frout=fread(&(table_ssB1_22[ener] ), binnum, 1, outfile);
+  }
+  //fclose(table);
+  //}
+  
+  /* BASE - PHOSPHATE , INTRA NT */
+  //glyc ANTI
+  //puck3
+  //printf("\nReading INTRA-BP interactions...\n");
+  table_bpI_A3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gA3.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    // printf("No backbone intra BP interaction for %d, glycosidic conformation ANTI.\n", i);
+    // table_bpI_N_A3[typ_ind][0]=-1;
+    // table_bpI_N_A3[typ_ind][1]=-1;
+    // table_bpI_N_A3[typ_ind][2]=-1;
+    // exit(ERR_INPUT);
+    //}
+    //else{
+    //printf("[%d ANTI P3] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A3[typ_ind][0]), &(table_bpI_N_A3[typ_ind][1]), &(table_bpI_N_A3[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_A3[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_A3[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_A3[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][0]), &(table_bpI_params_A3[typ_ind][1][0]), &(table_bpI_params_A3[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_A3[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A3[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A3[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A3[typ_ind][0][1]), &(table_bpI_params_A3[typ_ind][1][1]), &(table_bpI_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_A3[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A3[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A3[typ_ind][2][1] ), binnum, 1, outfile);
+    ntot=table_bpI_N_A3[typ_ind][0]*table_bpI_N_A3[typ_ind][1]*table_bpI_N_A3[typ_ind][2];
+    table_bpI_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_A3[typ_ind][ener]));
+      frout=fread(&(table_bpI_A3[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+      
+  //puck2
+  table_bpI_A2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gA2.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("No backbone intra BP interaction for %d, glycosidic conformation ANTI.\n", i);
+    //table_bpI_N_A2[typ_ind][0]=-1;
+    //table_bpI_N_A2[typ_ind][1]=-1;
+    //table_bpI_N_A2[typ_ind][2]=-1;
+    //}
+    //else{
+    //printf("[%d ANTI P2] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_A2[typ_ind][0]), &(table_bpI_N_A2[typ_ind][1]), &(table_bpI_N_A2[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_A2[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_A2[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_A2[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][0]), &(table_bpI_params_A2[typ_ind][1][0]), &(table_bpI_params_A2[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_A2[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A2[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A2[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_A2[typ_ind][0][1]), &(table_bpI_params_A2[typ_ind][1][1]), &(table_bpI_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_A2[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A2[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_A2[typ_ind][2][1] ), binnum, 1, outfile);
+    ntot=table_bpI_N_A2[typ_ind][0]*table_bpI_N_A2[typ_ind][1]*table_bpI_N_A2[typ_ind][2];
+    table_bpI_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_A2[typ_ind][ener]));
+      frout=fread(&(table_bpI_A2[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  
+  //glyc HIGH ANTI
+  table_bpI_H3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gH3.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("No backbone intra SP interaction for %d, glycosidic conformation HIGH ANTI.\n", i);
+    //table_bpI_N_H3[typ_ind][0]=-1;
+    //table_bpI_N_H3[typ_ind][1]=-1;
+    //table_bpI_N_H3[typ_ind][2]=-1;
+    //}
+    //else{
+    //printf("[%d HIGH ANTI P3] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H3[typ_ind][0]), &(table_bpI_N_H3[typ_ind][1]), &(table_bpI_N_H3[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_H3[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_H3[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_H3[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][0]), &(table_bpI_params_H3[typ_ind][1][0]), &(table_bpI_params_H3[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_H3[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H3[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H3[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H3[typ_ind][0][1]), &(table_bpI_params_H3[typ_ind][1][1]), &(table_bpI_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_H3[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H3[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H3[typ_ind][2][1] ), binnum, 1, outfile);
+    
+    ntot=table_bpI_N_H3[typ_ind][0]*table_bpI_N_H3[typ_ind][1]*table_bpI_N_H3[typ_ind][2];
+    table_bpI_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_H3[typ_ind][ener]));
+      frout=fread(&(table_bpI_H3[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  table_bpI_H2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gH2.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("No backbone intra SP interaction for %d, glycosidic conformation HIGH ANTI.\n", i);
+    //table_bpI_N_H2[typ_ind][0]=-1;
+    //table_bpI_N_H2[typ_ind][1]=-1;
+    //table_bpI_N_H2[typ_ind][2]=-1;
+    //}
+    //else{
+    //printf("[%d HIGH ANTI P2] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_H2[typ_ind][0]), &(table_bpI_N_H2[typ_ind][1]), &(table_bpI_N_H2[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_H2[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_H2[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_H2[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][0]), &(table_bpI_params_H2[typ_ind][1][0]), &(table_bpI_params_H2[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_H2[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H2[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H2[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_H2[typ_ind][0][1]), &(table_bpI_params_H2[typ_ind][1][1]), &(table_bpI_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_H2[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H2[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_H2[typ_ind][2][1] ), binnum, 1, outfile);
+    ntot=table_bpI_N_H2[typ_ind][0]*table_bpI_N_H2[typ_ind][1]*table_bpI_N_H2[typ_ind][2];
+    table_bpI_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_H2[typ_ind][ener]));
+      frout=fread(&(table_bpI_H2[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  //glyc SYN
+  table_bpI_S3=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gS3.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("No backbone intra SP interaction for %d, glycosidic conformation SYN.\n", i);
+    //table_bpI_N_S3[typ_ind][0]=-1;
+    //table_bpI_N_S3[typ_ind][1]=-1;
+    //table_bpI_N_S3[typ_ind][2]=-1;
+    //}
+    //else{
+    //printf("[%d SYN A3] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S3[typ_ind][0]), &(table_bpI_N_S3[typ_ind][1]), &(table_bpI_N_S3[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_S3[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_S3[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_S3[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][0]), &(table_bpI_params_S3[typ_ind][1][0]), &(table_bpI_params_S3[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_S3[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S3[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S3[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S3[typ_ind][0][1]), &(table_bpI_params_S3[typ_ind][1][1]), &(table_bpI_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_S3[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S3[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S3[typ_ind][2][1] ), binnum, 1, outfile);
+    ntot=table_bpI_N_S3[typ_ind][0]*table_bpI_N_S3[typ_ind][1]*table_bpI_N_S3[typ_ind][2];
+    table_bpI_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_S3[typ_ind][ener]));
+      frout=fread(&(table_bpI_S3[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  table_bpI_S2=(double **)malloc(sizeof(double *)*mc_n_types);
+  for(i=0;i<N_BASES;i++){
+    typ_ind=i;
+    //sprintf(tablename, "tab_energs/table_bpI_%d_gS2.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("No backbone intra SP interaction for %d, glycosidic conformation SYN.\n", i);
+    //table_bpI_N_S2[typ_ind][0]=-1;
+    //table_bpI_N_S2[typ_ind][1]=-1;
+    //table_bpI_N_S2[typ_ind][2]=-1;
+    //}
+    //else{
+    //printf("[%d SYN P2] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_bpI_N_S2[typ_ind][0]), &(table_bpI_N_S2[typ_ind][1]), &(table_bpI_N_S2[typ_ind][2])); //NX, NY, NZ
+    frout=fread(&(table_bpI_N_S2[typ_ind][0] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_S2[typ_ind][1] ), sizeof(int), 1, outfile);
+    frout=fread(&(table_bpI_N_S2[typ_ind][2] ), sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][0]), &(table_bpI_params_S2[typ_ind][1][0]), &(table_bpI_params_S2[typ_ind][2][0]));//DX, DY, DZ
+    frout=fread(&(table_bpI_params_S2[typ_ind][0][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S2[typ_ind][1][0] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S2[typ_ind][2][0] ), binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_bpI_params_S2[typ_ind][0][1]), &(table_bpI_params_S2[typ_ind][1][1]), &(table_bpI_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_bpI_params_S2[typ_ind][0][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S2[typ_ind][1][1] ), binnum, 1, outfile);
+    frout=fread(&(table_bpI_params_S2[typ_ind][2][1] ), binnum, 1, outfile);
+    ntot=table_bpI_N_S2[typ_ind][0]*table_bpI_N_S2[typ_ind][1]*table_bpI_N_S2[typ_ind][2];
+    table_bpI_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_bpI_S2[typ_ind][ener]));
+      frout=fread(&(table_bpI_S2[typ_ind][ener] ), binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  
+  /* SUGAR - PHOSPHATE , INTER NT */
+  //GLYC ANTI
+  //printf("\nReading INTER-BP interactions...\n");
+  table_bpB_A3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gA3.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_A3[typ_ind][0]=-1;
+      //table_bpB_N_A3[typ_ind][1]=-1;
+      //table_bpB_N_A3[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d ANTI P3] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A3[typ_ind][0]), &(table_bpB_N_A3[typ_ind][1]), &(table_bpB_N_A3[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_bpB_N_A3[typ_ind][0] ), sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_A3[typ_ind][1] ), sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_A3[typ_ind][2] ), sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][0]), &(table_bpB_params_A3[typ_ind][1][0]), &(table_bpB_params_A3[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_bpB_params_A3[typ_ind][0][0] ), binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A3[typ_ind][1][0] ), binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A3[typ_ind][2][0] ), binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A3[typ_ind][0][1]), &(table_bpB_params_A3[typ_ind][1][1]), &(table_bpB_params_A3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_bpB_params_A3[typ_ind][0][1] ), binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A3[typ_ind][1][1] ), binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A3[typ_ind][2][1] ), binnum, 1, outfile);
+      ntot=table_bpB_N_A3[typ_ind][0]*table_bpB_N_A3[typ_ind][1]*table_bpB_N_A3[typ_ind][2];
+      table_bpB_A3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_bpB_A3[typ_ind][ener]));
+	frout=fread(&(table_bpB_A3[typ_ind][ener] ), binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  table_bpB_A2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gA2.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_A2[typ_ind][0]=-1;
+      //table_bpB_N_A2[typ_ind][1]=-1;
+      //table_bpB_N_A2[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d ANTI P2] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_bpB_N_A2[typ_ind][0]), &(table_bpB_N_A2[typ_ind][1]), &(table_bpB_N_A2[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_bpB_N_A2[typ_ind][0]) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_A2[typ_ind][1]) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_A2[typ_ind][2]) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][0]), &(table_bpB_params_A2[typ_ind][1][0]), &(table_bpB_params_A2[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_bpB_params_A2[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A2[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A2[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_A2[typ_ind][0][1]), &(table_bpB_params_A2[typ_ind][1][1]), &(table_bpB_params_A2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_bpB_params_A2[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A2[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_A2[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_bpB_N_A2[typ_ind][0]*table_bpB_N_A2[typ_ind][1]*table_bpB_N_A2[typ_ind][2];
+      table_bpB_A2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_bpB_A2[typ_ind][ener]));
+	frout=fread(&(table_bpB_A2[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+      
+  //GLYC HIGH ANTI
+  table_bpB_H3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gH3.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_H3[typ_ind][0]=-1;
+      //table_bpB_N_H3[typ_ind][1]=-1;
+      //table_bpB_N_H3[typ_ind][2]=-1;
+      //}
+      //else{
+	//printf("[%d %d HIGH ANTI P3] ", i,j);
+	//fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H3[typ_ind][0]), &(table_bpB_N_H3[typ_ind][1]), &(table_bpB_N_H3[typ_ind][2])); //NX, NY, NZ
+	frout=fread(&(table_bpB_N_H3[typ_ind][0] ) , sizeof(int), 1, outfile);
+	frout=fread(&(table_bpB_N_H3[typ_ind][1] ) , sizeof(int), 1, outfile);
+	frout=fread(&(table_bpB_N_H3[typ_ind][2] ) , sizeof(int), 1, outfile);
+	//fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][0]), &(table_bpB_params_H3[typ_ind][1][0]), &(table_bpB_params_H3[typ_ind][2][0]));//DX, DY, DZ
+	frout=fread(&(table_bpB_params_H3[typ_ind][0][0] ) , binnum, 1, outfile);
+	frout=fread(&(table_bpB_params_H3[typ_ind][1][0] ) , binnum, 1, outfile);
+	frout=fread(&(table_bpB_params_H3[typ_ind][2][0] ) , binnum, 1, outfile);
+	//fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H3[typ_ind][0][1]), &(table_bpB_params_H3[typ_ind][1][1]), &(table_bpB_params_H3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+	frout=fread(&(table_bpB_params_H3[typ_ind][0][1] ) , binnum, 1, outfile);
+	frout=fread(&(table_bpB_params_H3[typ_ind][1][1] ) , binnum, 1, outfile);
+	frout=fread(&(table_bpB_params_H3[typ_ind][2][1] ) , binnum, 1, outfile);
+	ntot=table_bpB_N_H3[typ_ind][0]*table_bpB_N_H3[typ_ind][1]*table_bpB_N_H3[typ_ind][2];
+	table_bpB_H3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+	for(ener=0;ener<ntot;ener++){
+	  //fscout=fscanf(table, "%lf", &(table_bpB_H3[typ_ind][ener]));
+	  frout=fread(&(table_bpB_H3[typ_ind][ener] ) , binnum, 1, outfile);
+	}
+	//    fclose(table);
+	//}
+    }
+  }
+  table_bpB_H2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gH2.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_H2[typ_ind][0]=-1;
+      //table_bpB_N_H2[typ_ind][1]=-1;
+      //table_bpB_N_H2[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d HIGH ANTI P2] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_bpB_N_H2[typ_ind][0]), &(table_bpB_N_H2[typ_ind][1]), &(table_bpB_N_H2[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_bpB_N_H2[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_H2[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_H2[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][0]), &(table_bpB_params_H2[typ_ind][1][0]), &(table_bpB_params_H2[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_bpB_params_H2[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_H2[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_H2[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_H2[typ_ind][0][1]), &(table_bpB_params_H2[typ_ind][1][1]), &(table_bpB_params_H2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_bpB_params_H2[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_H2[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_H2[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_bpB_N_H2[typ_ind][0]*table_bpB_N_H2[typ_ind][1]*table_bpB_N_H2[typ_ind][2];
+      table_bpB_H2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_bpB_H2[typ_ind][ener]));
+	frout=fread(&(table_bpB_H2[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  //GLYC SYN
+  table_bpB_S3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gS3.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_S3[typ_ind][0]=-1;
+      //table_bpB_N_S3[typ_ind][1]=-1;
+      //table_bpB_N_S3[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d SYN P3] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S3[typ_ind][0]), &(table_bpB_N_S3[typ_ind][1]), &(table_bpB_N_S3[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_bpB_N_S3[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_S3[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_S3[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][0]), &(table_bpB_params_S3[typ_ind][1][0]), &(table_bpB_params_S3[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_bpB_params_S3[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S3[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S3[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S3[typ_ind][0][1]), &(table_bpB_params_S3[typ_ind][1][1]), &(table_bpB_params_S3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_bpB_params_S3[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S3[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S3[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_bpB_N_S3[typ_ind][0]*table_bpB_N_S3[typ_ind][1]*table_bpB_N_S3[typ_ind][2];
+      table_bpB_S3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_bpB_S3[typ_ind][ener]));
+	frout=fread(&(table_bpB_S3[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  table_bpB_S2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_bpB_%d%d_gS2.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No backbone inter SP interaction for %d and %d.\n", i,j);
+      //table_bpB_N_S2[typ_ind][0]=-1;
+      //table_bpB_N_S2[typ_ind][1]=-1;
+      //table_bpB_N_S2[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d SYN P2] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_bpB_N_S2[typ_ind][0]), &(table_bpB_N_S2[typ_ind][1]), &(table_bpB_N_S2[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_bpB_N_S2[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_S2[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_bpB_N_S2[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][0]), &(table_bpB_params_S2[typ_ind][1][0]), &(table_bpB_params_S2[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_bpB_params_S2[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S2[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S2[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_bpB_params_S2[typ_ind][0][1]), &(table_bpB_params_S2[typ_ind][1][1]), &(table_bpB_params_S2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_bpB_params_S2[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S2[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_bpB_params_S2[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_bpB_N_S2[typ_ind][0]*table_bpB_N_S2[typ_ind][1]*table_bpB_N_S2[typ_ind][2];
+      table_bpB_S2[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_bpB_S2[typ_ind][ener]));
+	frout=fread(&(table_bpB_S2[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  //printf("\nReading STACKING interactions...\n");
+  /* STACKING - BONDED */
+  //s35
+  table_nnB_0_s35=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s35.tab", i,j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No stacking interaction between %d and %d.\n", i,j);
+      //table_nnB_N_0_s35[typ_ind][0]=-1;
+      //table_nnB_N_0_s35[typ_ind][1]=-1;
+      //table_nnB_N_0_s35[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d s35] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s35[typ_ind][0]), &(table_nnB_N_0_s35[typ_ind][1]), &(table_nnB_N_0_s35[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnB_N_0_s35[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s35[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s35[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][0]), &(table_nnB_params_0_s35[typ_ind][1][0]), &(table_nnB_params_0_s35[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s35[typ_ind][0][1]), &(table_nnB_params_0_s35[typ_ind][1][1]), &(table_nnB_params_0_s35[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s35[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnB_N_0_s35[typ_ind][0]*table_nnB_N_0_s35[typ_ind][1]*table_nnB_N_0_s35[typ_ind][2];
+      table_nnB_0_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnB_0_s35[typ_ind][ener]));
+	frout=fread(&(table_nnB_0_s35[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  //S53
+  table_nnB_0_s53=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s53.tab", i,j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No stacking interaction between %d and %d.\n", i,j);
+      //table_nnB_N_0_s53[typ_ind][0]=-1;
+      //table_nnB_N_0_s53[typ_ind][1]=-1;
+      //table_nnB_N_0_s53[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d s53] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s53[typ_ind][0]), &(table_nnB_N_0_s53[typ_ind][1]), &(table_nnB_N_0_s53[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnB_N_0_s53[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s53[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s53[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][0]), &(table_nnB_params_0_s53[typ_ind][1][0]), &(table_nnB_params_0_s53[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s53[typ_ind][0][1]), &(table_nnB_params_0_s53[typ_ind][1][1]), &(table_nnB_params_0_s53[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s53[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnB_N_0_s53[typ_ind][0]*table_nnB_N_0_s53[typ_ind][1]*table_nnB_N_0_s53[typ_ind][2];
+      table_nnB_0_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnB_0_s53[typ_ind][ener]));
+	frout=fread(&(table_nnB_0_s53[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  //S33
+  table_nnB_0_s33=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s33.tab", i,j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No stacking interaction between %d and %d.\n", i,j);
+      //table_nnB_N_0_s33[typ_ind][0]=-1;
+      //table_nnB_N_0_s33[typ_ind][1]=-1;
+      //table_nnB_N_0_s33[typ_ind][2]=-1;
+      //}
+      //      else{
+      //printf("[%d %d s33] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s33[typ_ind][0]), &(table_nnB_N_0_s33[typ_ind][1]), &(table_nnB_N_0_s33[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnB_N_0_s33[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s33[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s33[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][0]), &(table_nnB_params_0_s33[typ_ind][1][0]), &(table_nnB_params_0_s33[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s33[typ_ind][0][1]), &(table_nnB_params_0_s33[typ_ind][1][1]), &(table_nnB_params_0_s33[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s33[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnB_N_0_s33[typ_ind][0]*table_nnB_N_0_s33[typ_ind][1]*table_nnB_N_0_s33[typ_ind][2];
+      table_nnB_0_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnB_0_s33[typ_ind][ener]));
+	frout=fread(&(table_nnB_0_s33[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  //S55
+  table_nnB_0_s55=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_nnB_%d%d_0_s55.tab", i,j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No stacking interaction between %d and %d.\n", i,j);
+      //    table_nnB_N_0_s55[typ_ind][0]=-1;
+      //    table_nnB_N_0_s55[typ_ind][1]=-1;
+      //    table_nnB_N_0_s55[typ_ind][2]=-1;
+      //  }
+      //else{
+      //printf("[%d %d s55] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnB_N_0_s55[typ_ind][0]), &(table_nnB_N_0_s55[typ_ind][1]), &(table_nnB_N_0_s55[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnB_N_0_s55[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s55[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnB_N_0_s55[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][0]), &(table_nnB_params_0_s55[typ_ind][1][0]), &(table_nnB_params_0_s55[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnB_params_0_s55[typ_ind][0][1]), &(table_nnB_params_0_s55[typ_ind][1][1]), &(table_nnB_params_0_s55[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnB_params_0_s55[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnB_N_0_s55[typ_ind][0]*table_nnB_N_0_s55[typ_ind][1]*table_nnB_N_0_s55[typ_ind][2];
+      table_nnB_0_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnB_0_s55[typ_ind][ener]));
+	frout=fread(&(table_nnB_0_s55[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  //////////////////////////////////
+  //printf("\nReading STACKING-DIHEDRAL interactions...\n");
+  table_nnB_1_s33=(double **)malloc(sizeof(double *)*ntypsq);
+   for(i=0;i<N_BASES;i++){ 
+     for(j=0;j<N_BASES;j++){ 
+       typ_ind=N_BASES*i+j; 
+       //typ_ind2=N_BASES*j+i; 
+       /*     //sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s33.tab", i,j); */
+       /*     //FILE *table; */
+       /*     //if((table=fopen(tablename, "r"))==NULL){ */
+       /*     //printf("[NO %d %d 33] ", i,j); */
+       table_nnB_N_1_s33[typ_ind]=-1; 
+       //table_nnB_N_1[typ_ind2]=-1; 
+       /*     //} */
+       /*     //else{ */
+       /*     //printf("[%d %d 33] ", i,j); */
+       /*     //fscout=fscanf(table,"%d", &(table_nnB_N_1_s33[typ_ind])); //N_ETA */
+       /*     frout=fread(&(table_nnB_N_1_s33[typ_ind] ) , sizeof(int), 1, outfile); */
+       /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][0]));//D_ETA */
+       /*     frout=fread(&(table_nnB_params_1_s33[typ_ind][0] ) , binnum, 1, outfile); */
+       /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s33[typ_ind][1])); //ETAMIN */
+       /*     frout=fread(&(table_nnB_params_1_s33[typ_ind][1] ) , binnum, 1, outfile); */
+       /*     ntot=table_nnB_N_1_s33[typ_ind]; */
+       /*     table_nnB_1_s33[typ_ind]=(double *)malloc(sizeof(double)*ntot); */
+       /*     for(ener=0;ener<ntot;ener++){ */
+       /* 	//fscout=fscanf(table, "%lf", &(table_nnB_1_s33[typ_ind][ener])); */
+       /* 	frout=fread(&(table_nnB_1_s33[typ_ind][ener] ) , binnum, 1, outfile); */
+       /*     } */
+       /*     //fclose(table); */
+       /*     //} */
+     } 
+   } 
+      
+   table_nnB_1_s35=(double **)malloc(sizeof(double *)*ntypsq);
+   for(i=0;i<N_BASES;i++){ 
+     for(j=0;j<N_BASES;j++){ 
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+  /*     //sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s35.tab", i,j); */
+  /*     //FILE *table; */
+  /*     //if((table=fopen(tablename, "r"))==NULL){ */
+  /*     //printf("[NO %d %d 35] ", i,j); */
+      table_nnB_N_1_s35[typ_ind]=-1;
+      /*     //table_nnB_N_1[typ_ind2]=-1; */
+  /*     //} */
+  /*     // else{ */
+  /*     //printf("[%d %d 35] ", i,j); */
+  /*     //fscout=fscanf(table,"%d", &(table_nnB_N_1_s35[typ_ind])); //N_ETA */
+  /*     frout=fread(&(table_nnB_N_1_s35[typ_ind] ) , sizeof(int), 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][0]));//D_ETA */
+  /*     frout=fread(&(table_nnB_params_1_s35[typ_ind][0] ) , binnum, 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s35[typ_ind][1])); //ETAMIN */
+  /*     frout=fread(&(table_nnB_params_1_s35[typ_ind][1] ) , binnum, 1, outfile); */
+  /*     ntot=table_nnB_N_1_s35[typ_ind]; */
+  /*     table_nnB_1_s35[typ_ind]=(double *)malloc(sizeof(double)*ntot); */
+  /*     for(ener=0;ener<ntot;ener++){ */
+  /* 	//fscout=fscanf(table, "%lf", &(table_nnB_1_s35[typ_ind][ener])); */
+  /* 	frout=fread(&(table_nnB_1_s35[typ_ind][ener] ) , binnum, 1, outfile); */
+  /*     } */
+  /*     //fclose(table); */
+  /*     //} */
+     }
+   } 
+  
+   table_nnB_1_s53=(double **)malloc(sizeof(double *)*ntypsq);
+   for(i=0;i<N_BASES;i++){
+     for(j=0;j<N_BASES;j++){
+       typ_ind=N_BASES*i+j; 
+  /*     //typ_ind2=N_BASES*j+i; */
+  /*     //sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s53.tab", i,j); */
+  /*     //FILE *table; */
+  /*     //if((table=fopen(tablename, "r"))==NULL){ */
+  /*     //printf("[NO %d %d 53] ", i,j); */
+       table_nnB_N_1_s53[typ_ind]=-1;
+  /*     //table_nnB_N_1[typ_ind2]=-1; */
+  /*     //} */
+  /*     // else{ */
+  /*     //printf("[%d %d 53] ", i,j); */
+  /*     //fscout=fscanf(table,"%d", &(table_nnB_N_1_s53[typ_ind])); //N_ETA */
+  /*     frout=fread(&(table_nnB_N_1_s53[typ_ind] ) , sizeof(int), 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][0]));//D_ETA */
+  /*     frout=fread(&(table_nnB_params_1_s53[typ_ind][0] ) , binnum, 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s53[typ_ind][1])); //ETAMIN */
+  /*     frout=fread(&(table_nnB_params_1_s53[typ_ind][1] ) , binnum, 1, outfile); */
+  /*     ntot=table_nnB_N_1_s53[typ_ind]; */
+  /*     table_nnB_1_s53[typ_ind]=(double *)malloc(sizeof(double)*ntot); */
+  /*     for(ener=0;ener<ntot;ener++){ */
+  /* 	//fscout=fscanf(table, "%lf", &(table_nnB_1_s53[typ_ind][ener])); */
+  /* 	frout=fread(&(table_nnB_1_s53[typ_ind][ener] ) , binnum, 1, outfile); */
+  /*     } */
+  /*     //fclose(table); */
+  /*     //} */
+     } 
+   } 
+  
+  table_nnB_1_s55=(double **)malloc(sizeof(double *)*ntypsq); 
+   for(i=0;i<N_BASES;i++){ 
+     for(j=0;j<N_BASES;j++){ 
+       typ_ind=N_BASES*i+j; 
+  /*     //typ_ind2=N_BASES*j+i; */
+  /*     //sprintf(tablename, "tab_energs/table_nnB_%d%d_1_s55.tab", i,j); */
+  /*     //FILE *table; */
+  /*     //if((table=fopen(tablename, "r"))==NULL){ */
+  /*     //printf("[NO %d %d 55] ", i,j); */
+       table_nnB_N_1_s55[typ_ind]=-1; 
+  /*     //table_nnB_N_1[typ_ind2]=-1; */
+  /*     //} */
+  /*     //else{ */
+  /*     //printf("[%d %d 55] ", i,j); */
+  /*     //fscout=fscanf(table,"%d", &(table_nnB_N_1_s55[typ_ind])); //N_ETA */
+  /*     frout=fread(&(table_nnB_N_1_s55[typ_ind] ) , sizeof(int), 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][0]));//D_ETA */
+  /*     frout=fread(&(table_nnB_params_1_s55[typ_ind][0] ) , binnum, 1, outfile); */
+  /*     //fscout=fscanf(table,"%lf", &(table_nnB_params_1_s55[typ_ind][1])); //ETAMIN */
+  /*     frout=fread(&(table_nnB_params_1_s55[typ_ind][1] ) , binnum, 1, outfile); */
+  /*     ntot=table_nnB_N_1_s55[typ_ind]; */
+  /*     table_nnB_1_s55[typ_ind]=(double *)malloc(sizeof(double)*ntot); */
+  /*     for(ener=0;ener<ntot;ener++){ */
+  /* 	//fscout=fscanf(table, "%lf", &(table_nnB_1_s55[typ_ind][ener])); */
+  /* 	frout=fread(&(table_nnB_1_s55[typ_ind][ener] ) , binnum, 1, outfile); */
+  /*     } */
+  /*     //fclose(table); */
+  /*     //} */
+     } 
+   } 
+      
+  //printf("\nReading NON-BONDED STACKING interactions...\n");
+  /* STACKING -  NON-BONDED */
+  //int nbtyp=1;
+  table_nnN_0s3=(double **)malloc(sizeof(double *)*ntypsq);
+  //typ_ind=0;
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      /*     //typ_ind2=N_BASES*j+i; */
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_0s3.tab", i, j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No generic non-bonded stacking interaction.\n");
+      //table_nnN_N_0s3[typ_ind][0]=-1;
+      //table_nnN_N_0s3[typ_ind][1]=-1;
+      //table_nnN_N_0s3[typ_ind][2]=-1;
+      //}
+      // else{
+      //printf("[%d %d s3] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s3[typ_ind][0]), &(table_nnN_N_0s3[typ_ind][1]), &(table_nnN_N_0s3[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_0s3[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_0s3[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_0s3[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][0]), &(table_nnN_params_0s3[typ_ind][1][0]), &(table_nnN_params_0s3[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_0s3[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s3[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s3[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s3[typ_ind][0][1]), &(table_nnN_params_0s3[typ_ind][1][1]), &(table_nnN_params_0s3[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_0s3[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s3[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s3[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_0s3[typ_ind][0]*table_nnN_N_0s3[typ_ind][1]*table_nnN_N_0s3[typ_ind][2];
+      table_nnN_0s3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_0s3[typ_ind][ener]));
+	frout=fread(&(table_nnN_0s3[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  table_nnN_0s5=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //typ_ind=0;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_0s5.tab", i, j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("No generic non-bonded stacking_inv interaction.\n");
+      //table_nnN_N_0s5[typ_ind][0]=-1;
+      //table_nnN_N_0s5[typ_ind][1]=-1;
+      //table_nnN_N_0s5[typ_ind][2]=-1;
+      //}
+      //else{
+      //printf("[%d %d s5] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_0s5[typ_ind][0]), &(table_nnN_N_0s5[typ_ind][1]), &(table_nnN_N_0s5[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_0s5[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_0s5[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_0s5[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][0]), &(table_nnN_params_0s5[typ_ind][1][0]), &(table_nnN_params_0s5[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_0s5[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s5[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s5[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_0s5[typ_ind][0][1]), &(table_nnN_params_0s5[typ_ind][1][1]), &(table_nnN_params_0s5[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_0s5[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s5[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_0s5[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_0s5[typ_ind][0]*table_nnN_N_0s5[typ_ind][1]*table_nnN_N_0s5[typ_ind][2];
+      table_nnN_0s5[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_0s5[typ_ind][ener]));
+	frout=fread(&(table_nnN_0s5[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  /* WATSON-CRICK */
+  //printf("\nReading BASE-PAIR interactions...\n");
+  table_nnN_2=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_2.tab", i,j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[NO %d %d] ", i,j);
+      //table_nnN_N_2[typ_ind][0]=-1;
+      //table_nnN_N_2[typ_ind][1]=-1;
+      //table_nnN_N_2[typ_ind][2]=-1;
+      //table_nnN_N_2[typ_ind][3]=-1;
+      //table_nnN_N_2[typ_ind2][0]=-1;
+      //table_nnN_N_2[typ_ind2][1]=-1;
+      //table_nnN_N_2[typ_ind2][2]=-1;
+      //table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*10);
+      //}
+      //else{
+      //printf("[%d %d] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2[typ_ind][0]), &(table_nnN_N_2[typ_ind][1]), &(table_nnN_N_2[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_2[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][0]), &(table_nnN_params_2[typ_ind][1][0]), &(table_nnN_params_2[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_2[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2[typ_ind][0][1]), &(table_nnN_params_2[typ_ind][1][1]), &(table_nnN_params_2[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_2[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_2[typ_ind][0]*table_nnN_N_2[typ_ind][1]*table_nnN_N_2[typ_ind][2];
+      table_nnN_N_2[typ_ind][3]=ntot;
+      table_nnN_2[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+      for(ener=0;ener<ntot*WC_FACES;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_2[typ_ind][ener]));
+	frout=fread(&(table_nnN_2[typ_ind][ener] ) , binnum, 1, outfile);
+	//table_nnN_2[typ_ind2][ener]=table_nnN_2[typ_ind][ener];
+      }
+      //fclose(table);
+    }
+  }
+  
+  table_nnN_2_inv=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_2i.tab", i,j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[NO inv %d %d] ", i,j);
+      //table_nnN_N_2_inv[typ_ind][0]=-1;
+      //table_nnN_N_2_inv[typ_ind][1]=-1;
+      //table_nnN_N_2_inv[typ_ind][2]=-1;
+      //table_nnN_N_2_inv[typ_ind][3]=-1;
+      //table_nnN_N_2_inv[typ_ind2][0]=-1;
+      //table_nnN_N_2_inv[typ_ind2][1]=-1;
+      //table_nnN_N_2_inv[typ_ind2][2]=-1;
+      //}
+      //else{
+      //printf("[inv %d %d] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv[typ_ind][0]), &(table_nnN_N_2_inv[typ_ind][1]), &(table_nnN_N_2_inv[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_2_inv[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_inv[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_inv[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][0]), &(table_nnN_params_2_inv[typ_ind][1][0]), &(table_nnN_params_2_inv[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv[typ_ind][0][1]), &(table_nnN_params_2_inv[typ_ind][1][1]), &(table_nnN_params_2_inv[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_2_inv[typ_ind][0]*table_nnN_N_2_inv[typ_ind][1]*table_nnN_N_2_inv[typ_ind][2];
+      table_nnN_N_2_inv[typ_ind][3]=ntot;
+      table_nnN_2_inv[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+      for(ener=0;ener<ntot*WC_FACES;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_2_inv[typ_ind][ener]));
+	//table_nnN_2_inv[typ_ind2][ener]=table_nnN_2_inv[typ_ind][ener];
+	frout=fread(&(table_nnN_2_inv[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  //printf("n max types : %d\n", N_MAX_TYPES);
+  table_nnN_3=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_3.tab", i,j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[DIH %d %d] ", i,j);
+      //table_nnN_N_3[typ_ind]=-1;
+      //table_nnN_N_3[typ_ind2]=-1;
+      //}
+      //else{
+      //printf("[DIH %d %d] ", i,j);
+      //fscout=fscanf(table,"%d", &(table_nnN_N_3[typ_ind])); //N_THETA
+      frout=fread(&(table_nnN_N_3[typ_ind] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][0]));//D_THETA
+      frout=fread(&(table_nnN_params_3[typ_ind][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(table_nnN_params_3[typ_ind][1])); //THETAMIN
+      frout=fread(&(table_nnN_params_3[typ_ind][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_3[typ_ind];
+      table_nnN_3[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      //table_nnN_3[typ_ind2]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_3[typ_ind][ener]));
+	frout=fread(&(table_nnN_3[typ_ind][ener] ) , binnum, 1, outfile);
+	//table_nnN_3[typ_ind2][ener]=table_nnN_3[typ_ind][ener];
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  /* for the case of parallel orientations */
+  
+  table_nnN_2_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_2_F.tab", i,j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[NO F %d %d] ", i,j);
+      //table_nnN_N_2_F[typ_ind][0]=-1;
+      //table_nnN_N_2_F[typ_ind][1]=-1;
+      //table_nnN_N_2_F[typ_ind][2]=-1;
+      //table_nnN_N_2_F[typ_ind][3]=-1;
+      //}
+      //else{
+      //printf("[F %d %d] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_F[typ_ind][0]), &(table_nnN_N_2_F[typ_ind][1]), &(table_nnN_N_2_F[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_2_F[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_F[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_F[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][0]), &(table_nnN_params_2_F[typ_ind][1][0]), &(table_nnN_params_2_F[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_2_F[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_F[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_F[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_F[typ_ind][0][1]), &(table_nnN_params_2_F[typ_ind][1][1]), &(table_nnN_params_2_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_2_F[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_F[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_F[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_2_F[typ_ind][0]*table_nnN_N_2_F[typ_ind][1]*table_nnN_N_2_F[typ_ind][2];
+      table_nnN_N_2_F[typ_ind][3]=ntot;
+      table_nnN_2_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+      for(ener=0;ener<ntot*WC_FACES;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_2_F[typ_ind][ener]));
+	frout=fread(&(table_nnN_2_F[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  table_nnN_2_inv_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //typ_ind2=N_BASES*j+i;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_2i_F.tab", i,j);
+      //FILE *table;
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[NO F inv %d %d] ", i,j);
+      //table_nnN_N_2_inv_F[typ_ind][0]=-1;
+      //table_nnN_N_2_inv_F[typ_ind][1]=-1;
+      //table_nnN_N_2_inv_F[typ_ind][2]=-1;
+      //table_nnN_N_2_inv_F[typ_ind][3]=-1;
+      //}
+      //else{
+      //printf("[F inv %d %d] ", i,j);
+      //fscout=fscanf(table,"%d%d%d", &(table_nnN_N_2_inv_F[typ_ind][0]), &(table_nnN_N_2_inv_F[typ_ind][1]), &(table_nnN_N_2_inv_F[typ_ind][2])); //NX, NY, NZ
+      frout=fread(&(table_nnN_N_2_inv_F[typ_ind][0] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_inv_F[typ_ind][1] ) , sizeof(int), 1, outfile);
+      frout=fread(&(table_nnN_N_2_inv_F[typ_ind][2] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][0]), &(table_nnN_params_2_inv_F[typ_ind][1][0]), &(table_nnN_params_2_inv_F[typ_ind][2][0]));//DX, DY, DZ
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][0][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][1][0] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][2][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf%lf%lf", &(table_nnN_params_2_inv_F[typ_ind][0][1]), &(table_nnN_params_2_inv_F[typ_ind][1][1]), &(table_nnN_params_2_inv_F[typ_ind][2][1])); //XMIN, YMIN, ZMIN
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][0][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][1][1] ) , binnum, 1, outfile);
+      frout=fread(&(table_nnN_params_2_inv_F[typ_ind][2][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_2_inv_F[typ_ind][0]*table_nnN_N_2_inv_F[typ_ind][1]*table_nnN_N_2_inv_F[typ_ind][2];
+      table_nnN_N_2_inv_F[typ_ind][3]=ntot;
+      table_nnN_2_inv_F[typ_ind]=(double *)malloc(sizeof(double)*ntot*WC_FACES);
+      for(ener=0;ener<ntot*WC_FACES;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_2_inv_F[typ_ind][ener]));
+	frout=fread(&(table_nnN_2_inv_F[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  
+  table_nnN_3_F=(double **)malloc(sizeof(double *)*ntypsq);
+  for(i=0;i<N_BASES;i++){
+    for(j=0;j<N_BASES;j++){
+      typ_ind=N_BASES*i+j;
+      //sprintf(tablename, "tab_energs/table_nnN_%d%d_3_F.tab", i,j);
+      //if((table=fopen(tablename, "r"))==NULL){
+      //printf("[NO F DIH %d %d] ", i,j);
+      //table_nnN_N_3_F[typ_ind]=-1;
+      //}
+      //else{
+      //printf("[F DIH %d %d] ", i,j);
+      //fscout=fscanf(table,"%d", &(table_nnN_N_3_F[typ_ind])); //N_THETA
+      frout=fread(&(table_nnN_N_3_F[typ_ind] ) , sizeof(int), 1, outfile);
+      //fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][0]));//D_THETA
+      frout=fread(&(table_nnN_params_3_F[typ_ind][0] ) , binnum, 1, outfile);
+      //fscout=fscanf(table,"%lf", &(table_nnN_params_3_F[typ_ind][1])); //THETAMIN
+      frout=fread(&(table_nnN_params_3_F[typ_ind][1] ) , binnum, 1, outfile);
+      ntot=table_nnN_N_3_F[typ_ind];
+      table_nnN_3_F[typ_ind]=(double *)malloc(sizeof(double)*ntot);
+      for(ener=0;ener<ntot;ener++){
+	//fscout=fscanf(table, "%lf", &(table_nnN_3_F[typ_ind][ener]));
+	frout=fread(&(table_nnN_3_F[typ_ind][ener] ) , binnum, 1, outfile);
+      }
+      //fclose(table);
+      //}
+    }
+  }
+  /***********************/
+  
+  //printf("\nReading BASE-PHOSPHATE interactions...\n");
+  // BASE-PHOSPHATE
+  table_npN_0=(double **)malloc(sizeof(double *)*N_BASES);
+  for(i=0;i<N_BASES;i++){
+    //sprintf(tablename, "tab_energs/table_npN_%d_0.tab", i);
+    //if((table=fopen(tablename, "r"))==NULL){
+    //printf("[NO BPH %d] ", i);
+    //table_npN_N_0[i][0]=-1;
+    //table_npN_N_0[i][1]=-1;
+    //table_npN_N_0[i][2]=-1;
+    //}
+    //else{
+    //printf("[BPH %d] ", i);
+    //fscout=fscanf(table,"%d%d%d", &(table_npN_N_0[i][0]), &(table_npN_N_0[i][1]), &(table_npN_N_0[i][2])); //NX, NY, NZ
+    frout=fread(&(table_npN_N_0[i][0] ) , sizeof(int), 1, outfile);
+    frout=fread(&(table_npN_N_0[i][1] ) , sizeof(int), 1, outfile);
+    frout=fread(&(table_npN_N_0[i][2] ) , sizeof(int), 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][0]), &(table_npN_params_0[i][1][0]), &(table_npN_params_0[i][2][0]));//DX, DY, DZ
+    frout=fread(&(table_npN_params_0[i][0][0] ) , binnum, 1, outfile);
+    frout=fread(&(table_npN_params_0[i][1][0] ) , binnum, 1, outfile);
+    frout=fread(&(table_npN_params_0[i][2][0] ) , binnum, 1, outfile);
+    //fscout=fscanf(table,"%lf%lf%lf", &(table_npN_params_0[i][0][1]), &(table_npN_params_0[i][1][1]), &(table_npN_params_0[i][2][1])); //XMIN, YMIN, ZMIN
+    frout=fread(&(table_npN_params_0[i][0][1] ) , binnum, 1, outfile);
+    frout=fread(&(table_npN_params_0[i][1][1] ) , binnum, 1, outfile);
+    frout=fread(&(table_npN_params_0[i][2][1] ) , binnum, 1, outfile);
+    ntot=table_npN_N_0[i][0]*table_npN_N_0[i][1]*table_npN_N_0[i][2];
+    table_npN_0[i]=(double *)malloc(sizeof(double)*ntot);
+    for(ener=0;ener<ntot;ener++){
+      //fscout=fscanf(table, "%lf", &(table_npN_0[i][ener]));
+      frout=fread(&(table_npN_0[i][ener] ) , binnum, 1, outfile);
+    }
+    //fclose(table);
+    //}
+  }
+  fclose(outfile);
+  //printf("\n");
+}
+
