@@ -1,6 +1,6 @@
 ## SPQR - SPlit and conQueR for RNA structure prediction!
 
-SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence.
+SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [2].
 
 A nucleotide is represented as two particles: an anisotropic one which stands for the nucleoside and a point particle for the phosphate group.
 
@@ -15,14 +15,14 @@ Our energy function makes a geometrically detailed description of canonical and 
 Also, SPQR allows the definition of different glycosidic bond angle conformations: ANTI, HIGH-ANTI and SYN, and it is able to distinguish between sugar pucker conformations: C3' endo and C2' endo.
 
 ## Backmapping procedure
-Due to the anisotropic representation of the nucleobases, SPQR allows the reintroduction of atomistic details in the predicted structures through steered-Molecular Dynamics [2].
+Due to the anisotropic representation of the nucleobases, SPQR allows the reintroduction of atomistic details in the predicted structures through steered-Molecular Dynamics [3].
 
-SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [3]
+SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [2]
 
 # The code
 SPQR is implemented in a versatile and clear, bug free C code which is available to download for free. The simulations can run constant temperature Monte Carlo simulations, and use Simulated Annealing and Simulated Tempering algorithms for finding the minimum energy conformations. It also includes a set of analysis tools for making the whole process easier.
 
-We include here a small tutorial for the folding of a small tetraloop hairpin, and a brief user manual.
+We include here a small tutorial for the folding of a small tetraloop hairpin, and a user manual.
 
 
 
@@ -32,6 +32,6 @@ We include here a small tutorial for the folding of a small tetraloop hairpin, a
 ## References
 [1] S. Bottaro, F. Di Palma and G. Bussi, _Nucleic Acids Res._ 42(21), 13306-13314 (2014).
 
-[2] S. Poblete, S. Bottaro and G. Bussi, [Link] (https://arxiv.org/abs/1709.08691).
+[2] S. Poblete, S. Bottaro and G. Bussi, A nucleobase-centric coarse-grained model for structure prediction of RNA motifs. _Nucleic Acids Res. 46(4), 1674-1683 (2018).  [Link]	https://doi.org/10.1093/nar/gkx1269 
 
-[3] S. Poblete, S. Bottaro and G. Bussi, [Link] (https://arxiv.org/abs/1711.00741).
+[3] S. Poblete, S. Bottaro and G. Bussi, Effects and limitations of a nucleobase-driven backmapping procedure for nucleic acids using steered molecular dynamics. _Biophys. Biochem. Res. Comm._ 498 (2), 352-358 (2018). [Link] https://www.sciencedirect.com/science/article/pii/S0006291X17324518?via%3Dihub
