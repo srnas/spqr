@@ -1,6 +1,6 @@
 ## SPQR - SPlit and conQueR for RNA structure prediction!
 
-SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [2].
+SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [1].
 
 A nucleotide is represented as two particles: an anisotropic one which stands for the nucleoside and a point particle for the phosphate group.
 
@@ -9,7 +9,7 @@ A nucleotide is represented as two particles: an anisotropic one which stands fo
 # Features
 
 ## Interactions
-Our energy function makes a geometrically detailed description of canonical and non-canonical base pairs, stacking interactions and even base-phosphate interactions! They are constructed as knowledge-based potentials inspired by the ESCORE function [1].
+Our energy function makes a geometrically detailed description of canonical and non-canonical base pairs, stacking interactions and even base-phosphate interactions! They are constructed as knowledge-based potentials inspired by the ESCORE function [2].
 
 ## Base degrees of freedom
 Also, SPQR allows the definition of different glycosidic bond angle conformations: ANTI, HIGH-ANTI and SYN, and it is able to distinguish between sugar pucker conformations: C3' endo and C2' endo.
@@ -17,7 +17,7 @@ Also, SPQR allows the definition of different glycosidic bond angle conformation
 ## Backmapping procedure
 Due to the anisotropic representation of the nucleobases, SPQR allows the reintroduction of atomistic details in the predicted structures through steered-Molecular Dynamics [3].
 
-SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [2]
+SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [1].
 
 # The code
 SPQR is implemented in a versatile and clear, bug free C code which is available to download for free. The simulations can run constant temperature Monte Carlo simulations, and use Simulated Annealing and Simulated Tempering algorithms for finding the minimum energy conformations. It also includes a set of analysis tools for making the whole process easier.
