@@ -30,8 +30,8 @@ We include here a small tutorial for the folding of a small tetraloop hairpin, a
 
 
 ## References
-[1] S. Bottaro, F. Di Palma and G. Bussi, _Nucleic Acids Res._ 42(21), 13306-13314 (2014).
+[1] S. Poblete, S. Bottaro and G. Bussi, A nucleobase-centric coarse-grained model for structure prediction of RNA motifs. _Nucleic Acids Res._ 46(4), 1674-1683 (2018).  [Link] https://doi.org/10.1093/nar/gkx1269 
 
-[2] S. Poblete, S. Bottaro and G. Bussi, A nucleobase-centric coarse-grained model for structure prediction of RNA motifs. _Nucleic Acids Res. 46(4), 1674-1683 (2018).  [Link]	https://doi.org/10.1093/nar/gkx1269 
+[2] S. Bottaro, F. Di Palma and G. Bussi, The role of nucleobase interactions in RNA structure and dynamics. _Nucleic Acids Res._ 42(21), 13306-13314 (2014).
 
-[3] S. Poblete, S. Bottaro and G. Bussi, Effects and limitations of a nucleobase-driven backmapping procedure for nucleic acids using steered molecular dynamics. _Biophys. Biochem. Res. Comm._ 498 (2), 352-358 (2018). [Link] https://www.sciencedirect.com/science/article/pii/S0006291X17324518?via%3Dihub
+[3] S. Poblete, S. Bottaro and G. Bussi, Effects and limitations of a nucleobase-driven backmapping procedure for nucleic acids using steered molecular dynamics. _Biophys. Biochem. Res. Comm._ 498 (2), 352-358 (2018).
