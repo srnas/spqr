@@ -1,7 +1,19 @@
 from math import sqrt,pi,atan2,cos
-import sys
+import argparse
+parser=argparse.ArgumentParser()
+parser.add_argument("-r","--renum",help="Renumbering of atoms", action="store_true")
+parser.add_argument("filename", help="The pdb file name")
+parser.add_argument("-n","--nframes", help="Number of frames",type=int,default=1)
+args=parser.parse_args()
 
-RENUM=0
+if(args.renum):
+    RENUM=1
+else:
+    RENUM=0
+NFRAMES=args.nframes
+FILENAME=args.filename
+
+
 
 visited = {}
 ln=0
@@ -255,7 +267,8 @@ modflag=0
 #EMAP_SUG=0
 #ODIF_NTS=0
 
-for line in open(sys.argv[1]):
+#for line in open(sys.argv[1]):
+for line in open(FILENAME):
     nam=line[:4]
     if(nam.strip()=="ATOM"):
         base=line[17:20].strip()
@@ -345,17 +358,13 @@ for line in ALLFILE:
         #break
 INDSEQS.append([n9fl,o6fl, o4fl, n4fl])
 res_list.append(single_res)
-#exit(1)
-frames=1
-if(len(sys.argv)>2):
-    frames=int(sys.argv[2])
 
 NATS=0
 for re in xrange(0,len(INDS)):
     NATS=NATS+len(res_list[re])
 
 curr_at=0
-for frame in xrange(0,frames):
+for frame in xrange(0,NFRAMES):
     prev_chain=0
     chain=0
     new_resind=0
