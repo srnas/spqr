@@ -214,7 +214,7 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
 //in this case, add_data is the annealing parameters
   char word[3];
   int tint;
-  if(fread(word, sizeof(char),3,chkfile)==3){
+  if(fread(word, sizeof(char),3,chkfile)==3 && (word[0]=='A' && word[1]=='N' && word[2]=='N')){
     fread(&tint, sizeof(int),1,chkfile);
     //add_data must already be allocated!
     fread(add_data, sizeof(double),ANN_NPARAMS,chkfile);  
