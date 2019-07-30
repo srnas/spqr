@@ -346,29 +346,30 @@ void MC_initialize_global(int mc_n, int mcseed, int mpi_id){
   /************************/
   
   /* ALLOCATE LINKED CELLS */
-  mc_n_linked_cells=1;
-#ifndef MCDILUTE
-  if(mc_r_cut+vl_skin>0){
-    for(i=0;i<DIM;i++){
-      mc_nc[i]=(int)floor(box_l[i]/(mc_r_cut+vl_skin));
-      mc_n_linked_cells*=mc_nc[i];
-    }
-  }
-  else
-#endif 
-   for(i=0;i<DIM;i++)
-      mc_nc[i]=1;
+ /*  mc_n_linked_cells=1; */
+  /* #ifndef MCDILUTE */
+  /*   if(mc_r_cut+vl_skin>0){ */
+  /*     for(i=0;i<DIM;i++){ */
+  /*       mc_nc[i]=(int)floor(box_l[i]/(mc_r_cut+vl_skin)); */
+  /*       mc_n_linked_cells*=mc_nc[i]; */
+  /*     } */
+  /*   } */
+  /*   else */
+  /* #endif  */
+  /* for(i=0;i<DIM;i++) */
+  /*       mc_nc[i]=1; */
   
-  mc_linked_cell_l=box_l[0]/mc_nc[0];
+  /*   mc_linked_cell_l=box_l[0]/mc_nc[0]; */
   
-  mc_cells=(int *)malloc((mc_n+mc_n_linked_cells)*sizeof(int));
-  /* a somewhat arbitrary initialization: all the particles in the last cell */
-  for(i=0;i<mc_n-1;i++)
-    mc_cells[i]=i+1;
-  mc_cells[mc_n-1]=-1;
-  for(i=mc_n;i<mc_n+mc_n_linked_cells-1;i++)
-    mc_cells[i]=-1;
-  mc_cells[mc_n+mc_n_linked_cells-1]=0;
+  /*   mc_cells=(int *)malloc((mc_n+mc_n_linked_cells)*sizeof(int)); */
+  /*       /\* a somewhat arbitrary initialization: all the particles in the last cell *\/ */
+  /*   for(i=0;i<mc_n-1;i++) */
+  /*   mc_cells[i]=i+1; */
+  /*   mc_cells[mc_n-1]=-1; */
+  /*   for(i=mc_n;i<mc_n+mc_n_linked_cells-1;i++) */
+  /*     mc_cells[i]=-1; */
+  /*   mc_cells[mc_n+mc_n_linked_cells-1]=0; */
+  /* */
 }
 
 void MC_read_nsolute(int *mc_n, int mpi_id, char *pdbname){

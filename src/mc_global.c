@@ -38,11 +38,11 @@ int **mc_bondlist, **mc_anglelist, **mc_dihedrallist, **mc_nbonds, **mc_tab_bond
 int **mc_anglecenter;
 FILE *mc_bond_file;
 
-/* mc_cells */
-int *mc_cells;
-int mc_n_linked_cells;
-int mc_nc[DIM];
-double mc_linked_cell_l;
+/* /\* mc_cells *\/ */
+/* int *mc_cells; */
+/* int mc_n_linked_cells; */
+/* int mc_nc[DIM]; */
+/* double mc_linked_cell_l; */
 
 /* mc_checkpoints */
 int mc_chkp_steps;

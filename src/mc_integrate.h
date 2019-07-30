@@ -1,8 +1,6 @@
 #ifndef MCINTEGRATE_H
 #define MCINTEGRATE_H
 #include "mc_global.h"
-//#include "mc_bond_lists.h"
-#include "mc_cells.h"
 #include "mc_energies.h"
 #include "mc_verlet_lists.h"
 #include "mc_utils.h"

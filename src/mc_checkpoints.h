@@ -14,6 +14,7 @@ extern int mc_chkp_steps;
 extern int mc_traj_steps;
 
 void MC_initialize_save_configs(int, int);
+void MC_write_pdb(char*, int, double*, double*, double*, double, int);
 void MC_close_configs();
 void MC_save_configuration(int, double *, double*, double*, double);
 void MC_save_xyz_configuration(int, double *, double *, double *, double, double, int);

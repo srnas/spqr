@@ -50,13 +50,16 @@ void MC_write_pdb(char * name, int mc_n, double *rx, double *ry, double *rz, dou
       
       sprintf(xp, "%d", (int)rx[at]);
       nintdig=strlen(xp); if(nintdig>8){printf("ERROR: particle %d out of range for x coordinate in pdb format\n", at); exit(ERR_WRITING);}if(rx[at]<0 && (int)rx[at]==0) nintdig++;
-      sprintf(xp, "%.*f ", rx[at], 6-nintdig);
+      //sprintf(xp, "%.*f ", rx[at], 6-nintdig);
+      sprintf(xp, "%.*f ", 6-nintdig,rx[at]);
       sprintf(yp, "%d", (int)ry[at]);
       nintdig=strlen(yp); if(nintdig>8){printf("ERROR: particle %d out of range for y coordinate in pdb format\n", at); exit(ERR_WRITING);}if(ry[at]<0 && (int)ry[at]==0) nintdig++;
-      sprintf(yp, "%.*f ", ry[at], 6-nintdig);
+      //sprintf(yp, "%.*f ", ry[at], 6-nintdig);
+      sprintf(yp, "%.*f ", 6-nintdig,ry[at]);
       sprintf(zp, "%d", (int)rz[at]);
       nintdig=strlen(zp); if(nintdig>8){printf("ERROR: particle %d out of range for z coordinate in pdb format\n", at); exit(ERR_WRITING);}if(rz[at]<0 && (int)rz[at]==0) nintdig++;
-      sprintf(zp, "%.*f ", rz[at], 6-nintdig);
+      //sprintf(zp, "%.*f ", rz[at], 6-nintdig);
+      sprintf(zp, "%.*f ", 6-nintdig,rz[at]);
       /* sprintf(xp, "%8.3f", rx[at]); */
       /* sprintf(yp, "%8.3f", ry[at]); */
       /* sprintf(zp, "%8.3f", rz[at]); */
@@ -215,9 +218,9 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
   char word[3];
   int tint;
   if(fread(word, sizeof(char),3,chkfile)==3 && (word[0]=='A' && word[1]=='N' && word[2]=='N')){
-    fread(&tint, sizeof(int),1,chkfile);
+    frout=fread(&tint, sizeof(int),1,chkfile);
     //add_data must already be allocated!
-    fread(add_data, sizeof(double),ANN_NPARAMS,chkfile);  
+    frout=fread(add_data, sizeof(double),ANN_NPARAMS,chkfile);  
     if(tint!=ANN_NPARAMS){
       printf("Number of parameters of annealing (%d) does not match the number of parameters of checkpoint file (%d).\n", tint, (int)ANN_NPARAMS);
       exit(ERR_INPUT);

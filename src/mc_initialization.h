@@ -1,23 +1,20 @@
 #ifndef MCINIT_H
 #define MCINIT_H
 #include "mc_global.h"
-#include "mc_cells.h"
 #include "mc_energies.h"
 #include "mc_verlet_lists.h"
-//#include "mc_bond_lists.h"
 #include "mc_integrate.h"
 #include "mc_utils.h"
 #include "mc_checkpoints.h"
 #include "mc_base_pairing.h"
 #include "mc_ermsd.h"
 
-//#include "../mpc_interface.h"
-
 
 #define READ_MC_CONF 1
 #define DONT_READ_MC_CONF 0
 #define READ_MC_CHECK 2
 
+int MC_detect_initial_condition(int);
 int MC_initialize(int *, double **, double **, double **, int *, int *, int, int, double *);
 void MC_initialize_global(int, int, int);
 void MC_print_parameters(int);
