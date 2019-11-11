@@ -145,21 +145,6 @@ int MC_are_neighbors(int i, int j){
     if(i==mc_bondlist[j][b])
       n=1;
   }
-#ifdef STWCBONDED
-  for(b=0;b<mc_nbonds[i][2];b++)
-    if(j==mc_stbondlist[i][b])
-      n=1;
-  for(b=0;b<mc_nbonds[j][2];b++)
-    if(i==mc_stbondlist[j][b])
-      n=1;
-  
-for(b=0;b<mc_nbonds[i][3];b++)
-    if(j==mc_wcbondlist[i][b])
-      n=1;
-  for(b=0;b<mc_nbonds[j][3];b++)
-    if(i==mc_wcbondlist[j][b])
-      n=1;
-#endif
   return n;
 }
 #endif

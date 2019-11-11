@@ -1,7 +1,6 @@
 #ifndef VLISTS_H
 #define VLISTS_H
 #include "mc_global.h"
-#include "mc_cells.h"
 #include "mc_energies.h"
 /* this has to be consistent with the dimensionality of the system */
 #define N_OFFSET 14

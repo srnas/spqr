@@ -22,6 +22,8 @@
 #define EPS 1.2e-7 
 #define RNMX (1.0-EPS) 
 #define SQ(x) ((x)*(x))
+#define MAXSTR 1000
+
 
 extern double *idum;
 float nrran2();
@@ -46,6 +48,14 @@ static inline double vec_norm(double x, double y, double z){
   return sqrt(x*x+y*y+z*z);
 }
 
+static inline double fvec_norm(double *vec){
+  return sqrt(vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]);
+}
+static inline double fcalc_min_dist(double *a, double *b){
+  double c[DIM];
+  c[0]=a[0]-b[0];  c[1]=a[1]-b[1];  c[2]=a[2]-b[2];
+  return fvec_norm(c);
+}
 static inline void calc_min_vec(double x1, double y1, double z1, double x2, double y2, double z2, double *rvec, double *r){
   rvec[0]=dist_1d(x1,x2,0);
   rvec[1]=dist_1d(y1,y2,1);
@@ -62,13 +72,9 @@ static inline double calc_min_dist_sq(double x1, double y1, double z1, double x2
   return SQ(dist_1d(x1,x2,0))+SQ(dist_1d(y1,y2,1))+SQ(dist_1d(z1,z2,2));
 }
 
-
-
-
 static inline double rand_d(double a){
   return a*(double)nrran2();
 }
-
 
 static inline double boltzmann_dist(double average, double std_dev){
   /* we create a random gaussian number */
@@ -221,8 +227,6 @@ static inline void proj_on_nt_inv(double *d_vec, double *rx, double *ry, double 
   r_vec[1]=(d_vec[0]*pbase_y[0]+d_vec[1]*pbase_y[1]+d_vec[2]*pbase_y[2]);
   r_vec[2]=(d_vec[0]*pbase_z[0]+d_vec[1]*pbase_z[1]+d_vec[2]*pbase_z[2]);
 }
-
-
 
 #endif
 

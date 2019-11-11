@@ -1,4 +1,6 @@
+#ifdef MPIMC
 #include <mpi.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,47 +19,58 @@
 
 int main(int argc, char **argv) {
   int i,j;
-  int rand_a;
+  int rand_a=-1;
   double lx, ly, lz;
   char checkpoint[256];
   /* MC variables */
-  int mc_n;
+  int mc_n,nt_n;
   double *rx,*ry,*rz;
-  int mc_iter, mc_ini;
+  double SA_DATA[ANN_NPARAMS];
+  int sa_read_flag=0;
+  double d_energ;
+  int mc_iter, mc_i0, tempinit=0;
+  int openflag=-1;
+  double energy_t;
+  int eff_iter;
   /* initialization */
   
   /*MPI STUFF*/
-  int mpi_count, mpi_id;
+  int mpi_count, mpi_id, job_id, argmax;
+#ifdef MPIMC
+  argmax=2;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_count);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_id);
-  
+#else
+  argmax=3;
+  if(argc < argmax){
+    printf("Second argument must be the job_id of the simulation!\n");
+    exit(ERR_INPUT);
+  }
+  mpi_id=atoi(argv[2]);
+#endif
   /***********/
-  
-  
-  
   mc_n=(int)NSOLUTE;
   printf("Launching from %d \n" , mpi_id);
-  int nt_n;
-  if (argc==2){
-    MC_read_nsolute(&mc_n, mpi_id);
-    mc_ini=0;
-    MC_read_params(&lx, &ly, &lz, &mc_iter, &rand_a, mpi_id);
-    
-    /* MPI STUFF */
-    //rand_a+=mpi_id;
-    MC_initialize(mc_n, &rx, &ry, &rz, lx, ly, lz, READ_MC_CONF, rand_a, mc_ini, mpi_id);
-  }  else {
-    printf("Default case not implemented.\n");
-    exit(1);
-  }
-  
+  openflag=MC_detect_initial_condition(mpi_id);
+
+#ifdef MPIMC
   MPI_Barrier(MPI_COMM_WORLD);
-  /* before running */
+#endif
   
-  /******************/
+  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag,SA_DATA);
+#ifdef MPIMC
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
   
   nt_n=mc_n/N_PARTS_PER_NT;
+  
+  mc_i0=0;
+  if (argc>argmax)
+    if(!strcmp(argv[argmax], "-r")){
+      mc_i0=(int)(tempinit-floor(tempinit/mc_iter)*mc_iter);
+    }
+  energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   
   /* ANNEALING */
   double sa_tmax=1.0, sa_tfac=1.0, sa_tmin=1, sa_sfac=1.0;
@@ -69,80 +82,85 @@ int main(int argc, char **argv) {
   double smc_nt_xyz, smc_ph_xyz, smc_nt_ang;
   int sa_resc_times=0;
   int sa_flag=1;
-  double bia_pref=1;
-  double temp_e;
-  //SA_init_mc_trials(&smc_nt_xyz, &smc_ph_xyz, &smc_nt_ang);
+  int sa_mark=0;
+  //we read from params.spqr or update the data found in the checkpoint file
   SA_read_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, mpi_id);
-  
-  if(mpi_id==0){
-    printf("/******* SIMULATED ANNEALING **********/\n");
-    printf("Starting from anneal step %d\n", sa_ini);
-    printf("Maximum temperature:                %lf \n", sa_tmax);
-    printf("Minimum temperature:                %lf \n", sa_tmin);
-    printf("Temperature factor:                 %lf \n", sa_tfac);
-    printf("Step factor:                        %lf \n", sa_sfac);
-    printf("Number of iterations:                %d \n", sa_NT);
-    printf("Initial energy:                     %lf \n", sa_prev_energ);
-  }
+  if (argc>argmax)
+    if(!strcmp(argv[argmax], "-r"))    {
+      SA_arr_to_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, SA_DATA);
+      printf("Reading SA parameters from checkpoint.\n");
+    }
+#ifdef MPIMC
   if(mpi_id==0)
-    printf("Each run is %d MC steps. Saving every %d trials.\n", mc_iter*mc_chk_freq, mc_chk_freq);
+#endif
+    {
+      printf("/******* SIMULATED ANNEALING **********/\n");
+      printf("Starting from anneal step %d\n", sa_ini);
+      printf("Maximum temperature:                %lf \n", sa_tmax);
+      printf("Minimum temperature:                %lf \n", sa_tmin);
+      printf("Temperature factor:                 %lf \n", sa_tfac);
+      printf("Step factor:                        %lf \n", sa_sfac);
+      printf("Number of iterations:                %d \n", sa_NT);
+      printf("Previous energy:                     %lf \n", sa_prev_energ);
+      printf("Each run is %d MC steps. Saving every %d trials.\n", mc_iter, mc_traj_steps);
+    }
+  
+  printf("Processor (job) %d starting from time %d\n", mpi_id, mc_i0);
   sa_temp=sa_tmax;
   SA_init_mc_trials(&smc_nt_xyz, &smc_ph_xyz, &smc_nt_ang, MC_NT_XYZ*sa_pow(sa_sfac,sa_resc_times),MC_PH_XYZ*sa_pow(sa_sfac,sa_resc_times),MC_NT_ANGLE*sa_pow(sa_sfac,sa_resc_times));
+
+#ifdef MPIMC
   MPI_Barrier(MPI_COMM_WORLD);
-  if(mpi_id==0){
-#ifdef NEW_BIA
-    bia_pref=mc_target_temp;
-    mc_target_temp=1.0;
 #endif
-    temp_e=MC_get_energy(nt_n, rx, ry, rz, 3);
-#ifdef NEW_BIA
-    mc_target_temp=bia_pref;
-    /* bia_pref=1; */
-    /* if(mc_target_temp>1) bia_pref=mc_target_temp; */
-    /* temp_e/=bia_pref; */
+  
+  //INITIALIZE SIMULATION ENERGY : PREVIOUS ENERGY IS READ, OR INITIALIZED IN CASE IT IS THE FIRST STEP
+  energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
+  if(sa_ini==0)
+    sa_prev_energ=energy_t;
+  printf("JOB %d , INITIAL ENERGY IS %lf\n", mpi_id, energy_t);
+#ifdef ERMSD
+  energy_t+=0.5*ERMSD_PREF*ERMSD_SQ;
 #endif
-    printf("INITIAL ENERGY IS %lf\n", temp_e);
-  }
   for(ann_step=sa_ini;ann_step<sa_NT;ann_step++){
-    printf("Step %d on %d, temperature set to %lf\n", ann_step, mpi_id, sa_temp);
+    printf("Step %d on processor %d, temperature set to %lf\n", ann_step, mpi_id, sa_temp);
     SA_set_temp(sa_temp);
     SA_set_mc_trials(smc_nt_xyz, smc_ph_xyz, smc_nt_ang);
-    sa_temp_energ=0;
-    if(ann_step==0){
-#ifdef NEW_BIA
-      bia_pref=mc_target_temp;
-      mc_target_temp=1.0;
+    sa_temp_energ=energy_t;
+#ifdef ERMSD
+    sa_temp_energ-=0.5*ERMSD_PREF*ERMSD_SQ;
 #endif
-      sa_prev_energ=MC_get_energy(nt_n, rx, ry, rz, 3);
-#ifdef NEW_BIA
-      mc_target_temp=bia_pref;
-#endif
+    sa_this_energ=sa_temp_energ;
+    eff_iter=mc_iter;
+    if(sa_temp<=6.0) {
+      eff_iter=mc_iter/10;
+      if(sa_mark==0) sa_mark=ann_step;
     }
-    for(i=mc_ini;i<mc_iter;++i) {
-      for(j=0;j<mc_chk_freq;++j) {
-	/* do your MC here */
-	MC_integrate(mc_n, &rx, &ry, &rz);
-      }
-#ifdef NEW_BIA
-      bia_pref=mc_target_temp;
-      mc_target_temp=1.0;
-#endif   
-      sa_temp_energ=MC_get_energy(nt_n, rx, ry, rz, 3);
-#ifdef NEW_BIA
-      mc_target_temp=bia_pref;
+    for(i=mc_i0;i<eff_iter;++i) {
+      /* do your MC here */
+      d_energ=MC_integrate(mc_n, &rx, &ry, &rz);
+      energy_t+=d_energ;
+      //WE DON'T CONSIDER THE PULLING IN THE ANNEALING ENERGY!
+      sa_temp_energ=energy_t;
+#ifdef ERMSD
+      sa_temp_energ-=0.5*ERMSD_PREF*ERMSD_SQ;
+      if((i+1)%mc_traj_steps==0)
+	MC_write_ermsd_obs(i+1,energy_t);
 #endif
-      if(i==0) sa_this_energ=sa_temp_energ;
+      //if(i==mc_i0+1) sa_this_energ=sa_temp_energ;
       if(sa_this_energ > sa_temp_energ) //find the minimum energy
 	sa_this_energ = sa_temp_energ;
+      if((i+1)%mc_traj_steps==0){
+	MC_save_configuration(mc_n, rx, ry, rz, energy_t);
+      }
       
-      MC_save_configuration(mc_n, rx, ry, rz);
+      if(((i+1)%(mc_chkp_steps))==0 && i<eff_iter){
+	SA_params_to_arr(sa_temp, sa_tmin, sa_tfac, ann_step, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, SA_DATA);
+	MC_save_checkpoint(mc_n, rx, ry, rz, (i+1)+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
+      }
     }
-    MC_save_current_configuration(mc_n, rx, ry, rz, i*j, ann_step*mc_iter, mpi_id);
     printf("Step %d on %d, energy is %lf . It was %lf\n", ann_step, mpi_id, sa_this_energ, sa_prev_energ);
-    
     if(sa_temp <sa_tmin){
       sa_temp=0;
-      
     }
     else{      
       if(sa_this_energ>=sa_prev_energ){ // energy is not dropping - reset temperature
@@ -154,15 +172,19 @@ int main(int argc, char **argv) {
       }
     }
     sa_prev_energ=sa_this_energ;
-    
-    
-    
-    //SA_save_params(ann_step,sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, mpi_id);
-    SA_save_params(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, mpi_id);
+    SA_params_to_arr(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, SA_DATA);
+    MC_save_checkpoint(mc_n, rx, ry, rz, eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
+    //printf("%d %d  %d %d\n", mc_iter, eff_iter, sa_mark,eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter );
+    //SA_save_params(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, mpi_id);
   }
   
-  printf("Simulation %d ended properly.\n", mpi_id);
-  MC_end(mc_n, rx, ry, rz, i, mpi_id);
+  printf("Simulation %d ended properly. Checkpoint saved with temperature %lf and minimum energy %lf .\n", mpi_id, sa_temp, sa_this_energ);
+  MC_write_pdb("final", mc_n, rx, ry, rz, sa_this_energ, mpi_id);
+  
+  MC_end(mc_n, rx, ry, rz, i, sa_this_energ, mpi_id);
+
+#ifdef MPIMC
   MPI_Finalize();
+#endif
   return 0;
 }

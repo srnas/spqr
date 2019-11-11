@@ -23,8 +23,9 @@
 #define N_BASES 4
 #define N_BASES_SQ 16
 #define N_GLYC_STATES 3
-#define N_PUCK_STATES 3
+#define N_PUCK_STATES 2
 #define DIM 3
+#define DIMSQ 9
 #define IPHO 4
 #define ISUG 3
 #define IBAS 0
@@ -43,6 +44,11 @@
 #define ERR_MC 6
 #define ERR_NEIGHBOR 7
 #define ERR_FORCES 8
+#define ERR_WRITING 9
+
+#define MAX_BUFFER 1000
+//bonds
+#define N_BONDED_INTERACTIONS 2
 
 /* DEFAULTS */
 #define MC_NT_XYZ_DEF 0.3
@@ -57,6 +63,17 @@
 #define FR_MOB_PHOS 1
 #define FR_MOB_BASE 2
 #define FR_MOB_FROZ 0
+
+#define GLP_FIXED  0
+#define GLP_GLYC   1
+#define GLP_PUCK   2
+#define GLP_BOTH   3
+
+#define FLIP_GLYC 0
+#define FLIP_PUCK 1
+
+#define ANN_NPARAMS 8
+
 
 /* MACROS */
 #if 1==DIM
@@ -83,7 +100,15 @@ extern double MC_BB_ANGLE;
 extern double MC_NT_ANGLE_COS, MC_NT_ANGLE_SIN;
 extern double MC_BB_ANGLE_COS, MC_BB_ANGLE_SIN;
 
+extern int **mc_bondlist;
+extern int **mc_anglelist;
+extern int **mc_dihedrallist;
+extern int **mc_nbonds;
+extern int **mc_tab_bonds_list;
+extern int **mc_anglecenter;
+extern FILE *mc_bond_file;
 
+extern char ENERG_PATH[MAX_BUFFER];
 
 #ifdef FROZEN
 extern int *fr_is_mobile;

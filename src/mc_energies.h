@@ -4,13 +4,12 @@
 #include "mc_global.h"
 #include "mc_utils.h"
 #include "mc_verlet_lists.h"
-#include "mc_bond_lists.h"
+//#include "mc_bond_lists.h"
 #include "mc_checkpoints.h"
 #include "mc_integrate.h"
+#include "mc_ermsd.h"
 
-
-
-#define MC_CAP 1000.0
+#define MC_CAP 10000.0
 #define N_MAX_TYPES 4
 #define MAX_BOND_TYPES 6460
 #define MAX_ANG_TYPES 1
@@ -54,7 +53,6 @@
 #define GLYCS_SS 8
 
 
-
 //PUCKERS 
 #define PUCK_3 0 
 #define PUCK_2 1 
@@ -66,102 +64,125 @@
 //EXCLUDED VOLUME
 #define EV_GLOB_RCUT 7.0
 
-#define EV_SUGSUG1 0.0473418
-#define EV_SUGSUG2 0.0524469
-#define EV_SUGSUG3 0.0619984
-#define EV_SUGSUG4 -0.0113765
-#define EV_SUGSUG5 -0.018455
-#define EV_SUGSUG6 0.0152821
+#define EV_SUGSUG1 0.0625
+#define EV_SUGSUG2 0.0625
+#define EV_SUGSUG3 0.0625
+#define EV_SUGSUG4 0
+#define EV_SUGSUG5 0
+#define EV_SUGSUG6 0
 
 
-#define EV_SUGPHO1 0.0530172
-#define EV_SUGPHO2 0.0547209
-#define EV_SUGPHO3 0.0488651
-#define EV_SUGPHO4 -0.0165082
-#define EV_SUGPHO5 -0.0103073
-#define EV_SUGPHO6 0.0169904
+#define EV_SUGPHO1 0.0516529
+#define EV_SUGPHO2 0.0516529
+#define EV_SUGPHO3 0.0516529
+#define EV_SUGPHO4 0
+#define EV_SUGPHO5 0
+#define EV_SUGPHO6 0
 
 
 
-#define EV_PHOSUG1 0.0530172
-#define EV_PHOSUG2 0.0547209
-#define EV_PHOSUG3 0.0488651
-#define EV_PHOSUG4 -0.0165082
-#define EV_PHOSUG5 -0.0103073
-#define EV_PHOSUG6 0.0169904
+#define EV_PHOSUG1 0.0516529
+#define EV_PHOSUG2 0.0516529
+#define EV_PHOSUG3 0.0516529
+#define EV_PHOSUG4 0
+#define EV_PHOSUG5 0
+#define EV_PHOSUG6 0
 
-#define EV_SUGPHOR 3.5
-#define EV_PHOSUGR 3.5
-#define EV_PHOS1 0.0530172
-#define EV_PHOS2 0.0547209
-#define EV_PHOS3 0.0488651
-#define EV_PHOS4 -0.0165082
-#define EV_PHOS5 -0.0103073
-#define EV_PHOS6 0.0169904
+//#define EV_SUGPHOR 3.5
+//#define EV_PHOSUGR 3.5
+#define EV_SUGPHOB 0.0816327
+#define EV_PHOSUGB 0.0816327
 
-#define EV_PURSUG1 0.0513906
-#define EV_PURSUG2 0.0379621
-#define EV_PURSUG3 0.0801443
-#define EV_PURSUG4 0.00206082
-#define EV_PURSUG5 -0.00597077
-#define EV_PURSUG6 0.00844258
+#define EV_PHOS1 0.0416493
+#define EV_PHOS2 0.0416493
+#define EV_PHOS3 0.0416493
+#define EV_PHOS4 0
+#define EV_PHOS5 0
+#define EV_PHOS6 0
 
-#define EV_PYRSUG1 0.05103
-#define EV_PYRSUG2 0.0449899
-#define EV_PYRSUG3 0.071579
-#define EV_PYRSUG4 0.0208221
-#define EV_PYRSUG5 -0.00299439
-#define EV_PYRSUG6 0.000222708
+#define EV_PURSUG1 0.063225
+#define EV_PURSUG2 0.063225
+#define EV_PURSUG3 0.063225
+#define EV_PURSUG4 0
+#define EV_PURSUG5 0
+#define EV_PURSUG6 0
 
-#define EV_SUGPUR1 0.0474667
-#define EV_SUGPUR2 0.0597185
-#define EV_SUGPUR3 0.0704311
-#define EV_SUGPUR4 -0.0217217
-#define EV_SUGPUR5 -0.0113282
-#define EV_SUGPUR6 0.0171938
+#define EV_PYRSUG1 0.0692521
+#define EV_PYRSUG2 0.0692521
+#define EV_PYRSUG3 0.0692521
+#define EV_PYRSUG4 0
+#define EV_PYRSUG5 0
+#define EV_PYRSUG6 0
 
-#define EV_SUGPYR1 0.0532680
-#define EV_SUGPYR2 0.0519358
-#define EV_SUGPYR3 0.0732114
-#define EV_SUGPYR4 -0.0109597
-#define EV_SUGPYR5 -0.0169547
-#define EV_SUGPYR6 0.00623243
+
+#define EV_SUGPUR1 0.0513906283333 
+#define EV_SUGPUR2 0.0379621127778 
+#define EV_SUGPUR3 0.0801443361111 
+#define EV_SUGPUR4 0.00206081777778 
+#define EV_SUGPUR5 -0.00597076944444 
+#define EV_SUGPUR6 0.00844257611111
+//rescaled parameters 0.05103, 0.0449899, 0.071579, 0.0208221, -0.00299439, 0.000222708
+#define EV_SUGPYR1 0.05103
+#define EV_SUGPYR2 0.0449899
+#define EV_SUGPYR3 0.071579
+#define EV_SUGPYR4 0.0208221
+#define EV_SUGPYR5 -0.00299439
+#define EV_SUGPYR6 0.000222708
+/* #define EV_SUGPYR1 0.047731901724 */
+/* #define EV_SUGPYR2 0.040628712808 */
+/* #define EV_SUGPYR3 0.071561573448 */
+/* #define EV_SUGPYR4 0.0246147088 */
+/* #define EV_SUGPYR5 -0.003234166 */
+/* #define EV_SUGPYR6 0.0004984296 */
 
 
 #define EV_BASE1 0.04
 #define EV_BASE2 0.04
 #define EV_BASE3 0.1111111
 
-#define EV_PURPHO1 0.0452219
-#define EV_PURPHO2 0.0408145
-#define EV_PURPHO3 0.0780272 
-#define EV_PURPHO4 0.0135575
-#define EV_PURPHO5 0.00325464
-#define EV_PURPHO6 -0.00704503 
+#define EV_PURPHO1 0.0612685
+#define EV_PURPHO2 0.0612685
+#define EV_PURPHO3 0.0612685
+#define EV_PURPHO4 0
+#define EV_PURPHO5 0
+#define EV_PURPHO6 0
 
-#define EV_PYRPHO1 0.0544948
-#define EV_PYRPHO2 0.0472098
-#define EV_PYRPHO3 0.0765752 
-#define EV_PYRPHO4 0.0134742 
-#define EV_PYRPHO5 -0.00995821
-#define EV_PYRPHO6 0.0195775
-
-
-#define EV_PHOPUR1 0.0543283
-#define EV_PHOPUR2 0.0563628
-#define EV_PHOPUR3 0.0677229
-#define EV_PHOPUR4 -0.0098667
-#define EV_PHOPUR5 -0.0278244
-#define EV_PHOPUR6 0.0217584
-
-#define EV_PHOPYR1 0.0505281
-#define EV_PHOPYR2 0.0610547
-#define EV_PHOPYR3 0.0656697
-#define EV_PHOPYR4 -0.000836099
-#define EV_PHOPYR5 -0.0308213
-#define EV_PHOPYR6 0.0176864
+#define EV_PYRPHO1 0.0657462
+#define EV_PYRPHO2 0.0657462
+#define EV_PYRPHO3 0.0657462
+#define EV_PYRPHO4 0
+#define EV_PYRPHO5 0
+#define EV_PYRPHO6 0
 
 
+#define EV_PHOPUR1 0.045221901 
+#define EV_PHOPUR2 0.040814517 
+#define EV_PHOPUR3 0.0780271643333 
+#define EV_PHOPUR4 0.0135575276667 
+#define EV_PHOPUR5 0.00325463733333 
+#define EV_PHOPUR6 -0.00704502666667
+
+//bonded parameters
+/* #define EV_PHOPYR1 0.0502646633333 */
+/* #define EV_PHOPYR2 0.0387524473333 */
+/* #define EV_PHOPYR3 0.0720512393333 */
+/* #define EV_PHOPYR4 0.01204247 */
+/* #define EV_PHOPYR5 0.009543366 */
+/* #define EV_PHOPYR6 0.01187689 */
+
+/* #define EV_PHOPYR1 0.0511947311703  */
+/* #define EV_PHOPYR2 0.0403455973541 */
+/* #define EV_PHOPYR3 0.0745895213784 */
+/* #define EV_PHOPYR4 0.0182336901685 */
+/* #define EV_PHOPYR5 -0.0125180762 */
+/* #define EV_PHOPYR6 0.0232693618919 */
+//rescaled parameters
+#define EV_PHOPYR1 0.0544948
+#define EV_PHOPYR2 0.0472098
+#define EV_PHOPYR3 0.0765752
+#define EV_PHOPYR4 0.0134742 
+#define EV_PHOPYR5 -0.00995821 
+#define EV_PHOPYR6 0.0195775
 
 
 // VERLET LISTS
@@ -198,6 +219,8 @@ extern int *mc_temp_glyc;
 extern int *mc_puck;
 extern int *mc_temp_puck;
 
+extern int *glp_is_flippable;
+
 //double *mc_mass;
 extern double *mc_ang_k;
 extern double *mc_ang_th;
@@ -213,8 +236,10 @@ extern double nb_bp_well[N_BASES][WC_FACES];
 extern double nb_bp_spec_well[N_BASES][3];
 extern double BB_PREF;
 extern double BB_PREF_A;
-extern double glyc_well[N_GLYC_STATES];
-extern double puck_well[N_PUCK_STATES];
+extern double glp_well_R[N_GLYC_STATES][N_PUCK_STATES];
+//extern double puck_well_R[N_PUCK_STATES];
+extern double glp_well_Y[N_GLYC_STATES][N_PUCK_STATES];
+//extern double puck_well_Y[N_PUCK_STATES];
 extern double wc_secdih_min[N_BASES_SQ][WC_FACES_SQ];
 extern double wc_secdih_max[N_BASES_SQ][WC_FACES_SQ];
 extern double wc_secdih_min_F[N_BASES_SQ][WC_FACES_SQ];
@@ -360,14 +385,18 @@ double MC_calc_nnN_stacking(int, int, double *, double *, int *);
 /* ENERGIES */
 void MC_initialize_energy_parameters(int);
 void MC_read_energy_parameters();
-double MC_calc_bonded_energy(int, double *, double *, double *, int*);
+void MC_read_bin_energy_tables();
+void MC_read_write_energy_tables();
+double MC_calc_bonded_energy(int, double *, double *, double *, int*, int, int,double , double,
+int, int,double , double,
+			     int *, int*, double *);
 double MC_calc_non_bonded_energy(int, double *, double *, double *, int, double *, double, int *);
 
 //double energy_hardcore(double *, double, double, double);
 
 double MC_calc_BP_intra(int, double *, int, int, int*);
 double MC_calc_BP_inter(int, double *, int, int, int*);
-double MC_calc_intra_energy(int, int*);
+double MC_calc_intra_energy(int, int*, int *, double *, double *);
 
 double energy_excludedvol(double, double);
 double energy_harmonic(double, double, double);
@@ -379,25 +408,18 @@ void MC_free_energy_params();
 /* GLYCOSIDICS AND PUCKERS */
 int MC_get_glycs(int, int);
 int MC_get_pucks(int, int);
-void MC_init_glycs_and_pucks(int);
+void MC_init_glycs_and_pucks(int, int);
 
 
 static inline double energy_hardcore(double *vec, double sxx, double syy, double szz, double sxy, double sxz, double syz){
   double RET=MC_CAP+1;
 #ifdef WARMUP
-  
   //RET = (0.5*MC_CAP*exp(-sqrt(vec[0]*vec[0]*sxx+vec[1]*vec[1]*syy+vec[2]*vec[2]*szz)));
-  RET=MC_CAP/(vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz);
+  //RET=MC_CAP/(vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz);
+  RET=-MC_CAP*((vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz)-1)+MC_CAP;
 #endif
-  double tem=1.0/(3.0*4.0);
   if( vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz   > 1.0 )
     RET= 0;
-  //if( SQ(vec[0]/s0) + SQ(vec[1]/s1)+ SQ(vec[2]/s2)>1 )return 0;
-  //if(RET!=0)printf("%lf %lf          %lf   %lf    %lf   =  %lf \n", sqrt(SQ(vec[0])+SQ(vec[1])+SQ(vec[2])), RET, vec[0], vec[1], vec[2],vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz);
-  //RET=0;
   return RET;
 }
-
-
-
 #endif

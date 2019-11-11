@@ -295,8 +295,39 @@ void MC_init_wc_arrays(int nt_n, double *rx, double *ry, double *rz){
   /* wc_face_angle[3][1]=WCFACEANG_3_1+WCFACEANG_3_0; */
   /* wc_face_angle[3][2]=-2.35619; */
   
+  bp_contacts[TYP_ADENINE][WC_FACE_SUGAR][0]=0   ;                bp_contacts[TYP_ADENINE][WC_FACE_SUGAR][1]=0;                   bp_contacts[TYP_ADENINE][WC_FACE_SUGAR][2]=0;
+  bp_contacts[TYP_ADENINE][WC_FACE_WATSCRICK][0]=BP_CONTACT_A_W_X;bp_contacts[TYP_ADENINE][WC_FACE_WATSCRICK][1]=BP_CONTACT_A_W_Y;bp_contacts[TYP_ADENINE][WC_FACE_WATSCRICK][2]=BP_CONTACT_A_W_Z;
+  bp_contacts[TYP_ADENINE][WC_FACE_HOOGSTEEN][0]=BP_CONTACT_A_H_X;bp_contacts[TYP_ADENINE][WC_FACE_HOOGSTEEN][1]=BP_CONTACT_A_H_Y;bp_contacts[TYP_ADENINE][WC_FACE_HOOGSTEEN][2]=BP_CONTACT_A_H_Z;
   
+  bp_contacts[TYP_CYTOSINE][WC_FACE_SUGAR][0]=0                    ;bp_contacts[TYP_CYTOSINE][WC_FACE_SUGAR][1]=0                    ;bp_contacts[TYP_CYTOSINE][WC_FACE_SUGAR][2]=0;
+  bp_contacts[TYP_CYTOSINE][WC_FACE_WATSCRICK][0]=BP_CONTACT_C_W_X ;bp_contacts[TYP_CYTOSINE][WC_FACE_WATSCRICK][1]=BP_CONTACT_C_W_Y ;bp_contacts[TYP_CYTOSINE][WC_FACE_WATSCRICK][2]=BP_CONTACT_C_W_Z;
+  bp_contacts[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][0]=BP_CONTACT_C_H_X ;bp_contacts[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][1]=BP_CONTACT_C_H_Y ;bp_contacts[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][2]=BP_CONTACT_C_H_Z;
   
+  bp_contacts[TYP_GUANINE][WC_FACE_SUGAR][0]=    BP_CONTACT_G_S_X ;bp_contacts[TYP_GUANINE][WC_FACE_SUGAR][1]=    BP_CONTACT_G_S_Y   ;bp_contacts[TYP_GUANINE][WC_FACE_SUGAR][2]=    BP_CONTACT_G_S_Z;
+  bp_contacts[TYP_GUANINE][WC_FACE_WATSCRICK][0]=BP_CONTACT_G_W1_X;bp_contacts[TYP_GUANINE][WC_FACE_WATSCRICK][1]=BP_CONTACT_G_W1_Y  ;bp_contacts[TYP_GUANINE][WC_FACE_WATSCRICK][2]=BP_CONTACT_G_W1_Z;
+  bp_contacts[TYP_GUANINE][WC_FACE_HOOGSTEEN][0]=0                ;bp_contacts[TYP_GUANINE][WC_FACE_HOOGSTEEN][1]=0                  ;bp_contacts[TYP_GUANINE][WC_FACE_HOOGSTEEN][2]=0               ;
+
+  bp_contacts[TYP_URACIL][WC_FACE_SUGAR][0]=0                    ;bp_contacts[TYP_URACIL][WC_FACE_SUGAR][1]=0                    ;bp_contacts[TYP_URACIL][WC_FACE_SUGAR][2]=0;
+  bp_contacts[TYP_URACIL][WC_FACE_WATSCRICK][0]=BP_CONTACT_U_W_X ;bp_contacts[TYP_URACIL][WC_FACE_WATSCRICK][1]=BP_CONTACT_U_W_Y ;bp_contacts[TYP_URACIL][WC_FACE_WATSCRICK][2]=BP_CONTACT_U_W_Z;
+  bp_contacts[TYP_URACIL][WC_FACE_HOOGSTEEN][0]=0                ;bp_contacts[TYP_URACIL][WC_FACE_HOOGSTEEN][1]=0                ;bp_contacts[TYP_URACIL][WC_FACE_HOOGSTEEN][2]=0               ;
+    
+  bp_hydros[TYP_ADENINE][WC_FACE_SUGAR][0]=0;                 bp_hydros[TYP_ADENINE][WC_FACE_SUGAR][1]=0;                 bp_hydros[TYP_ADENINE][WC_FACE_SUGAR][2]=0;
+  bp_hydros[TYP_ADENINE][WC_FACE_WATSCRICK][0]=BP_HYDRO_A_W_X;bp_hydros[TYP_ADENINE][WC_FACE_WATSCRICK][1]=BP_HYDRO_A_W_Y;bp_hydros[TYP_ADENINE][WC_FACE_WATSCRICK][2]=BP_HYDRO_A_W_Z;
+  bp_hydros[TYP_ADENINE][WC_FACE_HOOGSTEEN][0]=BP_HYDRO_A_H_X;bp_hydros[TYP_ADENINE][WC_FACE_HOOGSTEEN][1]=BP_HYDRO_A_H_Y;bp_hydros[TYP_ADENINE][WC_FACE_HOOGSTEEN][2]=BP_HYDRO_A_H_Z;
+  
+  bp_hydros[TYP_CYTOSINE][WC_FACE_SUGAR][0]=0                    ;bp_hydros[TYP_CYTOSINE][WC_FACE_SUGAR][1]=0                    ;bp_hydros[TYP_CYTOSINE][WC_FACE_SUGAR][2]=0;
+  bp_hydros[TYP_CYTOSINE][WC_FACE_WATSCRICK][0]=BP_HYDRO_C_W_X ;bp_hydros[TYP_CYTOSINE][WC_FACE_WATSCRICK][1]=BP_HYDRO_C_W_Y ;bp_hydros[TYP_CYTOSINE][WC_FACE_WATSCRICK][2]=BP_HYDRO_C_W_Z;
+  bp_hydros[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][0]=BP_HYDRO_C_H_X ;bp_hydros[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][1]=BP_HYDRO_C_H_Y ;bp_hydros[TYP_CYTOSINE][WC_FACE_HOOGSTEEN][2]=BP_HYDRO_C_H_Z;
+  
+  bp_hydros[TYP_GUANINE][WC_FACE_SUGAR][0]=    BP_HYDRO_G_S_X ;bp_hydros[TYP_GUANINE][WC_FACE_SUGAR][1]=    BP_HYDRO_G_S_Y   ;bp_hydros[TYP_GUANINE][WC_FACE_SUGAR][2]=    BP_HYDRO_G_S_Z;
+  bp_hydros[TYP_GUANINE][WC_FACE_WATSCRICK][0]=BP_HYDRO_G_W1_X;bp_hydros[TYP_GUANINE][WC_FACE_WATSCRICK][1]=BP_HYDRO_G_W1_Y  ;bp_hydros[TYP_GUANINE][WC_FACE_WATSCRICK][2]=BP_HYDRO_G_W1_Z;
+  bp_hydros[TYP_GUANINE][WC_FACE_HOOGSTEEN][0]=0              ;bp_hydros[TYP_GUANINE][WC_FACE_HOOGSTEEN][1]=0                ;bp_hydros[TYP_GUANINE][WC_FACE_HOOGSTEEN][2]=0             ;
+
+  bp_hydros[TYP_URACIL][WC_FACE_SUGAR][0]=0                    ;bp_hydros[TYP_URACIL][WC_FACE_SUGAR][1]=0                    ;bp_hydros[TYP_URACIL][WC_FACE_SUGAR][2]=0;
+  bp_hydros[TYP_URACIL][WC_FACE_WATSCRICK][0]=BP_HYDRO_U_W_X ;bp_hydros[TYP_URACIL][WC_FACE_WATSCRICK][1]=BP_HYDRO_U_W_Y ;bp_hydros[TYP_URACIL][WC_FACE_WATSCRICK][2]=BP_HYDRO_U_W_Z;
+  bp_hydros[TYP_URACIL][WC_FACE_HOOGSTEEN][0]=0              ;bp_hydros[TYP_URACIL][WC_FACE_HOOGSTEEN][1]=0              ;bp_hydros[TYP_URACIL][WC_FACE_HOOGSTEEN][2]=0             ;
+  bp_G_cont_W2[0]=BP_CONTACT_G_W2_X ;bp_G_cont_W2[1]=BP_CONTACT_G_W2_Y ;bp_G_cont_W2[2]=BP_CONTACT_G_W2_Z;
+  bp_G_hydr_W2[0]=BP_HYDRO_G_W2_X   ;bp_G_hydr_W2[1]=BP_HYDRO_G_W2_Y   ;bp_G_hydr_W2[2]=BP_HYDRO_G_W2_Z;
   
   double wc_ener=MC_calculate_total_wc_energy(nt_n,-1,  rx, ry, rz);
   MC_update_wc_lists(nt_n);
@@ -360,6 +391,7 @@ int MC_get_bp_face(int typ_ind, double *r_vec){
 }
 
 void MC_update_wc_lists(int nt_n){
+  //printf("updating\n");
   int n,f;
   for(n=0;n<nt_n;n++){
     for(f=0;f<WC_FACES;f++){
@@ -477,7 +509,7 @@ double MC_calculate_local_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
     bp_is_paired_trial[nt_t]=-1;// wc_is_paired[nt_t][face];
     bp_face_ene_trial[nt_t] = bp_face_ene[nt_t];
     bp_face_ind_trial[nt_t] = bp_face_ind[nt_t];
-    if(nt_t==nt_c){
+    if(nt_t==nt_c || nt_t==nt_c+1){
       bp_face_ene_trial[nt_t] = 0;
       bp_face_ind_trial[nt_t] = -1;
     }
@@ -490,15 +522,21 @@ double MC_calculate_local_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
   /*   printf("  - %d   %d    %lf\n", n,bp_face_ind[n], bp_face_ene[n]); */
   /* } */
   
-  //for(nt_t=0;nt_t<nt_n;nt_t++){
+  for(nt_t=0;nt_t<nt_n;nt_t++){
   // THIS LOOP HAS TO BE DONE IN THE NEIGHBOR LIST OF nt_c
-  for(n=0;n<vl_n_pairs[nt_c];n++){
-    nt_t=vl_neighbor_tables[nt_c][n]; 
+  //for(n=0;n<vl_n_pairs[nt_c];n++){
+  //nt_t=vl_neighbor_tables[nt_c][n]; 
     up_flag=MC_update_min_wc(nt_t, nt_c, rx, ry, rz, nt_n);
-    if(up_flag==1)
+    //up_flag=1;
+    if(up_flag==1 || up_flag==3)
       MC_find_min_wc(nt_t, nt_c, rx, ry, rz, nt_n); //if the nt was pointing to nt_c but its not anymore, it can point somewhere else
-  }  
-  
+    //if(up_flag==2 || up_flag==3)
+      
+  } 
+  //this should be only in the case where nt_c and nt_c+1 are bonded!
+  if(nt_c+1<nt_n)
+    if(MC_are_neighbors(nt_c, nt_c+1))
+      MC_find_min_wc(nt_c+1, nt_c, rx, ry, rz, nt_n); //if the nt was pointing to nt_c but its not anymore, it can point somewhere else
   
   MC_check_total_wc_list(nt_n);
   
@@ -540,20 +578,41 @@ double MC_calculate_local_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
       }
     }
   if(flag==1) exit(1);
+  /* printf("LOCAL BP   %lf    %lf   %lf    ", bp_tot_energ, bp_tot_energ_old, (bp_tot_energ-bp_tot_energ_old)); */
+  /* //printf("L(o)  - %d %lf  (%d %lf , %d %lf , %d %lf)\t",nt_c, bp_face_ind[nt_c], bp_face_ene[nt_c], wc_face_ind[nt_c][0], wc_face_ene[nt_c][0],wc_face_ind[nt_c][1], wc_face_ene[nt_c][1],wc_face_ind[nt_c][2], wc_face_ene[nt_c][2]); printf("L  -  %d %lf  (%d %lf , %d %lf , %d %lf)\n",bp_face_ind_trial[nt_c], bp_face_ene_trial[nt_c], wc_face_ind_trial[nt_c][0], wc_face_ene_trial[nt_c][0],wc_face_ind_trial[nt_c][1], wc_face_ene_trial[nt_c][1],wc_face_ind_trial[nt_c][2], wc_face_ene_trial[nt_c][2]); */
+  /* printf("L(o)   %d  -   %d %lf  (%d %lf , %d %lf , %d %lf)\t",nt_c, bp_face_ind[nt_c], bp_face_ene[nt_c], wc_face_ind[nt_c][0], wc_face_ene[nt_c][0],wc_face_ind[nt_c][1], wc_face_ene[nt_c][1],wc_face_ind[nt_c][2], wc_face_ene[nt_c][2]); printf("L  -  %d %lf  (%d %lf , %d %lf , %d %lf)\n",bp_face_ind_trial[nt_c], bp_face_ene_trial[nt_c], wc_face_ind_trial[nt_c][0], wc_face_ene_trial[nt_c][0],wc_face_ind_trial[nt_c][1], wc_face_ene_trial[nt_c][1],wc_face_ind_trial[nt_c][2], wc_face_ene_trial[nt_c][2]); */
+
+  /* printf("L(o)   %d  -   %d %lf  (%d %lf , %d %lf , %d %lf)\t",6, bp_face_ind[6], bp_face_ene[6], wc_face_ind[6][0], wc_face_ene[6][0],wc_face_ind[6][1], wc_face_ene[6][1],wc_face_ind[6][2], wc_face_ene[6][2]); printf("L  -  %d %lf  (%d %lf , %d %lf , %d %lf)\n",bp_face_ind_trial[6], bp_face_ene_trial[6], wc_face_ind_trial[6][0], wc_face_ene_trial[6][0],wc_face_ind_trial[6][1], wc_face_ene_trial[6][1],wc_face_ind_trial[6][2], wc_face_ene_trial[6][2]); */
+  /* printf("L(o)   %d  -   %d %lf  (%d %lf , %d %lf , %d %lf)\t",7, bp_face_ind[7], bp_face_ene[7], wc_face_ind[7][0], wc_face_ene[7][0],wc_face_ind[7][1], wc_face_ene[7][1],wc_face_ind[7][2], wc_face_ene[7][2]); printf("L  -  %d %lf  (%d %lf , %d %lf , %d %lf)\n",bp_face_ind_trial[7], bp_face_ene_trial[7], wc_face_ind_trial[7][0], wc_face_ene_trial[7][0],wc_face_ind_trial[7][1], wc_face_ene_trial[7][1],wc_face_ind_trial[7][2], wc_face_ene_trial[7][2]); */
   return (wc_tot_energ-wc_tot_energ_old)/2.0+(bp_tot_energ-bp_tot_energ_old);
+  
 }
 
 
 
 int MC_update_min_wc(int nt_ne, int nt_c, double *rx, double *ry, double *rz, int nt_n){
-  int at_c=N_PARTS_PER_NT*nt_c, at_ne, typ_ind, tf, ret=0;
+   //here it seems that we see what happens between nt_ne and nt_c, which was just moved
+  int at_c=N_PARTS_PER_NT*nt_c, at_ne, typ_ind, tf, ret=0, nt_add=nt_c+1,at_add=(nt_c+1)*N_PARTS_PER_NT;
+  //int at_c=N_PARTS_PER_NT*nt_c, at_ne, typ_ind, tf, ret=0;
   double r_vec[DIM]={0,0,0}, r_vec_inv[DIM]={0,0,0},bas_vec[DIM], r;
   double basedistsq=0, theta, basephosdistsq=0, phosbasedistsq=0, sphi;
-    
+  double BAS[DIM], SUG1[DIM], SUG2[DIM], PHO[DIM], op1[DIM], op2[DIM], bas_op1[DIM], bas_op2[DIM];
+  int bp_case=-1;
+  int glp1, glp2;
   at_ne=N_PARTS_PER_NT*nt_ne;
   basedistsq=calc_min_dist_sq(mc_temp_x[at_c],mc_temp_y[at_c], mc_temp_z[at_c], rx[at_ne], ry[at_ne], rz[at_ne]);
   basephosdistsq = calc_min_dist_sq(mc_temp_x[at_c],mc_temp_y[at_c], mc_temp_z[at_c], rx[at_ne+IPHO], ry[at_ne+IPHO], rz[at_ne+IPHO]); //this base, neighboring phosphate
   phosbasedistsq = calc_min_dist_sq(mc_temp_x[at_c+IPHO],mc_temp_y[at_c+IPHO], mc_temp_z[at_c+IPHO], rx[at_ne], ry[at_ne], rz[at_ne]); //this phosphate, neighboring base
+  //note that we also have to calculate neighboring phosphate - this base
+  double addphosbasedsq;
+  // addphosbasedsq = calc_min_dist_sq(rx[at_add+IPHO],ry[at_add+IPHO], rz[at_add+IPHO], rx[at_ne], ry[at_ne], rz[at_ne]); //next phosphate, this base
+  
+  if(nt_c<nt_n-1) addphosbasedsq = calc_min_dist_sq(rx[at_add+IPHO],ry[at_add+IPHO], rz[at_add+IPHO], rx[at_ne], ry[at_ne], rz[at_ne]); //next phosphate, this base
+  else {
+    addphosbasedsq=mc_bph_rcut_sq+100;
+    //printf("d=%lf\n", calc_min_dist_sq(rx[at_add+IPHO],ry[at_add+IPHO], rz[at_add+IPHO], rx[at_ne], ry[at_ne], rz[at_ne]));
+  }
+  
   int temp_ind_wc[WC_FACES], temp_ind_bp, temp_ind_pb;
   double temp_ene_wc[WC_FACES], temp_ene_bp, temp_ene_pb;
   /* if((nt_c==4 && nt_ne==7) || (nt_c==7 && nt_ne==4)) printf("bd %d  %d   -   %lf %lf\n", nt_c, nt_ne, basephosdistsq, phosbasedistsq); */
@@ -563,43 +622,74 @@ int MC_update_min_wc(int nt_ne, int nt_c, double *rx, double *ry, double *rz, in
   }
   if(bp_face_ind[nt_ne]==nt_c)
     bp_face_ene_trial[nt_ne]=0;
-  /* for(tf=0;tf<WC_FACES;tf++) */
-  /* if((nt_c==4 && nt_ne==7) || (nt_c==7 && nt_ne==4)) printf("pf %d  %d   -   %lf %lf\n", nt_c, nt_ne,wc_face_ene_trial[nt_ne][tf], wc_face_ene[nt_ne][tf]); */
   //BASE-BASE CHECK
-  //if(basedistsq<mc_r_cut_sq){
   if(basedistsq<mc_wc_rcut_sq){
     calc_min_vec(rx[at_ne],ry[at_ne],rz[at_ne],mc_temp_x[at_c],mc_temp_y[at_c],mc_temp_z[at_c],bas_vec, &r);
     proj_on_nt(bas_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
     proj_on_nt_inv(bas_vec, rx,ry,rz,nt_ne, r_vec_inv);
     theta=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z,rx,ry,rz,nt_c,nt_ne); 
     sphi =calc_wc_secdihed(mc_temp_x, mc_temp_y, mc_temp_z,rx,ry,rz,nt_c,nt_ne);
-    MC_calc_nnN_watscric(mc_types[at_c], mc_types[at_ne], r_vec, r_vec_inv, theta, sphi, nt_c, nt_ne);
+    glp1 =mc_temp_glyc[nt_c] + mc_temp_puck[nt_c];
+    glp2 =mc_glyc[nt_ne] + mc_puck[nt_ne];
+    MC_calc_nnN_watscric(mc_types[at_c], mc_types[at_ne], r_vec, r_vec_inv, theta, sphi, nt_c, nt_ne, glp1, glp2);
   }
   //BASE-PHOSPHATE CHECK
   if(basephosdistsq<mc_bph_rcut_sq){
     calc_min_vec(rx[at_ne+IPHO],ry[at_ne+IPHO],rz[at_ne+IPHO],mc_temp_x[at_c],mc_temp_y[at_c],mc_temp_z[at_c],bas_vec, &r);
     proj_on_nt(bas_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
-    MC_calc_npN_phosbase(mc_types[at_c], r_vec, nt_c, nt_ne, nt_n); // the second argument is the owner of the phosphate
+    
+    //ne has the phosphate!, so ne-1 has the SUG1
+    if(nt_ne-1==nt_c) //case 3, rx, temp, temp
+      bp_case=3;
+    else  // case 2, rx, temp, rx
+      bp_case=2;
+    MC_calc_npN_phosbase(mc_types[at_c], r_vec, nt_c, nt_ne, nt_n, rx, ry, rz, bp_case );// the second argument is the owner of the phosphate
   }
   //PHOSPHATE-BASE CHECK
   if(phosbasedistsq<mc_bph_rcut_sq){
     calc_min_vec(mc_temp_x[at_c+IPHO], mc_temp_y[at_c+IPHO], mc_temp_z[at_c+IPHO], rx[at_ne], ry[at_ne], rz[at_ne],bas_vec, &r);
     proj_on_nt(bas_vec, rx, ry, rz, nt_ne, r_vec);
-    MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_c, nt_n); // the second argument is the owner of the phosphate
+    
+    //nt_c has the phosphate!!, so nt_c -1 has the SUG1, and this is case 4, temp, rx, rx
+    bp_case=4;
+    MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_c, nt_n, rx, ry, rz,bp_case);  // the second argument is the owner of the phosphate
+  }
+  
+  //FINAL BASE-PHOSPHATE CHECK
+  if(addphosbasedsq<mc_bph_rcut_sq){
+    //at_xt=at_c+N_PARTS_PER_NT;
+    calc_min_vec(rx[at_add+IPHO],ry[at_add+IPHO],rz[at_add+IPHO],rx[at_ne],ry[at_ne],rz[at_ne],bas_vec, &r);
+    proj_on_nt(bas_vec, rx, ry, rz, nt_ne, r_vec);
+    //ne has the phosphate!, so ne-1 has the SUG1
+    bp_case=2; //check this!!!
+    MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_add, nt_n, rx, ry, rz, bp_case );// the second argument is the owner of the phosphate
   }
   
   //IF NT POINTED TO NT_C BUT :
   //A) IT DOESNT POINT ANYMORE
   //B) ITS ENERGY IS LARGER THAN THE PREVIOUS ONE - IT CAN NOW POINT SOMEWHERE ELSE - THIS INCLUDES CASE A)
   //IF NT DIDN'T POINT TO NT_C : IF NOW INTERACTS WITH NT_C
+  int ret2=0;
   for(tf=0;tf<WC_FACES;tf++){
-    if( ((wc_face_ind[nt_ne][tf]==nt_c || wc_face_ind[nt_ne][tf]==(nt_c+nt_n)) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf]) || (wc_face_ind_trial[nt_ne][tf]==nt_c && wc_face_ene_trial[nt_ne][tf]< wc_face_ene[nt_ne][tf]))
+    ////if( ((wc_face_ind[nt_ne][tf]==nt_c || wc_face_ind[nt_ne][tf]==(nt_c+nt_n)) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf]) || (wc_face_ind_trial[nt_ne][tf]==nt_c && wc_face_ene_trial[nt_ne][tf]< wc_face_ene[nt_ne][tf]))
+    //if( ((wc_face_ind[nt_ne][tf]==nt_c || wc_face_ind[nt_ne][tf]==(nt_c+nt_n)) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf]) || ((wc_face_ind_trial[nt_ne][tf]==nt_c || wc_face_ind_trial[nt_ne][tf]==(nt_c+nt_n)) && wc_face_ene_trial[nt_ne][tf]< wc_face_ene[nt_ne][tf])
+    //|| (wc_face_ind[nt_ne][tf]==(nt_add+nt_n) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf]) || (wc_face_ind_trial[nt_ne][tf]==nt_add && wc_face_ene_trial[nt_ne][tf]<wc_face_ene[nt_ne][tf])	)
+    if( ((wc_face_ind[nt_ne][tf]==nt_c || wc_face_ind[nt_ne][tf]==(nt_c+nt_n)) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf])
+	|| ( ( (wc_face_ind_trial[nt_ne][tf]==nt_c && wc_face_ind[nt_ne][tf]!=nt_c) || ( wc_face_ind_trial[nt_ne][tf]==(nt_c+nt_n) && wc_face_ind[nt_ne][tf]!=(nt_c+nt_n)) )    && wc_face_ene_trial[nt_ne][tf]< wc_face_ene[nt_ne][tf]))
       ret=1;
+    if( (   wc_face_ind[nt_ne][tf]==(nt_add+nt_n) && wc_face_ene_trial[nt_ne][tf] > wc_face_ene[nt_ne][tf]) 
+	|| (   wc_face_ind_trial[nt_ne][tf]==nt_add && wc_face_ene_trial[nt_ne][tf]  < wc_face_ene[nt_ne][tf])	)
+      ret2=2;
   }
-  if((bp_face_ind[nt_ne]==nt_c  && bp_face_ene_trial[nt_ne] > bp_face_ene[nt_ne]) || (bp_face_ind_trial[nt_ne]==nt_c &&  bp_face_ene_trial[nt_ne]<bp_face_ene[nt_ne]) )
+  //if((bp_face_ind[nt_ne]==nt_c  && bp_face_ene_trial[nt_ne] > bp_face_ene[nt_ne]) || (bp_face_ind_trial[nt_ne]==nt_c &&  bp_face_ene_trial[nt_ne]<bp_face_ene[nt_ne]) )
+  if(   (bp_face_ind[nt_ne]==nt_c  && bp_face_ene_trial[nt_ne] > bp_face_ene[nt_ne]) || (bp_face_ind_trial[nt_ne]==nt_c && bp_face_ind[nt_ne]!=nt_c &&  bp_face_ene_trial[nt_ne]<bp_face_ene[nt_ne]) )
     ret=1;
-    
-  return ret;
+  if(nt_add<nt_n)
+    if(   (bp_face_ind[nt_add]==nt_ne &&  bp_face_ene_trial[nt_add]<bp_face_ene[nt_add]) ||  (bp_face_ind_trial[nt_add]==nt_ne &&  bp_face_ind[nt_add]!=nt_ne && bp_face_ene_trial[nt_add]<bp_face_ene[nt_ne]) )
+      ret2=2;
+  
+  //return 1;
+  return ret;//+ret2;
 }
 
 double MC_calculate_total_wc_energy(int nt_n, int nt_c,  double *rx, double *ry, double *rz){
@@ -619,22 +709,9 @@ double MC_calculate_total_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
   }
   MC_check_total_wc_list(nt_n);
   
-  /* printf("TOTAL\n"); */
-  /* for(n=0;n<nt_n;n++){ */
-  /*   for(face=0;face<WC_FACES;face++) */
-  /*     printf("%d   %d  %d   %lf\t", n, face, wc_face_ind_trial[n][face], wc_face_ene_trial[n][face]); */
-  /*   printf("  - %d   %d    %lf\n", n,bp_face_ind_trial[n], bp_face_ene_trial[n]); */
-    
-  /* } */
-
-  
   //printf("TOTAL\n");
   for(nt_i=0;nt_i<nt_n;nt_i++)
     for(face=0;face<WC_FACES;face++){
-      //printf("%d  %d ", nt_i, face);// < SEGMENTATION FAULT!
-      
-      //printf("   %lf (%d)   ", wc_face_ene_trial[nt_i][face], wc_face_ind_trial[nt_i][face]);
-      //if(nt_i>nt_n)printf("   %lf (%d)   ", bp_face_ene_trial[nt_i-nt_n], bp_face_ind_trial[nt_i]);
       if(wc_is_paired_trial[nt_i][face]==1){
 	wc_tot_energ+=wc_face_ene_trial[nt_i][face];
       }
@@ -644,9 +721,11 @@ double MC_calculate_total_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
 	
       } 
     }
-  //printf("\n");
-  /* //printf("bp tot energ  %lf\n", bp_tot_energ); */
+  
+  //printf("total  BP   %lf\n", bp_tot_energ);
   return wc_tot_energ/2.0 + bp_tot_energ;
+
+  
 }
 
 
@@ -666,63 +745,62 @@ void MC_find_min_wc(int nt_c, int nt_trial, double *rx, double *ry, double *rz, 
     ind_wc=1;
     ind_phos=1;
 #ifdef SECONDSTC
-    if(wc_sstruct_N[nt_c]==0 && wc_sstruct_N[nt_ne]==0){
-	ind_wc=1;
-	ind_phos=1;
-	inv_fl=1;
-	fl=1;
-    }
-    else if(wc_sstruct_N[nt_c]==-1 || wc_sstruct_N[nt_ne]==-1){
-      ind_wc=0;
-      ind_phos=0;
-      inv_fl=0;
-      fl=0;
-    }
-    else{
-      ind_wc=0;
-      ind_phos=0;
-      inv_fl=0;
-      fl=0;
-      if(wc_sstruct_N[nt_ne]==0){
-	//printf("easy inv\n");
-	inv_fl=1;}
-      else{
-	for(uu=0;uu<wc_sstruct_N[nt_ne];uu++){
-	  if(wc_sstruct_neigh[nt_ne][uu*2] == nt_c){
-	    inv_fl=1;
-	    break;
-	  }
-	}
-      }
-      if(wc_sstruct_N[nt_c]==0){
-	//printf("easy \n");
-	fl=1;
-      }
-      else{
-	for(ss=0;ss<wc_sstruct_N[nt_c];ss++){
-	  if(wc_sstruct_neigh[nt_c][ss*2] == nt_ne){
-	    fl=1;
-	    break;
-	  }	}      }
-      if(inv_fl==1 && fl==1){
-	//printf("CHOSEN!\n");
-	if(wc_sstruct_neigh[nt_c][ss*2+1]< 2){
-	  ind_wc=1;
-	}
+    /* if(wc_sstruct_N[nt_c]==0 && wc_sstruct_N[nt_ne]==0){ */
+    /* 	ind_wc=1; */
+    /* 	ind_phos=1; */
+    /* 	inv_fl=1; */
+    /* 	fl=1; */
+    /* } */
+    /* else if(wc_sstruct_N[nt_c]==-1 || wc_sstruct_N[nt_ne]==-1){ */
+    /*   ind_wc=0; */
+    /*   ind_phos=0; */
+    /*   inv_fl=0; */
+    /*   fl=0; */
+    /* } */
+    /* else{ */
+    /*   ind_wc=0; */
+    /*   ind_phos=0; */
+    /*   inv_fl=0; */
+    /*   fl=0; */
+    /*   if(wc_sstruct_N[nt_ne]==0){ */
+    /* 	//printf("easy inv\n"); */
+    /* 	inv_fl=1;} */
+    /*   else{ */
+    /* 	for(uu=0;uu<wc_sstruct_N[nt_ne];uu++){ */
+    /* 	  if(wc_sstruct_neigh[nt_ne][uu*2] == nt_c){ */
+    /* 	    inv_fl=1; */
+    /* 	    break; */
+    /* 	  } */
+    /* 	} */
+    /*   } */
+    /*   if(wc_sstruct_N[nt_c]==0){ */
+    /* 	//printf("easy \n"); */
+    /* 	fl=1; */
+    /*   } */
+    /*   else{ */
+    /* 	for(ss=0;ss<wc_sstruct_N[nt_c];ss++){ */
+    /* 	  if(wc_sstruct_neigh[nt_c][ss*2] == nt_ne){ */
+    /* 	    fl=1; */
+    /* 	    break; */
+    /* 	  }	}      } */
+    /*   if(inv_fl==1 && fl==1){ */
+    /* 	//printf("CHOSEN!\n"); */
+    /* 	if(wc_sstruct_neigh[nt_c][ss*2+1]< 2){ */
+    /* 	  ind_wc=1; */
+    /* 	} */
 	
-	//else if(wc_sstruct_neigh[nt_c][ss*2+1]==1){
-	//  ind_phos=1;
-	//}
-	if(wc_sstruct_neigh[nt_c][ss*2+1]>=1)
-	  ind_phos=wc_sstruct_neigh[nt_c][ss*2+1];
-      }    }
+    /* 	//else if(wc_sstruct_neigh[nt_c][ss*2+1]==1){ */
+    /* 	//  ind_phos=1; */
+    /* 	//} */
+    /* 	if(wc_sstruct_neigh[nt_c][ss*2+1]>=1) */
+    /* 	  ind_phos=wc_sstruct_neigh[nt_c][ss*2+1]; */
+    /*   }    } */
     
-    //printf("%d  %d   %d %d\t%d %d\n", nt_c, nt_ne, ind_wc, ind_phos, fl, inv_fl);
-    if(ind_wc!=0 && ind_phos!=0)
+    /* //printf("%d  %d   %d %d\t%d %d\n", nt_c, nt_ne, ind_wc, ind_phos, fl, inv_fl); */
+    /* if(ind_wc!=0 || ind_phos!=0) */
 #endif
       //MC_find_min_wc_per_nt(nt_c, nt_ne, nt_trial, rx, ry, rz, nt_n, 1, 1);
-    
-      MC_find_min_wc_per_nt(nt_c, nt_ne, nt_trial, rx, ry, rz, nt_n, ind_wc, ind_phos);
+    MC_find_min_wc_per_nt(nt_c, nt_ne, nt_trial, rx, ry, rz, nt_n, ind_wc, ind_phos);
   }
   
   //THE ADDITIONAL NEIGHBOR PAIRS
@@ -742,6 +820,7 @@ void MC_find_min_wc(int nt_c, int nt_trial, double *rx, double *ry, double *rz, 
     ind_wc=1;
     MC_find_min_wc_per_nt(nt_c, nt_ne, nt_trial, rx, ry, rz, nt_n, ind_wc, ind_phos);
   }
+
 }
 
 void MC_find_min_wc_per_nt(int nt_c, int nt_ne, int nt_trial, double *rx, double *ry, double *rz, int nt_n, int wc_flag, int bp_flag){
@@ -749,7 +828,9 @@ void MC_find_min_wc_per_nt(int nt_c, int nt_ne, int nt_trial, double *rx, double
   double r_vec[DIM]={0,0,0}, r_vec_inv[DIM]={0,0,0},bas_vec[DIM], r;
   double basedistsq=0, basephosdistsq=0, phosbasedistsq=0, theta=0, sphi;
   //at_ne=N_PARTS_PER_NT*nt_ne;
-  
+  double BAS[DIM], SUG1[DIM], SUG2[DIM], PHO[DIM], op1[DIM], op2[DIM], bas_op1[DIM], bas_op2[DIM];
+  int bp_case=-1;
+  int glp1, glp2;
   if(nt_trial == nt_c) {
     if(wc_flag==1)
       basedistsq     = calc_min_dist_sq(mc_temp_x[at_c],mc_temp_y[at_c], mc_temp_z[at_c], rx[at_ne], ry[at_ne], rz[at_ne]);
@@ -783,58 +864,154 @@ void MC_find_min_wc_per_nt(int nt_c, int nt_ne, int nt_trial, double *rx, double
       proj_on_nt_inv(bas_vec, rx,ry,rz,nt_ne, r_vec_inv);
       theta=calc_wc_psdihedr(mc_temp_x, mc_temp_y, mc_temp_z,rx,ry,rz,nt_c,nt_ne); 
       sphi =calc_wc_secdihed(mc_temp_x, mc_temp_y, mc_temp_z,rx,ry,rz,nt_c,nt_ne); 
+      glp1 =mc_temp_glyc[nt_c] + mc_temp_puck[nt_c];
+      glp2 =mc_glyc[nt_ne] + mc_puck[nt_ne];
     } else if(nt_trial==nt_ne){
       calc_min_vec(mc_temp_x[at_ne],mc_temp_y[at_ne], mc_temp_z[at_ne], rx[at_c],ry[at_c],rz[at_c], bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_c, r_vec);
       proj_on_nt_inv(bas_vec,mc_temp_x, mc_temp_y, mc_temp_z,nt_ne, r_vec_inv);
       theta=calc_wc_psdihedr(rx,ry,rz,mc_temp_x, mc_temp_y, mc_temp_z,nt_c,nt_ne); 
       sphi =calc_wc_secdihed(rx,ry,rz,mc_temp_x, mc_temp_y, mc_temp_z,nt_c,nt_ne); 
+      glp1 =mc_glyc[nt_c] + mc_puck[nt_c];
+      glp2 =mc_temp_glyc[nt_ne] + mc_temp_puck[nt_ne];
     } else {
       calc_min_vec(rx[at_ne],ry[at_ne],rz[at_ne],rx[at_c],ry[at_c],rz[at_c],  bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_c, r_vec);
       proj_on_nt_inv(bas_vec,rx, ry, rz,nt_ne, r_vec_inv);
       theta=calc_wc_psdihedr(rx,ry,rz,rx,ry,rz,nt_c,nt_ne); 
       sphi =calc_wc_secdihed(rx,ry,rz,rx,ry,rz,nt_c,nt_ne); 
+      glp1 =mc_glyc[nt_c]  + mc_puck[nt_c];
+      glp2 =mc_glyc[nt_ne] + mc_puck[nt_ne];
     }
-    MC_calc_nnN_watscric(mc_types[at_c], mc_types[at_ne], r_vec, r_vec_inv, theta, sphi, nt_c, nt_ne);
+    MC_calc_nnN_watscric(mc_types[at_c], mc_types[at_ne], r_vec, r_vec_inv, theta, sphi, nt_c, nt_ne, glp1, glp2);
   }
   
   if(basephosdistsq<mc_bph_rcut_sq && (bp_flag ==1 || bp_flag==2)){ // ne-phosphate   c-base
     if(nt_trial == nt_c) {//typical case
       calc_min_vec(rx[at_ne+IPHO],ry[at_ne+IPHO],rz[at_ne+IPHO],mc_temp_x[at_c],mc_temp_y[at_c],mc_temp_z[at_c],bas_vec, &r);
       proj_on_nt(bas_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, r_vec);
+      //phosphate is in rx array (nt_ne), base is in temp array (nt_c)
+      if(nt_trial==nt_ne-1) //here, sug1 must be in temp (case 3), rx, temp, temp
+	bp_case=3;
+      else //otherwise, it is in rx (case 2), rx, temp, rx
+	bp_case=2;
     } else if(nt_trial==nt_ne){
       calc_min_vec(mc_temp_x[at_ne+IPHO],mc_temp_y[at_ne+IPHO], mc_temp_z[at_ne+IPHO], rx[at_c],ry[at_c],rz[at_c], bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_c, r_vec);
+      //phosphate is in temp array (nt_ne), base is in rx array (nt_c); case 4 by force, temp, rx, rx
+      bp_case=4;
     } else {
       calc_min_vec(rx[at_ne+IPHO],ry[at_ne+IPHO],rz[at_ne+IPHO],rx[at_c],ry[at_c],rz[at_c],  bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_c, r_vec);
+      //phosphate is in rx array (nt_ne), base is in rx array (nt_c)
+      if(nt_trial==nt_ne-1) //here, sug1 must be in temp (case 1), rx, rx, temp
+	bp_case=1;
+      else //otherwise, it is in rx (case 0), rx, rx, rx
+	bp_case=0;
     }
-    if(nt_ne!=0)
-      MC_calc_npN_phosbase(mc_types[at_c], r_vec, nt_c, nt_ne, nt_n); // the second argument is the owner of the phosphate
+    if(nt_ne!=0){
+      //MC_calc_npN_phosbase(mc_types[at_c], r_vec, nt_c, nt_ne, nt_n); // the second argument is the owner of the phosphate
+      /** HERE WE DO THE HB CHECK **/
+    /*   BAS[0]=mc_temp_x[at_c];    BAS[1]=mc_temp_y[at_c];    BAS[2]=mc_temp_z[at_c]; */
+    /*   SUG1[0]=rx[at_ne+ISUG-N_PARTS_PER_NT];SUG1[1]=ry[at_ne+ISUG-N_PARTS_PER_NT];SUG1[2]=rz[at_ne+ISUG-N_PARTS_PER_NT]; */
+    /*   SUG2[0]=rx[at_ne+ISUG               ];SUG2[1]=ry[at_ne+ISUG               ];SUG2[2]=rz[at_ne+ISUG               ]; */
+    /*   PHO[0]=rx[at_ne+IPHO];PHO[1]=ry[at_ne+IPHO];PHO[2]=rz[at_ne+IPHO]; */
+      
+    /* MC_get_op1op2(mc_types[at_c], MC_get_bp_face(mc_types[at_c], r_vec), BAS, PHO, SUG1,SUG2,op1,op2); */
+    /* proj_on_nt(op1, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, bas_op1); */
+    /* proj_on_nt(op2, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, bas_op2); */
+    /* if(MC_check_bph_HB(bas_op1, bas_op2, mc_types[at_c], MC_get_bp_face(mc_types[at_c], r_vec))==1) */
+      
+      MC_calc_npN_phosbase(mc_types[at_c], r_vec, nt_c, nt_ne, nt_n, rx, ry, rz, bp_case); //the second argument is the owner of the phosphate
+      
+    }
   }
   
+  
   if(phosbasedistsq<mc_bph_rcut_sq && (bp_flag==1 || bp_flag==3)){// ne-base    c-phosphate
-    if(nt_trial == nt_c) {//typical case
+     if(nt_trial == nt_c) {//typical case
       calc_min_vec(mc_temp_x[at_c+IPHO], mc_temp_y[at_c+IPHO], mc_temp_z[at_c+IPHO], rx[at_ne], ry[at_ne], rz[at_ne],bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_ne, r_vec);
+      bp_case=4;//here, sug1 must be in rx by force (case 4), temp, rx, rx
     } else if(nt_trial==nt_ne){
       calc_min_vec(rx[at_c+IPHO],ry[at_c+IPHO], rz[at_c+IPHO], mc_temp_x[at_ne],mc_temp_y[at_ne],mc_temp_z[at_ne], bas_vec, &r);
       proj_on_nt(bas_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_ne, r_vec);
+      //here, phsphate is in rx, base in temp
+      if(nt_trial==nt_c-1) // sug1 is temp, case 3, rx, temp, temp
+	bp_case=3;
+      else //otherwise, it is in rx (case 2), rx, temp, rx
+	bp_case=2;
     } else {
       calc_min_vec(rx[at_c+IPHO],ry[at_c+IPHO],rz[at_c+IPHO],rx[at_ne],ry[at_ne],rz[at_ne],  bas_vec, &r);
       proj_on_nt(bas_vec, rx, ry, rz, nt_ne, r_vec);
+      //here, phosphate is in rx, base in rx
+      if(nt_trial==nt_c-1) // sug1 is temp, case 1, rx, rx, temp
+	bp_case=1;
+      else //otherwise, it is in rx (case 0), rx, rx, rx
+	bp_case=0;
     }
-    if(nt_c!=0)
-      MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_c, nt_n); // the second argument is the owner of the phosphate
+    if(nt_c!=0){
+      //MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_c, nt_n); // the second argument is the owner of the phosphate
+      /** HERE WE DO THE HB CHECK **/
+    /* BAS[0]=rx[at_ne];    BAS[1]=ry[at_ne];    BAS[2]=rz[at_ne]; */
+    /* SUG1[0]=rx[at_c+ISUG-N_PARTS_PER_NT];SUG1[1]=ry[at_c+ISUG-N_PARTS_PER_NT];SUG1[2]=rz[at_c+ISUG-N_PARTS_PER_NT]; */
+    /* SUG2[0]=mc_temp_x[at_c+ISUG];SUG2[1]=mc_temp_y[at_c+ISUG];SUG2[2]=mc_temp_z[at_c+ISUG]; */
+    /* PHO[0]=mc_temp_x[at_c+IPHO];PHO[1]=mc_temp_y[at_c+IPHO];PHO[2]=mc_temp_z[at_c+IPHO]; */
+    
+    /* MC_get_op1op2(mc_types[at_ne], MC_get_bp_face(mc_types[at_ne], r_vec), BAS, PHO, SUG1,SUG2,op1,op2); */
+    /* proj_on_nt(op1, rx, ry, rz, nt_ne, bas_op1); */
+    /* proj_on_nt(op2, rx, ry, rz, nt_ne, bas_op2); */
+    /* if(MC_check_bph_HB(bas_op1, bas_op2, mc_types[at_ne], MC_get_bp_face(mc_types[at_ne], r_vec))==1) */
+      MC_calc_npN_phosbase(mc_types[at_ne], r_vec, nt_ne, nt_c, nt_n, rx, ry, rz, bp_case); 
+    
+    }
   }
   /* printf("\n"); */
 }
 
-void MC_calc_npN_phosbase(int typ_a,  double *r_vec, int nt_a, int nt_b, int nt_n){
+int MC_check_bph_HB(double *OP1, double *OP2, int type, int face){
+  int ret=0,d;
+  double CONTACT[DIM], HYDRO[DIM], va[DIM], vb1[DIM], vb2[DIM], c1, c2;
+  //printf("checking type %d  face %d\n", type, face);
+  CONTACT[0]=bp_contacts[type][face][0];HYDRO[0]=bp_hydros[type][face][0];
+  CONTACT[1]=bp_contacts[type][face][1];HYDRO[1]=bp_hydros[type][face][1];
+  CONTACT[2]=bp_contacts[type][face][2];HYDRO[2]=bp_hydros[type][face][2];
+  //REMEMBER! GUANINE IS A SPECIAL CASE
+  for(d=0;d<DIM;d++){
+    va[d]=CONTACT[d]-HYDRO[d];
+    vb1[d]=OP1[d]-HYDRO[d];
+    vb2[d]=OP2[d]-HYDRO[d];
+  }
+  c1=dot_prod(vb1, va)/(fvec_norm(vb1)*fvec_norm(va));
+  c2=dot_prod(vb2, va)/(fvec_norm(vb2)*fvec_norm(va));
+  //printf("OP1: %lf  %lf\tOP2: %lf  %lf\n", fcalc_min_dist(CONTACT, OP1), c1, fcalc_min_dist(CONTACT, OP2), c2);
+  if((fcalc_min_dist(CONTACT, OP1)<RHB &&  c1<CHB ) || (fcalc_min_dist(CONTACT, OP2)<RHB &&  c2<CHB ))
+    ret=1;
+  
+  if(type==TYP_GUANINE && face==WC_FACE_WATSCRICK){
+    CONTACT[0]=bp_G_cont_W2[0];HYDRO[0]=bp_G_hydr_W2[0];
+    CONTACT[1]=bp_G_cont_W2[1];HYDRO[1]=bp_G_hydr_W2[1];
+    CONTACT[2]=bp_G_cont_W2[2];HYDRO[2]=bp_G_hydr_W2[2];
+    for(d=0;d<DIM;d++){
+    va[d]=CONTACT[d]-HYDRO[d];
+    vb1[d]=OP1[d]-HYDRO[d];
+    vb2[d]=OP2[d]-HYDRO[d];
+    }
+    c1=dot_prod(vb1, va)/(fvec_norm(vb1)*fvec_norm(va));
+    c2=dot_prod(vb2, va)/(fvec_norm(vb2)*fvec_norm(va));
+    if((fcalc_min_dist(CONTACT, OP1)<RHB &&  c1<CHB ) || (fcalc_min_dist(CONTACT, OP2)<RHB &&  c2<CHB ))
+      ret=1;
+    //here, we should state that when two HB are formed, the energy is larger!
+  }
+  return ret;
+}
+//void MC_calc_npN_phosbase(int typ_a,  double *r_vec, int nt_a, int nt_b, int nt_n){
+void MC_calc_npN_phosbase(int typ_a,  double *r_vec, int nt_a, int nt_b, int nt_n, double *rx, double *ry, double *rz, int bp_flag){
+  //NT_A IS THE BASE, NT_B IS THE PHOSPHATE
   //classify type of pair
   int face_a =MC_get_bp_face(typ_a , r_vec);
-   
+  int at_a, at_b, at_c, hb_exists;
+  double BAS[DIM], PHO[DIM], SUG1[DIM], SUG2[DIM], op1[DIM], op2[DIM], bas_op1[DIM], bas_op2[DIM];
   if(face_a <0){
     return;
   }
@@ -846,35 +1023,150 @@ void MC_calc_npN_phosbase(int typ_a,  double *r_vec, int nt_a, int nt_b, int nt_
   double tot_nb_bp=0;
   
   double well=nb_bp_well[typ_ind][face_ind];
-  //calculate subfaces
-  int subf=MC_get_BPh_subface(typ_a, r_vec, face_a);
+  /* //calculate subfaces */
+  /* int subf=MC_get_BPh_subface(typ_a, r_vec, face_a); */
   
-  if(subf!=-1){
-    //here we modify the potential well
-    well=nb_bp_spec_well[typ_ind][subf];
-  }
-  
+  /* if(subf!=-1){ */
+  /*   //here we modify the potential well */
+  /*   well=nb_bp_spec_well[typ_ind][subf]; */
+  /* } */
+  //if(nt_a==6 || nt_b==6) printf("inside  %lf\n", nbe);
   if(nbe!=0 && well!=0 ){
-    //printf("%d %d %d  %lf\n", nt_a, nt_b, subf, well);
-    tot_nb_bp=nbe;
-    tot_nb_bp-=well;
-#ifdef BI_ANNEALING
-    tot_nb_bp*=bia_lambda;
-    if(tot_nb_bp<bia_cap)
-      tot_nb_bp=bia_cap;
-#endif
- 
+    /*  printf("%d %d %d  %lf %lf \t %lf %lf %lf\t", nt_a, nt_b, face_a, nbe, well, r_vec[0], r_vec[1], r_vec[2]); */
+    /* if(typ_a==0) printf("A "); */
+    /* if(typ_a==1) printf("U "); */
+    /* if(typ_a==2) printf("G "); */
+    /* if(typ_a==3) printf("C "); */
+    /* if(face_ind==WC_FACE_SUGAR) printf("S\t"); */
+    /* if(face_ind==WC_FACE_HOOGSTEEN) printf("H\t"); */
+    /* if(face_ind==WC_FACE_WATSCRICK) printf("W\t"); */
     
-    if(tot_nb_bp < wc_face_ene_trial[nt_a][face_a]){
-      wc_face_ene_trial[nt_a][face_a]=tot_nb_bp;
-      wc_face_ind_trial[nt_a][face_a]=nt_b+nt_n;
+    /* printf("P %lf %lf %lf\tS1  %lf %lf %lf\tS2 %lf %lf %lf\tB %lf %lf %lf\n", rx[N_PARTS_PER_NT*nt_b+IPHO], ry[N_PARTS_PER_NT*nt_b+IPHO], rz[N_PARTS_PER_NT*nt_b+IPHO], */
+    /* 	   rx[N_PARTS_PER_NT*(nt_b-1)+ISUG], ry[N_PARTS_PER_NT*(nt_b-1)+ISUG], rz[N_PARTS_PER_NT*(nt_b-1)+ISUG], */
+    /* 	   rx[N_PARTS_PER_NT*nt_b+ISUG], ry[N_PARTS_PER_NT*nt_b+ISUG], rz[N_PARTS_PER_NT*nt_b+ISUG], */
+    /* 	   rx[N_PARTS_PER_NT*nt_a+IBAS], ry[N_PARTS_PER_NT*nt_a+IBAS], rz[N_PARTS_PER_NT*nt_a+IBAS] */
+    /* 	   ); */
+    //HERE, OUR REFINED TEST CASE, depending on the case
+    at_a=nt_a*N_PARTS_PER_NT;at_b=nt_b*N_PARTS_PER_NT;at_c=(nt_b-1)*N_PARTS_PER_NT;//remember, AT_C MUST EXIST TO PERFORM THE CHECK!
+    //printf("bp flag = %d  between %d  %d  %d\n", bp_flag, nt_a, nt_b, nt_b-1);
+    if(nt_b-1<0) {hb_exists=0; return;}
+    if(!MC_are_neighbors(nt_b, nt_b-1)){hb_exists=0; return;}
+    switch(bp_flag){
+    case 0:
+      BAS[0]=rx[at_a];BAS[1]=ry[at_a];BAS[2]=rz[at_a];
+      PHO[0]=rx[at_b+IPHO];PHO[1]=ry[at_b+IPHO];PHO[2]=rz[at_b+IPHO];
+      SUG2[0]=rx[at_b+ISUG];SUG2[1]=ry[at_b+ISUG];SUG2[2]=rz[at_b+ISUG];
+      SUG1[0]=rx[at_c+ISUG];SUG1[1]=ry[at_c+ISUG];SUG1[2]=rz[at_c+ISUG];
+      MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in rx
+      proj_on_nt(op1, rx, ry, rz, nt_a, bas_op1);
+      proj_on_nt(op2, rx, ry, rz, nt_a, bas_op2);
+      //printf("op1onbas   %lf %lf %lf    %lf\n", bas_op1[0], bas_op1[1], bas_op1[2], sqrt(SQ(bas_op1[0])+SQ(bas_op1[1])+SQ(bas_op1[2])));
+      //printf("op2onbas   %lf %lf %lf    %lf\n", bas_op2[0], bas_op2[1], bas_op2[2], sqrt(SQ(bas_op2[0])+SQ(bas_op2[1])+SQ(bas_op2[2])));
+      hb_exists=MC_check_bph_HB(bas_op1, bas_op2, typ_a, face_a);
+      //to get all op1op2
+      /* BAS[0]=rx[at_a];BAS[1]=ry[at_a];BAS[2]=rz[at_a]; */
+      /* int ph;  */
+      /* int at_ph , at_s1; */
+      /* for(ph=1;ph<nt_n;ph++){ */
+      /* 	at_ph=ph*N_PARTS_PER_NT;at_s1=(ph-1)*N_PARTS_PER_NT; */
+      /* 	PHO[0]=rx[at_ph+IPHO];PHO[1]=ry[at_ph+IPHO];PHO[2]=rz[at_ph+IPHO]; */
+      /* 	SUG2[0]=rx[at_ph+ISUG];SUG2[1]=ry[at_ph+ISUG];SUG2[2]=rz[at_ph+ISUG]; */
+      /* 	SUG1[0]=rx[at_s1+ISUG];SUG1[1]=ry[at_s1+ISUG];SUG1[2]=rz[at_s1+ISUG]; */
+      /* 	printf("NT %d   ", ph); */
+      /* 	MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in rx */
+      /* } */
+      /* exit(10); */
+      //if(nt_b-1<0) {printf("case 0 : %lf %lf %lf    %lf %lf %lf \n", bas_op1, bas_op2);}
+      break;
+    case 1:
+      BAS[0]=rx[at_a];BAS[1]=ry[at_a];BAS[2]=rz[at_a];
+      PHO[0]=rx[at_b+IPHO];PHO[1]=ry[at_b+IPHO];PHO[2]=rz[at_b+IPHO];
+      SUG2[0]=rx[at_b+ISUG];SUG2[1]=ry[at_b+ISUG];SUG2[2]=rz[at_b+ISUG];
+      SUG1[0]=mc_temp_x[at_c+ISUG];SUG1[1]=mc_temp_y[at_c+ISUG];SUG1[2]=mc_temp_z[at_c+ISUG];
+      MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in rx
+      proj_on_nt(op1, rx, ry, rz, nt_a, bas_op1);
+      proj_on_nt(op2, rx, ry, rz, nt_a, bas_op2); 
+      hb_exists=MC_check_bph_HB(bas_op1, bas_op2, typ_a, face_a);
+      //if(nt_b-1<0) {printf("case 1 : %lf %lf %lf    %lf %lf %lf    %d\n", bas_op1, bas_op2, hb_exists);}
+      break;
+    case 2:
+      BAS[0]=mc_temp_x[at_a];BAS[1]=mc_temp_y[at_a];BAS[2]=mc_temp_z[at_a];
+      PHO[0]=rx[at_b+IPHO];PHO[1]=ry[at_b+IPHO];PHO[2]=rz[at_b+IPHO];
+      SUG2[0]=rx[at_b+ISUG];SUG2[1]=ry[at_b+ISUG];SUG2[2]=rz[at_b+ISUG];
+      SUG1[0]=rx[at_c+ISUG];SUG1[1]=ry[at_c+ISUG];SUG1[2]=rz[at_c+ISUG];
+      MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in mc_temp
+      proj_on_nt(op1, mc_temp_x, mc_temp_y, mc_temp_z, nt_a, bas_op1);
+      proj_on_nt(op2, mc_temp_x, mc_temp_y, mc_temp_z, nt_a, bas_op2); 
+      hb_exists=MC_check_bph_HB(bas_op1, bas_op2, typ_a, face_a);
+      //if(nt_b-1<0) {printf("case 2 : %lf %lf %lf    %lf %lf %lf    %d\n", bas_op1, bas_op2, hb_exists);}
+      break; 
+    case 3:
+      BAS[0]=mc_temp_x[at_a];BAS[1]=mc_temp_y[at_a];BAS[2]=mc_temp_z[at_a];
+      PHO[0]=rx[at_b+IPHO];PHO[1]=ry[at_b+IPHO];PHO[2]=rz[at_b+IPHO];
+      SUG2[0]=rx[at_b+ISUG];SUG2[1]=ry[at_b+ISUG];SUG2[2]=rz[at_b+ISUG];
+      SUG1[0]=mc_temp_x[at_c+ISUG];SUG1[1]=mc_temp_y[at_c+ISUG];SUG1[2]=mc_temp_z[at_c+ISUG];
+      MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in mc_temp
+      proj_on_nt(op1, mc_temp_x, mc_temp_y, mc_temp_z, nt_a, bas_op1);
+      proj_on_nt(op2, mc_temp_x, mc_temp_y, mc_temp_z, nt_a, bas_op2); 
+      hb_exists=MC_check_bph_HB(bas_op1, bas_op2, typ_a, face_a);
+      //if(nt_b-1<0) {printf("case 3 : %lf %lf %lf    %lf %lf %lf    %d\n", bas_op1, bas_op2, hb_exists);}
+      break; 
+    case 4:
+      BAS[0]=rx[at_a];BAS[1]=ry[at_a];BAS[2]=rz[at_a];
+      PHO[0]=mc_temp_x[at_b+IPHO];PHO[1]=mc_temp_y[at_b+IPHO];PHO[2]=mc_temp_z[at_b+IPHO];
+      SUG2[0]=mc_temp_x[at_b+ISUG];SUG2[1]=mc_temp_y[at_b+ISUG];SUG2[2]=mc_temp_z[at_b+ISUG];
+      SUG1[0]=rx[at_c+ISUG];SUG1[1]=ry[at_c+ISUG];SUG1[2]=rz[at_c+ISUG];
+      MC_get_op1op2(BAS, PHO, SUG1,SUG2,op1,op2); //and now we project on the base, which is in rx
+      proj_on_nt(op1, rx, ry, rz, nt_a, bas_op1);
+      proj_on_nt(op2, rx, ry, rz, nt_a, bas_op2); 
+      hb_exists=MC_check_bph_HB(bas_op1, bas_op2, typ_a, face_a);
+      //if(nt_b-1<0) {printf("case 4 : %lf %lf %lf    %lf %lf %lf    %d\n", bas_op1, bas_op2, hb_exists);}
+      break;
+    default: hb_exists=0;
     }
-    if(tot_nb_bp < bp_face_ene_trial[nt_b]){
-      bp_face_ene_trial[nt_b]=tot_nb_bp;
-      bp_face_ind_trial[nt_b]=nt_a;
+    if(hb_exists==1){ 
+      tot_nb_bp=nbe;
+      tot_nb_bp-=well;
+      if(tot_nb_bp < wc_face_ene_trial[nt_a][face_a]){
+	wc_face_ene_trial[nt_a][face_a]=tot_nb_bp;
+	wc_face_ind_trial[nt_a][face_a]=nt_b+nt_n;
+      }
+      if(tot_nb_bp < bp_face_ene_trial[nt_b]){
+	bp_face_ene_trial[nt_b]=tot_nb_bp;
+	bp_face_ind_trial[nt_b]=nt_a;
+      }
     }
   }
 }
+
+void MC_get_op1op2(double *BAS, double *PHO, double *SUG1, double *SUG2, double *op1, double *op2){
+  double bbx[DIM], bby[DIM], bbz[DIM], vn, zdotx;
+  int d;
+  //we calculate the position of the contact atom in the base reference frame
+  //and we calculate the positions of the OP1 and OP2 in the backbone reference frame
+  for(d=0;d<DIM;d++){
+    bbz[d]=SUG2[d]-PHO[d];
+    bbx[d]=SUG1[d]-PHO[d];
+  }
+  vn=vec_norm(bbz[0], bbz[1], bbz[2]);
+  for(d=0;d<DIM;d++)
+    bbz[d]/=vn;
+  zdotx=dot_prod(bbx, bbz);
+  for(d=0;d<DIM;d++)
+    bbx[d]-=zdotx*bbz[d];
+  vn=vec_norm(bbx[0], bbx[1], bbx[2]);
+  for(d=0;d<DIM;d++)
+    bbx[d]/=vn;
+  vec_prod(bbz, bbx, bby);
+    
+  for(d=0;d<DIM;d++){
+    op1[d]=BP_OP1X*bbx[d]+BP_OP1Y*bby[d]+BP_OP1Z*bbz[d]+PHO[d]-BAS[d];
+    op2[d]=BP_OP2X*bbx[d]+BP_OP2Y*bby[d]+BP_OP2Z*bbz[d]+PHO[d]-BAS[d];
+  }
+  //to finally project the difference in the base reference frame
+  //printf("OP1 : %lf %lf %lf\nOP2: %lf %lf %lf\n", op1[0]+BAS[0], op1[1]+BAS[1], op1[2]+BAS[2], op2[0]+BAS[0], op2[1]+BAS[1], op2[2]+BAS[2]);
+}
+
 int MC_get_BPh_subface(int type, double *r_vec, int face){
   int ret=-1;
   double angle;
@@ -888,15 +1180,15 @@ int MC_get_BPh_subface(int type, double *r_vec, int face){
       else ret=2;
     }
   }
-  else if(type==TYP_CYTOSINE && face==WC_FACE_HOOGSTEEN){
-    angle=atan2(r_vec[1], r_vec[0]);
-    if(angle<-M_PI/2.0) angle+=2.0*M_PI;
-    if(angle<bp_spec_ang[type][0]) ret=0;
-    else{
-      if(angle<bp_spec_ang[type][1]) ret=1;
-      else ret=2;
-    }
-  }
+  /* else if(type==TYP_CYTOSINE && face==WC_FACE_HOOGSTEEN){ */
+  /*   angle=atan2(r_vec[1], r_vec[0]); */
+  /*   if(angle<-M_PI/2.0) angle+=2.0*M_PI; */
+  /*   if(angle<bp_spec_ang[type][0]) ret=0; */
+  /*   else{ */
+  /*     if(angle<bp_spec_ang[type][1]) ret=1; */
+  /*     else ret=2; */
+  /*   } */
+  /* } */
   return ret;
 }
 
@@ -980,7 +1272,74 @@ int eval_sameface_excl(int typ_c, int typ_ne, int face_c, int face_ne, double *r
   return ret;
 }
 
-void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_inv, double theta, double sphi, int nt_c, int nt_ne){
+double MC_sugar_penalization(int face_c, int face_ne, int typ_c, int typ_ne, int glp1, int glp2, int flip){
+  double shift=0;
+  if((glp1!=0 || glp2!=0) && (face_c==WC_FACE_SUGAR || face_ne==WC_FACE_SUGAR  )){ //someone is flipped AND one of the faces involved is sugar
+    double sub1=0, sub2=0, subT=0;
+    if(face_c ==WC_FACE_SUGAR  && glp1!=0) sub1=1;
+    if(face_ne==WC_FACE_SUGAR && glp2!=0) sub2=1;
+    //case antiparallel
+    if(flip==0){
+      if(face_c==WC_FACE_SUGAR && face_ne==WC_FACE_SUGAR){
+	//SS
+	shift=0.5*(sub1+sub2)+1;
+      }
+      else if(face_c==WC_FACE_HOOGSTEEN && face_ne == WC_FACE_SUGAR){
+	//HS
+	if( !(typ_c==TYP_GUANINE && typ_ne==TYP_GUANINE) && !(typ_c==TYP_URACIL && typ_ne==TYP_ADENINE) && !(typ_c==TYP_URACIL && typ_ne==TYP_GUANINE)){
+	  shift=sub2;
+	}
+      }
+      else if(face_ne==WC_FACE_HOOGSTEEN && face_c == WC_FACE_SUGAR){
+	//SH
+	if( !(typ_ne==TYP_GUANINE && typ_c==TYP_GUANINE) && !(typ_ne==TYP_URACIL && typ_c==TYP_ADENINE) && !(typ_ne==TYP_URACIL && typ_c==TYP_GUANINE)){
+	  shift=sub1;
+	}
+      }
+      else if(face_c==WC_FACE_WATSCRICK && face_ne == WC_FACE_SUGAR){
+	//WS
+	if( !(typ_c==TYP_URACIL && typ_ne==TYP_GUANINE)){
+	  shift=sub2;
+	}
+      }
+      else if(face_ne==WC_FACE_WATSCRICK && face_c == WC_FACE_SUGAR){
+	//SW
+	if( !(typ_ne==TYP_URACIL && typ_c==TYP_GUANINE)){
+	  shift=sub1;
+	}
+      }
+    }
+    //case parallel
+    else if(flip==1){
+      if(face_c==WC_FACE_SUGAR && face_ne==WC_FACE_SUGAR){
+	//SS
+	shift=0.5*(sub1+sub2);
+	if(typ_c==TYP_GUANINE && typ_ne==TYP_GUANINE)
+	  shift=shift+1;
+      }
+      else if(face_c==WC_FACE_WATSCRICK && face_ne == WC_FACE_SUGAR){
+	//WS
+	if( !(typ_c==TYP_ADENINE && typ_ne==TYP_ADENINE) && !(typ_c==TYP_URACIL && typ_ne==TYP_ADENINE)&& !(typ_c==TYP_URACIL && typ_ne==TYP_GUANINE)	    ){
+	  shift=sub2;
+	}
+      }
+      else if(face_ne==WC_FACE_WATSCRICK && face_c == WC_FACE_SUGAR){
+	//SW
+	if( !(typ_ne==TYP_ADENINE && typ_c==TYP_ADENINE) && !(typ_ne==TYP_URACIL && typ_c==TYP_ADENINE)&& !(typ_ne==TYP_URACIL && typ_c==TYP_GUANINE)	    ){
+	  shift=sub1;
+	}
+      }
+    }
+    else{
+      printf("WRONG FLIP FLAG!\n");
+      exit(1);
+    }
+    
+  }
+  return shift*E_HB;
+}
+
+void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_inv, double theta, double sphi, int nt_c, int nt_ne, int glp1, int glp2){
   //fflush(stdout);
   //classify type of pair
   //int face_c =MC_get_wc_face(typ_c , r_vec);
@@ -998,6 +1357,7 @@ void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_in
   double tnbed_F=0, tnbed=0, nb_well=0;
   int tshift=0;
   int tshift_i;
+  int flipflag=-1;
   if(table_nnN_N_3[typ_ind]>0) 
     tnbed  =calc_nnN_tab_wc_psdihedr(theta,typ_ind,NT_UNFLIPPED); // watson-crick pseudodihedral
   if(table_nnN_N_3_F[typ_ind]>0) 
@@ -1005,6 +1365,7 @@ void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_in
   
   if(tnbed!=0 && tnbed_F==0){
     //CASE UNFLIPPED
+    flipflag=0;
     //face_c =MC_get_wc_face(typ_c , r_vec, NT_UNFLIPPED);
     //face_ne=MC_get_wc_face(typ_ne, r_vec_inv,NT_UNFLIPPED);
     face_c =MC_get_wc_face(typ_ind    , r_vec    , NT_UNFLIPPED);
@@ -1031,16 +1392,14 @@ void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_in
   }
   else if(tnbed==0 && tnbed_F!=0){
     //CASE FLIPPED
+    flipflag=1;
     face_c =MC_get_wc_face(typ_ind    , r_vec    , NT_FLIPPED);
     face_ne=MC_get_wc_face(typ_ind_inv, r_vec_inv, NT_FLIPPED);
     if(face_c <0 || face_ne <0)
       return;
     
-    
-    
     //HERE APPLY THE SAMEFACE EXCLUSION
     if(eval_sameface_excl(typ_c, typ_ne, face_c, face_ne, r_vec, r_vec_inv, NT_FLIPPED)==1) return;
-    
     
     face_ind = WC_FACES*face_c + face_ne;
     //SECOND DIHEDRAL
@@ -1055,17 +1414,26 @@ void MC_calc_nnN_watscric(int typ_c, int typ_ne, double *r_vec, double *r_vec_in
       nbei=calc_nnN_tab_watscric_inv(r_vec_inv, typ_ind, tshift_i, NT_FLIPPED); // watson-crick
     nbed=tnbed_F;
     nb_well=nb_wc_well_F[typ_ind][face_ind];
+    nb_well=nb_well-MC_sugar_penalization(face_c, face_ne, typ_c, typ_ne, glp1, glp2, flipflag);
   }
   double tot_nb_wc=0;
   //printf("PAIR %d %d    %lf %lf %lf   %lf   SHIFT %d %d\t\t%lf %lf %lf   %lf %lf %lf\n", nt_c, nt_ne, nbe, nbei, nbed, nb_well, tshift, tshift_i,r_vec[0], r_vec[1], r_vec[2], r_vec_inv[0], r_vec_inv[1], r_vec_inv[2]);
   if(nbe!=0 && nbei!=0 && nbed!=0 && nb_well!=0 ){
     tot_nb_wc=nbe+nbei+nbed;
     tot_nb_wc-=nb_well;
-#ifdef BI_ANNEALING
-    tot_nb_wc*=bia_lambda;
-    if(tot_nb_wc<bia_cap)
-      tot_nb_wc=bia_cap;
+    // HERE WE APPLY THE SECSTRC
+#ifdef SECONDSTC
+    if(wc_sstruct_N[nt_c]>0 && wc_sstruct_N[nt_ne]>0){
+      if(wc_sstruct_neigh[nt_c][0]==nt_ne && wc_sstruct_neigh[nt_ne][0]==nt_c && 
+	 face_ind==(WC_FACES*WC_FACE_WATSCRICK + WC_FACE_WATSCRICK) && (tnbed!=0 && tnbed_F==0) ){
+	//so, it makes a cWW pair which is constrained in the secstrc list
+	tot_nb_wc-=1000;
+      }
+    }
 #endif
+    /**************************/
+    
+    if(tot_nb_wc>0) tot_nb_wc=0; //FOR SAFETY!! 
     if(tot_nb_wc < wc_face_ene_trial[nt_c][face_c]){
       wc_face_ene_trial[nt_c][face_c]=tot_nb_wc;
       wc_face_ind_trial[nt_c][face_c]=nt_ne;
