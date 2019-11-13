@@ -1,0 +1,50 @@
+This is 01-28-17
+Jacobian is not considered in the interactions - wc, nst and bst
+epsilon table for bonded stacking is corrected as well, accordingly
+base phosphate does not contain C-H hydrogen bonds - better to run with 8.7
+
+This is 05-31-16
+It only contains the table of the angles plus a very small correction in the base-pairing of CUpSW, both in the table and the epsilons
+to be run with 8.4
+
+It was 04-18-16
+
+To be run from 8.0 
+It was 03-31-16, but now the backbone interactions have epsilons determined in a more systematic way.
+
+To be run with 8.0
+Now base-pairing interactions have been recalculated. They are specific for both faces involved.
+
+This was 02-11-16
+To be run with 7.6
+Now the bonded stacking interactions depend on faces 3' and 5'
+No dihedral interaction for this kind of stacking.
+
+
+It was 02-07-16
+to be run with 7.5.
+Backbone interactions include now puckers, at least for the glycosidic conformations 
+anti and high-anti. For syn, in the case of pyrimidines, they have been patched with something else.
+Angles depend only on glycosidic conformations, as before.
+
+
+
+
+
+It was 01-28-16:
+ with the real EV interactions
+Now non-bonded stacking and base-phosphate have been updated according to the non-redundant pdb list.
+NB st is taken as a combination of 3' and 5' faces.
+The value of HBOND is 24 for BPH, but it should be changed.
+The faces of a base for BPH have been redefined.
+The rest is taken from 01-21-16
+
+01-21-16
+BASE PAIR INTERACTIONS have been updated, taken from the whole non-redundant pdb list of FR3D.
+The value of an HBOND is now 24.
+The rest is taken from 11-27-15
+
+11-27-15:
+base phosphate interactions have a heaviside-cutoff interaction as well
+st epsilon is stronger
+Kbb is lower
