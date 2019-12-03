@@ -9,7 +9,8 @@ localinteractions=../interactions
 localsrc=../src
 SPQRFLAGS=-DFROZEN
 
-binaries=SPQR_MC SPQR_eMC SPQR_wMC SPQR_ENERG WRITETABLES
+
+binaries=SPQR_MC SPQR_eMC SPQR_wMC SPQR_ENERG WRITETABLES SPQR_SA SPQR_wSA SPQR_eSA
 
 %.o : %.c
 	$(CC) $(CFLAGS) $(SPQRFLAGS)  -o $@ -c $<
@@ -19,21 +20,30 @@ binaries=SPQR_MC SPQR_eMC SPQR_wMC SPQR_ENERG WRITETABLES
 	$(CC) $(CFLAGS) $(SPQRFLAGS) -DFROZEN -DNOCTCS -DWARMUP  -o $@ -c $<
 %_xy.o : %.c
 	$(CC) $(CFLAGS) $(SPQRFLAGS) -DFROZEN -DXYZDEBUG  -o $@ -c $<
+%_sa.o : %.c
+	$(CC) $(CFLAGS) $(SPQRFLAGS) -DFROZEN -DTANN -o $@ -c $<
+%_wa.o : %.c
+	$(CC) $(CFLAGS) $(SPQRFLAGS) -DFROZEN -DTANN -DWARMUP -o $@ -c $<
+%_ea.o : %.c
+	$(CC) $(CFLAGS) $(SPQRFLAGS) -DFROZEN -DTANN -DERMSDR -o $@ -c $<
 
-all: 	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o mpi_mc_we.o mc_energies_we.o mc_initialization_we.o mc_integrate_we.o mc_end_we.o mpi_mc_wr.o mc_energies_wr.o mc_initialization_wr.o mc_integrate_wr.o mc_end_wr.o mc_energies_xy.o get_energ.o write_tabs.o
+
+all: 	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  mc_integrate.o  mc_verlet_lists.o mc_global.o mc_base_pairing.o mc_utils.o mc_ermsd.o mpi_mc_we.o mc_energies_we.o mc_initialization_we.o mc_integrate_we.o mc_end_we.o mpi_mc_wr.o mc_energies_wr.o mc_initialization_wr.o mc_integrate_wr.o mc_end_wr.o mc_energies_xy.o get_energ.o write_tabs.o sim_anneal.o sa_impl.o mc_energies_wa.o mc_initialization_wa.o mc_integrate_wa.o mc_checkpoints_sa.o mc_energies_ea.o mc_initialization_ea.o mc_integrate_ea.o sim_anneal_ea.o
 	$(CC) $(CFLAGS)	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_MC -lm
 	$(CC) $(CFLAGS)	mpi_mc_we.o mc_checkpoints.o  mc_end_we.o  mc_energies_we.o  mc_initialization_we.o mc_integrate_we.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_eMC -lm
 	$(CC) $(CFLAGS)	mpi_mc_wr.o mc_checkpoints.o  mc_end_wr.o  mc_energies_wr.o  mc_initialization_wr.o mc_integrate_wr.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_wMC -lm
 	$(CC) $(CFLAGS)	get_energ.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_ENERG -lm
 	$(CC) $(CFLAGS)	write_tabs.o mc_checkpoints.o  mc_end.o  mc_energies.o mc_initialization.o  mc_integrate.o  mc_verlet_lists.o  mc_global.o  mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o WRITETABLES -lm
+	$(CC) $(CFLAGS)	sim_anneal.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_SA -lm
+	$(CC) $(CFLAGS)	sim_anneal.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_wa.o  mc_initialization_wa.o mc_integrate_wa.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_wSA -lm
+	$(CC) $(CFLAGS)	sim_anneal_ea.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_ea.o  mc_initialization_ea.o mc_integrate_ea.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_eSA -lm
 install:
 	rm -rf ../bin 
 	mkdir -p ../bin
-	mv SPQR_MC SPQR_eMC SPQR_wMC SPQR_ENERG ../bin
+	mv SPQR_MC SPQR_eMC SPQR_wMC SPQR_ENERG SPQR_SA SPQR_wSA SPQR_eSA ../bin
 	rm -rf ../interactions
 	mkdir -p ../interactions
 	./WRITETABLES
-
 clean:
 	rm -f *.o $(binaries)
 	rm -rf bin

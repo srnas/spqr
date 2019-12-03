@@ -42,12 +42,12 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_count);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_id);
 #else
-  argmax=3;
+  argmax=2;
   if(argc < argmax){
     printf("Second argument must be the job_id of the simulation!\n");
     exit(ERR_INPUT);
   }
-  mpi_id=atoi(argv[2]);
+  mpi_id=atoi(argv[1]);
 #endif
   /***********/
   mc_n=(int)NSOLUTE;
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   if(sa_ini==0)
     sa_prev_energ=energy_t;
   printf("JOB %d , INITIAL ENERGY IS %lf\n", mpi_id, energy_t);
-#ifdef ERMSD
+#ifdef ERMSDR
   //energy_t+=0.5*ERMSD_PREF*ERMSD_SQ;
   energy_t+=ERMSD_ENERG;
 #endif
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     SA_set_temp(sa_temp);
     SA_set_mc_trials(smc_nt_xyz, smc_ph_xyz, smc_nt_ang);
     sa_temp_energ=energy_t;
-#ifdef ERMSD
+#ifdef ERMSDR
     sa_temp_energ-=ERMSD_ENERG;
 #endif
     sa_this_energ=sa_temp_energ;
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
       energy_t+=d_energ;
       //WE DON'T CONSIDER THE PULLING IN THE ANNEALING ENERGY!
       sa_temp_energ=energy_t;
-#ifdef ERMSD
+#ifdef ERMSDR
       sa_temp_energ-=ERMSD_ENERG;
       //0.5*ERMSD_PREF*ERMSD_SQ;
       if((i+1)%mc_traj_steps==0)
