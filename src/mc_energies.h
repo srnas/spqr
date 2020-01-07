@@ -420,8 +420,8 @@ static inline double energy_hardcore(double *vec, double sxx, double syy, double
 #endif
   if( vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz   > 1.0 )
     RET= 0;
-  else printf("%lf %lf\n", vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz ,
-	      sqrt( vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]) );
+  //else printf("%lf %lf\n", vec[0]*vec[0]*sxx + vec[1]*vec[1]*syy + vec[2]*vec[2]*szz + 2*vec[0]*vec[1]*sxy + 2*vec[0]*vec[2]*sxz + 2*vec[1]*vec[2]*syz ,
+  //	      sqrt( vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]) );
   return RET;
 }
 #endif
