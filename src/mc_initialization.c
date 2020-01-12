@@ -595,8 +595,8 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
     printf("No MC parameters file found.\n");
     exit(ERR_INPUT);
   } else {
-    if(mpi_id==0)
-      printf("Reading MC parameters from file %s ...\n", PARAMS_NAME);
+    //if(mpi_id==0)
+    printf("Reading MC parameters from file %s ...\n", PARAMS_NAME);
     //while (s=ew_gtl(mc_params)) {
     while((l=getline(&line, &st_l, mc_params))>0){
       //printf("ret %d  '%s'\n", sscanf(line, "%s", s), s);
@@ -668,6 +668,6 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   /***** check some parameters *****/
   
   /*********************************/
-  if(mpi_id==0)
-    MC_print_params(*mc_iter, *rand_a);
+  //if(mpi_id==0)
+  MC_print_params(*mc_iter, *rand_a);
 }

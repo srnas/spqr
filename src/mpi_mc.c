@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "mc.h"
 
 #ifdef MPIMC
@@ -32,12 +33,37 @@ int main(int argc, char **argv) {
   /* initialization */
   
   /*MPI STUFF*/
-  int mpi_id=0;
+  int mpi_id=0,argmax;
 #ifdef MPIMC
   int mpi_count;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_count);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_id);
+  #else
+  int opt;
+  while((opt = getopt(argc, argv, "hi:")) != -1)  
+    {  
+      switch(opt)  
+        {  
+	case 'i':
+	  mpi_id=atoi((char *)optarg);
+	  //printf("Job_id = %d\n",mpi_id);
+	  break;
+	case 'h':
+	  printf("Usage: ./SPQR_MC [-i job_id]\nRemember that params.pms and pdb_inits, with a proper initial condition must be present in the simulation directory.\n");
+	  exit(ERR_INPUT);
+	  break;
+	case '?':
+	  if (optopt == 'i')
+	    printf ("Option -%c requires an argument.\n", optopt);
+	  else if (isprint (optopt))
+	    printf ("Unknown option `-%c'.\n", optopt);
+	  else
+	    printf ("Unknown option character `\\x%x'.\n",   optopt);
+	  exit(ERR_INPUT);
+	  break;
+	}
+    }  
 #endif
   /***********/
   
@@ -46,7 +72,7 @@ int main(int argc, char **argv) {
 #ifdef MPIMC
   printf("Launching from %d \n" , mpi_id);
 #else
-  printf("Launching from single processor \n");
+  printf("Launching from single processor. Job_id = %d \n", mpi_id);
 #endif
   openflag=MC_detect_initial_condition(mpi_id);
 #ifdef MPIMC
@@ -69,8 +95,8 @@ int main(int argc, char **argv) {
   if(argc>2 && !strcmp(argv[2],"-r")) mc_i0=tempinit;
   else mc_i0=0;
   
-  if(mpi_id==0)
-    printf("Run %d MC steps. Saving trajectory and checkpointing every %d and %d swaps.\n", mc_iter, mc_traj_steps, mc_chkp_steps);
+  //if(mpi_id==0)
+  printf("Simulation %d . Run %d MC steps. Saving trajectory and checkpointing every %d and %d swaps.\n", mpi_id, mc_iter, mc_traj_steps, mc_chkp_steps);
   double jcenergy;
   energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   printf("INITIAL ENERGY IS %lf at step %d\n", energy_t, mc_i0);
