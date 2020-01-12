@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{wrapfig}
 \usepackage{verbatim}
+\usepackage{spverbatim}
 \title{SPQR 0.9.5.1\\A simulation package for the prediction, refinement and simulation of RNA structures.}
 \author{Sim\'on Poblete}
 \date{}
@@ -41,22 +42,20 @@ To compile, one has to run the \verb ./configure ~ script in the \verb src/ dire
 
 In order to run any of these programs one must include the file \verb params.spqr ~in the same directory, plus other files specified in the next section. The following list summarizes the binaries
 \begin{itemize}
-\item \verb SPQR_MC : Runs a simple Monte Carlo simulation at constant temperature. Requires also two empty directories for the initial conditions and the output configurations. Must be run as
-\begin{verbatim}
-./SPQR_MC
-\end{verbatim}
+\item \begin{verbatim} SPQR_MC [-i job_index]\end{verbatim} 
+  Runs a simple Monte Carlo simulation at constant temperature. Requires the initial condition stored in the \verb pdb_inits ~directory, which can be created with the scripts described in the Tools section.
 
-\item \verb SPQR_eMC : Runs a simple Monte Carlo simulation with the option of including a harmonic restraint on the $\cal{E}$RMSD with respect to a target structure. Requires also two empty directories for the initial conditions and the output configurations.
+\item \begin{verbatim} SPQR_eMC [-i job index] \end{verbatim}
+  Runs a simple Monte Carlo simulation with the option of including a harmonic restraint on the $\cal{E}$RMSD with respect to a target structure. It requires the same files as \verb SPQR_MC ~and the file \verb ermsd_frags.lst ~, which defines the groups over which the $\cal{E}$RMSD steering will be applied, their harmonic spring constant and the reference fragments.
 
-\item \verb SPQR_SA : Runs a simulated annealing. Requires also two empty directories for the initial conditions and the output configurations.
-\begin{verbatim}
-./SPQR_SA  <job_index>
-\end{verbatim}
-where \verb <job_index>  is a positive integer used to label the job, in case many simulations with different initial conditions are ran. In addition, it ensures that the random seed of each run is different for each replica. Pretty useful for running job arrays.
+\item \begin{verbatim} SPQR_SA [-i job index] \end{verbatim}
+  Runs a simulated annealing. It requires additional parameters in the \verb params.pms ~file, which are described in the next section.
 
-\item \verb SPQR_wMC : Runs a Monte Carlo simulation with capped interactions. That is, whenever there is a clash or broken bond, the interactions do not collapse but instead push the system to an allowed configuration.
+ \item \begin{verbatim} SPQR_wMC [-i job index] \end{verbatim}
+Runs a Monte Carlo simulation with capped interactions. That is, whenever there is a clash or broken bond, the interactions do not collapse but instead push the system to an allowed configuration.
 
-\item \verb SPQR_ENERG : A tool for calculating the energy and its contributions of a given structure. In addition, one can perform annotations and also detect possible clashes.
+\item  \begin{verbatim} SPQR_ENERG <pdbfile> <args>  \end{verbatim}
+ A tool for calculating the energy and its contributions of a given structure. In addition, one can perform annotations and also detect possible clashes.
 \end{itemize}
 
 
@@ -101,7 +100,7 @@ All the parameters which are zero unless the simulation starts from a checkpoint
 
 The directory \verb pdb_inits  contains the initial conditions. The files can be in \verb .pdb  or \verb .mc  binary format, which saves the configurations and more information in full precision, allowing to evaluate energies and restarting simulations without complications. Several tools are provided for converting between these formats, modify them and generate them from a sequence or other pdb (see the Tools section). The names of the initial conditions must be \verb init.p<XX>.<format>  . \verb XX  corresponds to the index of the simulation. It can also be that only the file \verb init.<format>  is provided, starting all the simulations from them but with different random seeds.
 
-The SPQR \verb pdb ~ format contains some particular features. Each nucleotide is composed of five particles, with atom names \verb BASE , \verb XVEC , \verb YVEC , \verb SUGR ~and \verb PHOS . The sugar position is only contained for human-reading purposes, since the SPQR binaries rewrite it anyway. Apart from the atom, residue and chain indexes, it contains the coordinates as any pdb file. However, the \verb BASE ~atoms can contain additional information for a simulation. Starting from the column 56, four parameters \verb G , \verb P , \verb L and \verb F ~can be specified.
+The SPQR \verb pdb ~format contains some particular features. Each nucleotide is composed of five particles, with atom names \verb BASE , \verb XVEC , \verb YVEC , \verb SUGR ~and \verb PHOS . The sugar position is only contained for human-reading purposes, since the SPQR binaries rewrite it anyway. Apart from the atom, residue and chain indexes, it contains the coordinates as any pdb file. However, the \verb BASE ~atoms can contain additional information for a simulation. Starting from the column 56, four parameters \verb G , \verb P , \verb L and \verb F ~can be specified.
 \begin{itemize}
   \item \verb G : Corresponds to the glycosidic bond angle state. It can be \verb A , \verb H  or \verb S   for anti, high-anti and syn. The syn state is not allowed in pyrimidines.
   \item \verb P : Corresponds to the sugar pucker. It can be 3 or 2, for C3' endo and C2' endo states.
@@ -117,7 +116,7 @@ As mentioned before, the \verb intrac.btb  binary file must be located somewhere
 
 \section{Output files.}
 
-After a simulation is performed, several files are created. Inside the \verb configs  directory, the trajectories and the checkpoints are stored. Both of them are in binary format, which is accessible by using the analysis template in the tools directory. The trajectories are stored in the file \verb confs.pXX.mc , where \verb XX ~  corresponds to the index of the simulation running. The checkpoints, on the other hand, are named \verb chk.YY.pXX.mc , with \verb YY ~ denoting the Monte Carlo step. These files can also be transformed to pdb format easily with the tool \verb extract_traj.c , and modified with similar methods found in the same directory (See the Tools section). The final configuration is also written in pdb format in the local directory under the name \verb final.pXX.pdb . The checkpoints contain all the information of the conformation with double precision, and the parameters for the simulated annealing in case this is interrupted.
+After a simulation is performed, several files are created. Inside the \verb configs  directory, the trajectories and the checkpoints are stored. Both of them are in binary format, which is accessible by using the analysis template in the tools directory. The trajectories are stored in the file \verb confs.pXX.mc , where \verb XX ~corresponds to the index of the simulation running. The checkpoints, on the other hand, are named \verb chk.YY.pXX.mc , with \verb YY ~denoting the Monte Carlo step. These files can also be transformed to pdb format easily with the tool \verb extract_traj.c , and modified with similar methods found in the same directory (See the Tools section). The final configuration is also written in pdb format in the local directory under the name \verb final.pXX.pdb . The checkpoints contain all the information of the conformation with double precision, and the parameters for the simulated annealing in case this is interrupted.
 
 \section{Annotation, energies and secondary structure.}
 
@@ -147,21 +146,22 @@ The directory tools contains several binaries with their sources for the creatio
 \item \verb MODIF_MC : It allows to change the state of a glycosidic bond angle or sugar pucker, to make it fixed or allowed to change during a simulation. Its source is \verb modif_mc.c .
 
 \item \verb func_assemble.py : A python script which allows to generate a simple SPQR \verb pdb  file from a sequence. It must be used as
-\begin{verbatim}
+\begin{spverbatim}
 python func_assemble.py -s "<seq>" -t "<secondary structure>" -c "x y z x y z ... "
-\end{verbatim}
-where the options \verb -t ~and \verb -c ~are optional. \verb -s allows to specify the sequence. \verb -t ~allows to introduce seceondary structure constraints and \verb -c , the centers of the strands that will be created.
-The output files are: \verb init.pdb ~for the initial condition, and \verb ~ermsd_frags.lst which is required for enforcing the contacts given in the arguments.
+\end{spverbatim}
+
+where the options \verb -t ~and \verb -c ~are optional. \verb -s ~allows to specify the sequence. \verb -t ~allows to introduce seceondary structure constraints and \verb -c , the centers of the strands that will be created.
+The output files are: \verb init.pdb ~for the initial condition, and \verb ermsd_frags.lst ~which is required for enforcing the contacts given in the arguments.
 The \verb init.pdb ~file must be in the directory \verb pdb_inits ~when running the simulation, as shown in the \verb example ~directory. The \verb ermsd_frags.lst ~must be contained in the same directory of the simulation running, which has to be run with the \verb SPQR_eMC ~or \verb SPQR_eSA ~binaries.
-Also, note that the \verb ermsd_frags.lst ~file contains some \verb REMARK ~lines at the beginning. The first corresponds to the parameters to be used in the simulation: the first line containts the number of groups where the contacts are going to be enforced followed by the cutoff of the \cal{E}RMSD. The following lines are as many as there are groups to be enforced, and contain the harmonic constant of the \cal{E}RMSD harmonic potential followed by the residue indexes of the nucleotides belonging to each group. The \verb ATOM ~coordinates which complete the file are for internal use and constitute the templates used for enforcing the contacts.
+Also, note that the \verb ermsd_frags.lst ~file contains some \verb REMARK ~lines at the beginning. The first corresponds to the parameters to be used in the simulation: the first line containts the number of groups where the contacts are going to be enforced followed by the cutoff of the $\cal{E}$RMSD. The following lines are as many as there are groups to be enforced, and contain the harmonic constant of the $\cal{E}$RMSD harmonic potential followed by the residue indexes of the nucleotides belonging to each group. The \verb ATOM ~coordinates which complete the file are for internal use and constitute the templates used for enforcing the contacts.
 
-\item \verb pdb2spqr.py : Transforms an all-atom \verb pdb ~ file into a SPQR \verb pdb ~ file. It classifies automatically the glycosidic bond angles and sugar puckers of each nucleotide.
+\item \verb pdb2spqr.py : Transforms an all-atom \verb pdb ~file into a SPQR \verb pdb ~file. It classifies automatically the glycosidic bond angles and sugar puckers of each nucleotide.
 
-\item \verb spqr2ccc.py : It converts a SPQR \verb pdb ~ file into a \verb pdb ~ with the positions of the C2, C4 and C6 atoms, ready to be used with the Gromacs and Plumed packages for \cal{E}RMSD pulling.
+\item \verb spqr2ccc.py : It converts a SPQR \verb pdb ~file into a \verb pdb ~with the positions of the C2, C4 and C6 atoms, ready to be used with the Gromacs and Plumed packages for $\cal{E}RMSD$ pulling.
 
 \item \verb brute_backmap.py : A trivial and direct way of backmapping SPQR files into all-atom representations. It simply mounts an atomistic template nucleotide on top of each SPQR base. It uses specific templates depending on the glycosidic and pucker states. Further energy minimization can follow this step for later use in MD simulations. It requires the directory \verb bbm_templates ~to be located in the same directory as the script.
 
-\item \verb at.tcl : A \verb tcl ~ script which allows to visualize the SPQR representation of a \verb pdb ~ in \verb vmd. It must be loaded from \verb vmd ~ with the command \verb source ~ \verb at.tcl ~ once a molecule is already loaded.
+\item \verb at.tcl : A \verb tcl ~script which allows to visualize the SPQR representation of a \verb pdb ~ in \verb vmd. It must be loaded from \verb vmd ~ with the command \verb source ~ \verb at.tcl ~once a molecule is already loaded.
   
 \end{itemize}
 
@@ -172,7 +172,8 @@ Enforce secondary structure contacts in a GCAA tetraloop. Create the files with
 python func_assemble.py -s "GGGCGCAAGCCC" -t "((((....))))"
 \end{verbatim}
 
-Move the init.pdb file into the \verb example/pdb_inits ~directory, and \verb ermsd_frags.lst ~and \verb eMC ~to the \verb example ~directory. Then, run the simulation.
+Move the \verb init.pdb ~file into the \verb example/pdb_inits ~directory.
+Then, move \verb ermsd_frags.lst ~and \verb SPQR_MC ~to the \verb example ~directory. Finally, run the simulation.
 %A simple test corresponds to fold the GCAA tetraloop closed by a duplex, belonging to the PDB:1zih. Its initial conformation can be created using the \verb assemble.py  script with the sequence  GGGCGCAAGCCU . In the directory \verb example  one can find the \verb input.spqr  and the initial condition in the \verb pdb_inits  directory. By simply setting the correct directory for the interactions in the input file and running it with \verb MPI_SPQR_SA , one will generate a series of final structures from which the one with the minimum energy will have the correct contacts, as found in the native structure. Try it! 
 
 %\section{Optimization of pdb structures.}
