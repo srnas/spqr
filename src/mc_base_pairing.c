@@ -523,15 +523,16 @@ double MC_calculate_local_wc_energy(int nt_n, int nt_c,  double *rx, double *ry,
   /* } */
   
   for(nt_t=0;nt_t<nt_n;nt_t++){
-  // THIS LOOP HAS TO BE DONE IN THE NEIGHBOR LIST OF nt_c
-  //for(n=0;n<vl_n_pairs[nt_c];n++){
-  //nt_t=vl_neighbor_tables[nt_c][n]; 
-    up_flag=MC_update_min_wc(nt_t, nt_c, rx, ry, rz, nt_n);
-    //up_flag=1;
-    if(up_flag==1 || up_flag==3)
-      MC_find_min_wc(nt_t, nt_c, rx, ry, rz, nt_n); //if the nt was pointing to nt_c but its not anymore, it can point somewhere else
-    //if(up_flag==2 || up_flag==3)
-      
+    if(nt_t!=nt_c){
+      // THIS LOOP HAS TO BE DONE IN THE NEIGHBOR LIST OF nt_c
+      //for(n=0;n<vl_n_pairs[nt_c];n++){
+      //nt_t=vl_neighbor_tables[nt_c][n]; 
+      up_flag=MC_update_min_wc(nt_t, nt_c, rx, ry, rz, nt_n);
+      //up_flag=1;
+      if(up_flag==1 || up_flag==3)
+	MC_find_min_wc(nt_t, nt_c, rx, ry, rz, nt_n); //if the nt was pointing to nt_c but its not anymore, it can point somewhere else
+      //if(up_flag==2 || up_flag==3)
+    }
   } 
   //this should be only in the case where nt_c and nt_c+1 are bonded!
   if(nt_c+1<nt_n)
