@@ -602,7 +602,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
       //printf("ret %d  '%s'\n", sscanf(line, "%s", s), s);
       //if(line[0]!='#' && sscanf(line, "%s", stmp)>0 && (line[0]!='S' && (line[1]!='A' && line[1]!='T' ) && (line[2]!='_'))){
 	if(line[0]!='#' && sscanf(line, "%s", stmp)>0){
-	  if((line[0]!='S' || (line[1]!='A' && line[1]!='T' ) || (line[2]!='_')) ){
+	  if(((line[0]!='S' || (line[1]!='A' && line[1]!='T' ) || (line[2]!='_')) && (line[0]!='P' || line[1]!='T') )){
 	    sscanf(line, "%s", s);
 	    //printf("read %s - line = %s\n", s2, line);
 	    if(!strcmp(s, "TEMPERATURE")) {
