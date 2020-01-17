@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
   /* before running */
   
   /******************/
-  int n, face;
+  int n;
   nt_n=mc_n/N_PARTS_PER_NT;
   //IF -R IS GIVEN, Mc_i0=0
   if(argc>2 && !strcmp(argv[2],"-r")) mc_i0=tempinit;
@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
   
   //if(mpi_id==0)
   printf("Simulation %d . Run %d MC steps. Saving trajectory and checkpointing every %d and %d swaps.\n", mpi_id, mc_iter, mc_traj_steps, mc_chkp_steps);
-  double jcenergy;
   energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   printf("INITIAL ENERGY IS %lf at step %d\n", energy_t, mc_i0);
 #ifdef ERMSDR
@@ -109,24 +108,13 @@ int main(int argc, char **argv) {
     d_energ=MC_integrate(mc_n, &rx, &ry, &rz);
     energy_t+=d_energ;
     
-    /* jcenergy=MC_get_energy(nt_n, rx, ry, rz, 3)+0.5*ERMSD_PREF*ERMSD_SQ; */
-    /* printf("Step %d  %d  ,   acc = %lf  get_energ = %lf\n", i,j,energy_t, jcenergy); */
-    /* if(fabs(jcenergy-energy_t)>0.01){ */
-    /*   printf("STOP ! %d  %d  ,   acc = %lf  get_energ = %lf\n", i,j,energy_t, jcenergy); */
-    /*   exit(1); */
-    /* } */
-    
 #ifdef ERMSDR
-    //energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
-    //ERMSD_SQ=get_current_ermsd(&rx, &ry, &rz, nt_n);
-    //energy_t+=0.5*ERMSD_PREF*ERMSD_SQ;
     if((i+1)%mc_traj_steps==0)
       MC_write_ermsd_obs(i+1,energy_t);
 #endif
     if((i+1)%mc_traj_steps==0)
       MC_save_configuration(mc_n, rx, ry, rz, energy_t,i+1); //this writes in binary file and possibly the pdb output
     if(((i+1)%(mc_chkp_steps))==0){
-      //MC_save_current_configuration(mc_n, rx, ry, rz, i*j, i+1, energy_t, mpi_id); //this writes xyz and glp files which allow restarting
       MC_save_checkpoint(mc_n, rx, ry, rz, (i+1), energy_t, mpi_id,NULL); //this writes a binary checkpoint
     }
   }
@@ -139,9 +127,9 @@ int main(int argc, char **argv) {
   fclose(ermsd_obs);
 #endif
   
-  //printf("Checkpoints written.\n");
 #ifdef MPIMC
   MPI_Finalize();
-#endif
+#else
   return 0;
+#endif
 }
