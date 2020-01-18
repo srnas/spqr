@@ -103,12 +103,10 @@ int main(int argc, char **argv) {
     /** HERE SWAP THE TEMPERATURES **/
     //select randomly the processor
     if(((i+1)%PT_freq)==0){
-      printf("performing swap!\n");
       pt_sel=0;
       if(mpi_id==mpi_root){
 	//only one processor sets this
 	pt_sel=rand_i(PT_N-1);
-	printf("SELECTED %d\n", pt_sel);
       }
       MPI_Bcast(&pt_sel, 1, MPI_INT, mpi_root, MPI_COMM_WORLD);
       MPI_Barrier(MPI_COMM_WORLD);
