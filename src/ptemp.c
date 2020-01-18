@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   /* each processor reads its PT parameters */
   PT_read_params(mpi_id, mpi_count,&PT_FILE);
   MPI_Barrier(MPI_COMM_WORLD);
-  PT_freq=10*mc_traj_steps;
+  PT_freq=100;
   fflush(stdout);
   /************************/
 
