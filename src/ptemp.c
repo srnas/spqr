@@ -41,12 +41,14 @@ int main(int argc, char **argv) {
    /* PARALLEL TEMPERING */
   int PT_ind, PT_freq, PT_N;
   
-  int pt_sel;
+  int pt_sel,ptid,pt_next,id_sel, id_next, id_temp;
   double energ_sel, energ_next, chosen_temp, next_temp, beta_sel, beta_next, PT_expfac, PT_fac, dtemp;
   FILE *PT_FILE;
   PT_ind=mpi_id;
   PT_N=mpi_count;
-  
+  int *PT_list=malloc(sizeof(int)*PT_N);
+  for(i=0;i<PT_N;i++)
+    PT_list[i]=i;
   /************************/
 
 
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
   /* each processor reads its PT parameters */
   PT_read_params(mpi_id, mpi_count,&PT_FILE);
   MPI_Barrier(MPI_COMM_WORLD);
-  PT_freq=100;
+  PT_freq=2;
   fflush(stdout);
   /************************/
 
@@ -107,52 +109,81 @@ int main(int argc, char **argv) {
       if(mpi_id==mpi_root){
 	//only one processor sets this
 	pt_sel=rand_i(PT_N-1);
+	pt_next=pt_sel+1;
+	for(ptid=0;ptid<PT_N;ptid++){
+	  if(PT_list[ptid]==pt_sel) id_sel=ptid;
+	  if(PT_list[ptid]==pt_next) id_next=ptid;
+	}
       }
-      MPI_Bcast(&pt_sel, 1, MPI_INT, mpi_root, MPI_COMM_WORLD);
+      MPI_Bcast(&id_sel, 1, MPI_INT, mpi_root, MPI_COMM_WORLD);
+      MPI_Bcast(&id_next, 1, MPI_INT, mpi_root, MPI_COMM_WORLD);
       MPI_Barrier(MPI_COMM_WORLD);
       //we copy the temperatures and energies of processors pt_sel and pt_sel+1
       if(mpi_id==mpi_root){
-	//we have to treat separately the case where mpi_root == pt_sel
-	if(mpi_root != pt_sel){
-	  MPI_Recv(&chosen_temp,1,MPI_DOUBLE,pt_sel  ,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	  MPI_Recv(&energ_sel  ,1,MPI_DOUBLE,pt_sel  ,4,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	//we have to treat separately the case where mpi_root == id_sel or id_next
+	if(mpi_root != id_sel){
+	  MPI_Recv(&chosen_temp,1,MPI_DOUBLE,id_sel  ,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	  MPI_Recv(&energ_sel  ,1,MPI_DOUBLE,id_sel  ,4,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	}
 	else{
 	  chosen_temp=mc_target_temp;
 	  energ_sel=energy_t;
 	}
-	MPI_Recv(&next_temp  ,1,MPI_DOUBLE,pt_sel+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&energ_next ,1,MPI_DOUBLE,pt_sel+1,5,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	if(mpi_root != id_next){
+	  MPI_Recv(&next_temp  ,1,MPI_DOUBLE,id_next,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	  MPI_Recv(&energ_next ,1,MPI_DOUBLE,id_next,5,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	}
+	else{
+	  next_temp=mc_target_temp;
+	  energ_next=energy_t;
+	}
+	
 	beta_sel=1.0/chosen_temp;
 	beta_next=1.0/next_temp;
 	PT_expfac=(beta_sel-beta_next)*(energ_next-energ_sel);
-	PT_fac=exp(PT_expfac);
+	PT_fac=exp(-PT_expfac);
 	if(rand_d(1.0)<PT_fac){
 	  //we perform the swap of temperatures
 	  dtemp=chosen_temp;
 	  chosen_temp=next_temp;
 	  next_temp=dtemp;
+	  
+	  //and perform the swap of indexes
+	  //if(PT_list[ptid]==pt_sel) id_sel=ptid;
+	  //if(PT_list[ptid]==pt_next) id_next=ptid;
+	  PT_list[id_sel]=pt_next;
+	  PT_list[id_next]=pt_sel;
+	  
 	}
-	if(mpi_root != pt_sel)
-	  MPI_Send(&chosen_temp,1,MPI_DOUBLE,pt_sel  ,2,MPI_COMM_WORLD);
+	if(mpi_root != id_sel)
+	  MPI_Send(&chosen_temp,1,MPI_DOUBLE,id_sel  ,2,MPI_COMM_WORLD);
 	else
 	  mc_target_temp=chosen_temp;
-	MPI_Send(&next_temp  ,1,MPI_DOUBLE,pt_sel+1,3,MPI_COMM_WORLD);
+	if(mpi_root != id_next)
+	  MPI_Send(&next_temp  ,1,MPI_DOUBLE,id_next,3,MPI_COMM_WORLD);
+	else
+	  mc_target_temp=next_temp;
 	//temperature is updated here, immediately
+	
       }
-      else if (mpi_id == pt_sel) {
-	if(mpi_root != pt_sel){
+      else if (mpi_id == id_sel) {
+	if(mpi_root != id_sel){
 	  MPI_Send(&mc_target_temp,1,MPI_DOUBLE,mpi_root,0,MPI_COMM_WORLD);
 	  MPI_Send(&energy_t      ,1,MPI_DOUBLE,mpi_root,4,MPI_COMM_WORLD);
 	  MPI_Recv(&mc_target_temp,1,MPI_DOUBLE,mpi_root,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	}
       }
-      else if (mpi_id == pt_sel+1) {
-	MPI_Send(&mc_target_temp,1,MPI_DOUBLE,mpi_root,1,MPI_COMM_WORLD);
-	MPI_Send(&energy_t      ,1,MPI_DOUBLE,mpi_root,5,MPI_COMM_WORLD);
-	MPI_Recv(&mc_target_temp,1,MPI_DOUBLE,mpi_root,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      else if (mpi_id == id_next) {
+	if(mpi_root != id_next){
+	  MPI_Send(&mc_target_temp,1,MPI_DOUBLE,mpi_root,1,MPI_COMM_WORLD);
+	  MPI_Send(&energy_t      ,1,MPI_DOUBLE,mpi_root,5,MPI_COMM_WORLD);
+	  MPI_Recv(&mc_target_temp,1,MPI_DOUBLE,mpi_root,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	}
       }
+      //finally, for safety, we export the array of indexes
+      MPI_Bcast(PT_list,PT_N,MPI_INT,mpi_root,MPI_COMM_WORLD);
       MPI_Barrier(MPI_COMM_WORLD);
+      
     }
   }
   

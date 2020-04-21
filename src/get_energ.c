@@ -98,6 +98,8 @@ int main(int argc, char **argv) {
   }
   else if(!strcmp(argv[2], "-s"))
     MC_print_secondary_structure(nt_n, rx, ry, rz);
+  else if(!strcmp(argv[2], "-r"))
+    MC_print_radius_of_gyration(nt_n, rx, ry, rz);
   else if(!strcmp(argv[2], "-a"))
     MC_print_contact_list(nt_n, rx, ry, rz);
   else if(!strcmp(argv[2], "-f"))
@@ -149,5 +151,6 @@ void print_help(){
   printf("(B)  : Bonded energy (Includes S-S and Stacking)\n");
   printf("(n)  : Non-bonded energy\n");
   printf("(w)  : Base-pairing energy\n");
+  printf("(r)  : Radius of gyration\n");
 
 }

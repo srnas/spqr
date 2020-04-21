@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
   
   printf("Simulation %d ended properly. Checkpoint saved with temperature %lf and minimum energy %lf .\n", mpi_id, sa_temp, sa_this_energ);
   MC_write_pdb("final", mc_n, rx, ry, rz, sa_this_energ, mpi_id);
-  
+  MC_save_checkpoint(mc_n, rx, ry, rz, -1, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
   MC_end(mc_n, rx, ry, rz, i, sa_this_energ, mpi_id);
 
 #ifdef MPIMC

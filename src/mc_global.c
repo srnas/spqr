@@ -18,6 +18,11 @@ double MC_BB_ANGLE_COS, MC_BB_ANGLE_SIN;
 
 char ENERG_PATH[MAX_BUFFER];
 
+//gyration radius
+
+
+double KRG;
+
 #ifdef FROZEN
 int *fr_is_mobile;
 #endif

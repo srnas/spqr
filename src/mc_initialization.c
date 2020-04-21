@@ -327,7 +327,7 @@ void MC_initialize_global(int mc_n, int mcseed, int mpi_id){
   mc_wc_rcut_sq=mc_wc_rcut*mc_wc_rcut;
   mc_bph_rcut_sq=mc_bph_rcut*mc_bph_rcut;
   mc_nb_rcut_sq=mc_nb_rcut*mc_nb_rcut;
-
+  
   /************************/
   
   /* ALLOCATE LINKED CELLS */
@@ -573,9 +573,9 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   int cnt=0, l;
   //*lx=100.0 ;*ly=100.0;*lz=100.0;
   mc_r_cut=DEFAULT_MC_RCUT;
-  mc_wc_rcut=DEFAULT_MC_RCUT;
-  mc_bph_rcut=DEFAULT_MC_RCUT;
-  mc_nb_rcut=DEFAULT_MC_RCUT;
+  mc_wc_rcut=DEFAULT_MC_WC_RCUT;
+  mc_bph_rcut=DEFAULT_MC_BPH_RCUT;
+  mc_nb_rcut=DEFAULT_MC_NB_RCUT;
   mc_n_types=N_BASES;
   mc_n_bond_types=DEFAULT_MC_N_BOND_TYPES;
   vl_skin=DEFAULT_VL_SKIN;
@@ -590,6 +590,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   mc_target_temp=(double)MC_TEMP_DEF;
   *rand_a=(double)MC_RAND_SEED_DEF;
   *mc_iter=(double)MC_ITER_DEF;
+  KRG=0;
   mc_params=fopen(PARAMS_NAME, "r");
   if(mc_params==NULL){
     printf("No MC parameters file found.\n");
@@ -607,6 +608,10 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	    //printf("read %s - line = %s\n", s2, line);
 	    if(!strcmp(s, "TEMPERATURE")) {
 	      if(sscanf(line, "%s %lf", s2, &mc_target_temp)!=2){printf("Invalid value of TEMPERATURE in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+	      cnt++;
+	    }
+	    else if(!strcmp(s, "RG_COUPL")) {
+	      if(sscanf(line, "%s %lf", s2, &KRG)!=2){printf("Invalid value of RG_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      cnt++;
 	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
@@ -642,14 +647,14 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      MC_BB_ANGLE_SIN=sin(MC_BB_ANGLE);
 	      cnt++;
 	    }
-	    else if(!strcmp(s, "MC_RCUT")) {
-	      if(sscanf(line, "%s %lf %lf %lf %lf", s2, &mc_r_cut, &mc_wc_rcut, &mc_bph_rcut, &mc_nb_rcut)!=5){printf("Invalid values of MC_RCUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
-	    }
-	    else if(!strcmp(s, "VL_SKIN")) {
-	      if(sscanf(line, "%s %lf", s2, &vl_skin)!=2){printf("Invalid value of VL_SKIN in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
-	    }
+	    /* else if(!strcmp(s, "MC_RCUT")) { */
+	    /*   if(sscanf(line, "%s %lf %lf %lf %lf", s2, &mc_r_cut, &mc_wc_rcut, &mc_bph_rcut, &mc_nb_rcut)!=5){printf("Invalid values of MC_RCUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);} */
+	    /*   cnt++; */
+	    /* } */
+	    /* else if(!strcmp(s, "VL_SKIN")) { */
+	    /*   if(sscanf(line, "%s %lf", s2, &vl_skin)!=2){printf("Invalid value of VL_SKIN in %s\n", PARAMS_NAME);exit(ERR_INPUT);} */
+	    /*   cnt++; */
+	    /* } */
 	    else if(!strcmp(s, "MC_TRAJ_STEPS")) {
 	      if(sscanf(line, "%s %d", s2, &mc_traj_steps)!=2){printf("Invalid value of MC_TRAJ_STEPS in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      cnt++;
@@ -662,7 +667,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	  }
 	}
     }
-    if(cnt!=12){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
+    if(cnt!=11){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
   }
   fclose(mc_params);
   /***** check some parameters *****/

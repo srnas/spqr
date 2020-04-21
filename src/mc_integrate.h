@@ -72,6 +72,7 @@ void MC_perform_base_flip(int, int);
 /* void calc_min_vec(double, double, double, double, double, double, double *, double *); */
 int MC_eval_AH_inter(int, double*, int *, int, int, int, int, double, double, double, double, int *);
 
+void MC_print_radius_of_gyration(int, double*, double*, double*);
 void MC_print_secondary_structure(int, double*, double*, double *);
 int is_canonical(int, int);
 

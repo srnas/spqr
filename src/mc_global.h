@@ -117,3 +117,7 @@ extern double bia_lambda;
 extern double bia_cap;
 
 #endif
+
+
+//gyration radius
+extern double KRG;
