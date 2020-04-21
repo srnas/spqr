@@ -67,6 +67,7 @@ The most important file is \verb params.spqr , which contains the parameters for
 \begin{itemize}
 \item \verb TEMPERATURE : temperature of the system in the CG units.
 \item \verb PDB_OUTPUT   : A flag (0 or 1) which indicates whether the output trajectory will also be saved in \verb pdb format. Use it carefully, since the trajectory files tend to be quite large.
+\item \verb RG_COUPL   : The restitution constant for an energy term proportional to the square of the radius of gyration. When zero, the corresponding energy term is not calculated.
 \item \verb MC_PH_XYZ   : Monte Carlo step for the translation of phosphate particles.
 \item \verb MC_NT_XYZ   : Monte Carlo step for the translation of nucleoside particles.
 \item \verb MC_STEPS   : Number of Monte Carlo trials for the simulation. Each of these steps consists of a trial move of each of the nucleotides of the system.
@@ -74,8 +75,6 @@ The most important file is \verb params.spqr , which contains the parameters for
 \item \verb MC_CHKP_STEPS : Number of steps between checkpoint saving.
 \item \verb RANDOM_SEED : Integer larger than zero. Still, two runs with the same random seed but different \verb mpi_id  or process id will have internally a different seed and therefore, produce different results.
 \item \verb MC_NT_ANGLE   : Monte Carlo parameters for the maximum rotations of the nucleoside, around the base and the sugar group.
-\item \verb MC_RCUT       : Cut-off for the interactions. Currently optimized.
-\item \verb VL_SKIN       : Skin of the Verlet lists.
 \item \verb ENERGS_PATH   : Path leading to the file containing the interaction data, including its name. By default, the name is \verb intrac.btb, and it is located in the \verb interactions ~directory when the package is installed  . This file is a binary which contains the information of the whole tables and interaction parameters. Such files can be found in the same directory by default, \verb interactions . In case a modification to the tables is added, one can generate the corresponding binary file again with the tools included in the same directory.
 \end{itemize}
 The order of the input parameters is irrelevant, and the lines can be commented by introducing the character \verb #  at the beginning of a line.
@@ -146,9 +145,14 @@ The directory tools contains several binaries with their sources for the creatio
 \item \verb MODIF_MC : It allows to change the state of a glycosidic bond angle or sugar pucker, to make it fixed or allowed to change during a simulation. Its source is \verb modif_mc.c .
 
 \item \verb func_assemble.py : A python script which allows to generate a simple SPQR \verb pdb  file from a sequence. It must be used as
-\begin{spverbatim}
-python func_assemble.py -s "<seq>" -t "<secondary structure>" -c "x y z x y z ... "
-\end{spverbatim}
+  %\begin{spverbatim}
+\begin{verbatim}
+python func_assemble.py -s "<seq>" -t "<secondary structure>"
+\end{verbatim}
+\begin{verbatim}
+-c "x y z x y z ... "
+\end{verbatim}
+%\end{spverbatim}
 
 where the options \verb -t ~and \verb -c ~are optional. \verb -s ~allows to specify the sequence. \verb -t ~allows to introduce seceondary structure constraints and \verb -c , the centers of the strands that will be created.
 The output files are: \verb init.pdb ~for the initial condition, and \verb ermsd_frags.lst ~which is required for enforcing the contacts given in the arguments.
@@ -157,7 +161,7 @@ Also, note that the \verb ermsd_frags.lst ~file contains some \verb REMARK ~line
 
 \item \verb pdb2spqr.py : Transforms an all-atom \verb pdb ~file into a SPQR \verb pdb ~file. It classifies automatically the glycosidic bond angles and sugar puckers of each nucleotide.
 
-\item \verb spqr2ccc.py : It converts a SPQR \verb pdb ~file into a \verb pdb ~with the positions of the C2, C4 and C6 atoms, ready to be used with the Gromacs and Plumed packages for $\cal{E}RMSD$ pulling.
+\item \verb spqr2pc3.py : It converts a SPQR \verb pdb ~file into a \verb pdb ~with the positions of the P, C2, C4 and C6 atoms, ready to be used with the Gromacs and Plumed packages for $\cal{E}RMSD$ pulling.
 
 \item \verb brute_backmap.py : A trivial and direct way of backmapping SPQR files into all-atom representations. It simply mounts an atomistic template nucleotide on top of each SPQR base. It uses specific templates depending on the glycosidic and pucker states. Further energy minimization can follow this step for later use in MD simulations. It requires the directory \verb bbm_templates ~to be located in the same directory as the script.
 
