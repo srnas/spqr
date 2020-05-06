@@ -5,12 +5,20 @@ N_PARTS_PER_NT=5
 ALLFILE=[]
 
 parser=argparse.ArgumentParser()
-parser.add_argument("-i","--input", help="Input file",type=str,default="bbm_input.pdb")
+parser.add_argument("-i","--input", help="Input file",type=str,default="")
 parser.add_argument("-o","--output", help="Output file",type=str,default="bbm_output.pdb")
 args=parser.parse_args()
 
+
+
+
 INPUTFILE=args.input
+if INPUTFILE=="":
+    print "ERROR : input file needed."
+    parser.print_help()
+    exit(1)
 BBMFILE=args.output
+
 
 for line in open(INPUTFILE):
     nam=line[:4]

@@ -102,8 +102,8 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
 	nRG2/=mc_n;
 	/******************************/
 	/** add RG energy **/
-	oeRG=KRG*oRG2; 
-	neRG=KRG*nRG2;
+	oeRG=KRG*SQ(sqrt(oRG2)-RG_target); 
+	neRG=KRG*SQ(sqrt(nRG2)-RG_target);
       }
 #ifndef NOCTCS
       dwce=MC_calculate_local_wc_energy(nt_n, nt_c, *rx, *ry, *rz);

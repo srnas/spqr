@@ -11,9 +11,11 @@ parser.add_argument("-s","--sequences", help="Sequences",type=str,default="")
 parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
 parser.add_argument("-c","--centers", help="Strand centers",type=str,default="")
 parser.add_argument("-o","--output", help="Output name",type=str,default="init")
-#parser.add_argument("-d","--DUPLEX", help="Builds also complementary strand",action="store_true",default=False)
+parser.add_argument("-p","--pairs", help="No stacks, only pairs",action='store_true',default=False)
+
 args=parser.parse_args()
 ssflag=False
+PFLAG=args.pairs
 #DUPLEX=args.DUPLEX
 DUPLEX=True
 splseq=args.sequences.split("&")
@@ -683,7 +685,7 @@ if(ssflag):
                     fullss[pnt]="."
                     restart=True
                     break
-
+    
     opairs=bpairs.sort()
     SSSTACKS=[]
     CSTACK=[bpairs[0]]
@@ -696,7 +698,13 @@ if(ssflag):
             CSTACK=[bpairs[bp]]
     if(len(CSTACK)>0):
         SSSTACKS.append(CSTACK)
-
+    
+    if PFLAG:
+        SSSTACKS=[]
+        for pair in bpairs:
+            SSSTACKS.append([pair])
+    
+    
     STACKSEQS=[]
     stra=[]
     for ST in xrange(0,len(SSSTACKS)):

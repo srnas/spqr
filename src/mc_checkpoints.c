@@ -195,7 +195,7 @@ void MC_save_configuration(int mc_n, double *rx, double *ry, double *rz, double 
   }
 }
 
-int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *rand_a, int mpi_id, char *chkname, double * add_data){
+int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *rand_a, int mpi_id, char *chkname, int read_flag, double * add_data){
   //read binary configuration file, as saved in a checkpoint - read types, positions, glp, frz, and bonds
   FILE *chkfile;
   int nt_n;
@@ -203,6 +203,8 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
   double tempd;
   double tx, ty, tz;
   size_t frout;
+  long tidum2, tiy, tiv[NTAB];
+  
   if((chkfile=fopen(chkname, "rb"))==NULL){
     printf("Unable to read binary file %s\n", chkname);
   }
@@ -211,7 +213,7 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
     nt_n=*mc_n/N_PARTS_PER_NT;
     chains=(int *)malloc(nt_n*sizeof(int));
     printf("File %s open successfully with %d nucleotides.\n", chkname, nt_n);
-    MC_initialize_global(*mc_n, *rand_a,mpi_id);
+    MC_initialize_global(*mc_n, *rand_a,mpi_id); //here is initialized the random seed
     MC_initialize_arrays(*mc_n, rx, ry, rz); //here the mpi_id is used only for printing purposes and initializing the random seed
     for(i=0;i<*mc_n;i++){
       frout=fread(&tempi, sizeof(int),1,chkfile);
@@ -219,7 +221,9 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
     }
     frout=fread(&tempd, sizeof(double),1,chkfile); //energy
     frout=fread(&tempd, sizeof(double),1,chkfile); //temperature
-    //mc_target_temp=tempd;
+    if(read_flag==1)
+      mc_target_temp=tempd;
+    
     for(i=0;i<*mc_n;i++){
       frout=fread(&tempd,sizeof(double),1,chkfile);(*rx)[i]=tempd;//tx=tempd;
       frout=fread(&tempd,sizeof(double),1,chkfile);(*ry)[i]=tempd;//ty=tempd;
@@ -234,7 +238,24 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
       frout=fread(&tempi,sizeof(int),1,chkfile);chains[i]=tempi;
       //printf("%d  %d %d   %d    %d %d\n", i, mc_glyc[i], mc_puck[i], chains[i], glp_is_flippable[i], fr_is_mobile[i]);
     }
-    frout=fread(&tempd,sizeof(double),1,chkfile);//*idum=tempd;
+    frout=fread(&tempd,sizeof(double),1,chkfile);//idum
+    //fread(idum,sizeof(double),1,chkpnt);
+    frout=fread(&tidum2, sizeof(long),1,chkfile);
+    frout=fread(&tiy, sizeof(long),1,chkfile);
+    frout=fread(tiv, sizeof(long),NTAB,chkfile);
+    
+    if(read_flag==1){
+      *idum=tempd;
+      idum2=tidum2;
+      iy=tiy;
+      for(i=0;i<NTAB;i++)
+	iv[i]=tiv[i];
+    } else{
+      //just for safety
+      idum2=123456789;
+      iy=0;
+    }
+    
     frout=fread(&tempiter,sizeof(int),1,chkfile);
   }
   for(i=0;i<nt_n;i++)
@@ -326,7 +347,7 @@ void MC_save_checkpoint(int mc_n, double *rx, double *ry, double *rz, int iter, 
       fwrite(&(mc_types[i]), sizeof(int), 1, chkpnt);
     tempf=(double)(energy_t);
     fwrite(&tempf,sizeof(double),1,chkpnt);
-    fwrite(&mc_target_temp,sizeof(double),1,chkpnt);
+    fwrite(&mc_target_temp,sizeof(double),1,chkpnt); 
     //and then the configuration
     for(i=0;i<mc_n;i++){
       tempf=(double)(get_unf_coo_x(rx,i));
@@ -351,6 +372,9 @@ void MC_save_checkpoint(int mc_n, double *rx, double *ry, double *rz, int iter, 
     }
     //finally, the random seed
     fwrite(idum,sizeof(double),1,chkpnt);
+    fwrite(&idum2, sizeof(long),1,chkpnt);
+    fwrite(&iy, sizeof(long),1,chkpnt);
+    fwrite(iv, sizeof(long),NTAB,chkpnt);
     //and the time step
     int tempiter=iter;
     if(iter<0) tempiter=0;

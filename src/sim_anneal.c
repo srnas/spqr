@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "mc.h"
 #include "sa_impl.h"
 
@@ -35,41 +36,60 @@ int main(int argc, char **argv) {
   /* initialization */
   
   /*MPI STUFF*/
-  int mpi_count, mpi_id, job_id, argmax;
+  int mpi_count, mpi_id=0, job_id, argmax;
 #ifdef MPIMC
   argmax=2;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_count);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_id);
 #else
-  argmax=2;
-  if(argc < argmax){
-    printf("Second argument must be the job_id of the simulation!\n");
-    exit(ERR_INPUT);
-  }
-  mpi_id=atoi(argv[1]);
+  int opt;
+  while((opt = getopt(argc, argv, "hi:r")) != -1)  
+    {  
+      switch(opt)  
+        {  
+	case 'i':
+	  mpi_id=atoi((char *)optarg);
+	  //printf("Job_id = %d\n",mpi_id);
+	  break;
+	case 'h':
+	  printf("Usage: SPQR_SA [-i job_id] [-r]\nRemember that params.pms and pdb_inits, with a proper initial condition must be present in the simulation directory.\n");
+	  exit(ERR_INPUT);
+	  break;
+	case 'r':
+	  sa_read_flag=1;
+	  break;
+	case '?':
+	  if (optopt == 'i')
+	    printf ("Option -%c requires an argument.\n", optopt);
+	  else if (optopt == 'r')
+	    printf ("Option -%c must be entered if the checkpoint contains previous parameters.\n", optopt);
+	  else if (isprint (optopt))
+	    printf ("Unknown option `-%c'.\n", optopt);
+	  else
+	    printf ("Unknown option character `\\x%x'.\n",   optopt);
+	  exit(ERR_INPUT);
+	  break;
+	}
+    }
 #endif
   /***********/
   mc_n=(int)NSOLUTE;
   printf("Launching from %d \n" , mpi_id);
   openflag=MC_detect_initial_condition(mpi_id);
-
+  
 #ifdef MPIMC
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  
-  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag,SA_DATA);
+  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag, sa_read_flag, SA_DATA);
 #ifdef MPIMC
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  
   nt_n=mc_n/N_PARTS_PER_NT;
-  
   mc_i0=0;
-  if (argc>argmax)
-    if(!strcmp(argv[argmax], "-r")){
-      mc_i0=(int)(tempinit-floor(tempinit/mc_iter)*mc_iter);
-    }
+  if(sa_read_flag){
+    mc_i0=(int)(tempinit-floor(tempinit/mc_iter)*mc_iter);
+  }
   energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   
   /* ANNEALING */
@@ -85,11 +105,10 @@ int main(int argc, char **argv) {
   int sa_mark=0;
   //we read from params.spqr or update the data found in the checkpoint file
   SA_read_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, mpi_id);
-  if (argc>argmax)
-    if(!strcmp(argv[argmax], "-r"))    {
-      SA_arr_to_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, SA_DATA);
-      printf("Reading SA parameters from checkpoint.\n");
-    }
+  if(sa_read_flag){
+    SA_arr_to_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, SA_DATA);
+    printf("Reading SA parameters from checkpoint.\n");
+  }
 #ifdef MPIMC
   if(mpi_id==0)
 #endif
@@ -175,11 +194,11 @@ int main(int argc, char **argv) {
     }
     sa_prev_energ=sa_this_energ;
     SA_params_to_arr(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, SA_DATA);
+    
     MC_save_checkpoint(mc_n, rx, ry, rz, eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
     //printf("%d %d  %d %d\n", mc_iter, eff_iter, sa_mark,eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter );
     //SA_save_params(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, mpi_id);
   }
-  
   printf("Simulation %d ended properly. Checkpoint saved with temperature %lf and minimum energy %lf .\n", mpi_id, sa_temp, sa_this_energ);
   MC_write_pdb("final", mc_n, rx, ry, rz, sa_this_energ, mpi_id);
   MC_save_checkpoint(mc_n, rx, ry, rz, -1, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint

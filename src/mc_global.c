@@ -22,6 +22,7 @@ char ENERG_PATH[MAX_BUFFER];
 
 
 double KRG;
+double RG_target;
 
 #ifdef FROZEN
 int *fr_is_mobile;
@@ -208,7 +209,9 @@ double table_npN_params_0[N_BASES][DIM][3];
 int table_npN_N_0[N_BASES][DIM];
 /* mc_utils */
 double *idum;
-
+long idum2;
+long iy;
+long iv[NTAB];
 
 double ph_pintra_ave[N_BASES][3][2][DIM];
 double ph_pinter_ave[N_BASES][3][2][DIM];

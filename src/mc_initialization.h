@@ -15,7 +15,7 @@
 #define READ_MC_CHECK 2
 
 int MC_detect_initial_condition(int);
-int MC_initialize(int *, double **, double **, double **, int *, int *, int, int, double *);
+int MC_initialize(int *, double **, double **, double **, int *, int *, int, int, int, double *);
 void MC_initialize_global(int, int, int);
 void MC_print_parameters(int);
 void MC_read_nsolute(int *, int, char *);

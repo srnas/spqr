@@ -4,9 +4,6 @@
 #include <unistd.h>
 #include "mc.h"
 
-#ifdef MPIMC
-#include <mpi.h>
-#endif
 
 /* #define LX 30 */
 /* #define LY 30 */
@@ -30,28 +27,25 @@ int main(int argc, char **argv) {
   double d_energ, energy_t;
   int mc_iter=MC_ITER, mc_i0=0;
   int openflag=-1;
+  int mc_read_flag=0;
   /* initialization */
   
   /*MPI STUFF*/
   int mpi_id=0,argmax;
-#ifdef MPIMC
-  int mpi_count;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi_count);
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_id);
-  #else
   int opt;
-  while((opt = getopt(argc, argv, "hi:")) != -1)  
+  while((opt = getopt(argc, argv, "rhi:")) != -1)  
     {  
       switch(opt)  
         {  
 	case 'i':
 	  mpi_id=atoi((char *)optarg);
-	  //printf("Job_id = %d\n",mpi_id);
 	  break;
 	case 'h':
-	  printf("Usage: ./SPQR_MC [-i job_id]\nRemember that params.pms and pdb_inits, with a proper initial condition must be present in the simulation directory.\n");
+	  printf("Usage: SPQR_MC [-i job_id] [-r]\nRemember that params.pms and the directory pdb_inits, with a proper initial condition must be present in the simulation directory.\n-r option is for using the random seed and initial time of initial condition (in .mc format).\n");
 	  exit(ERR_INPUT);
+	  break;
+	case 'r':
+	  mc_read_flag=1;
 	  break;
 	case '?':
 	  if (optopt == 'i')
@@ -64,43 +58,31 @@ int main(int argc, char **argv) {
 	  break;
 	}
     }  
-#endif
   /***********/
   
   mc_n=(int)NSOLUTE;
   
-#ifdef MPIMC
-  printf("Launching from %d \n" , mpi_id);
-#else
   printf("Launching from single processor. Job_id = %d \n", mpi_id);
-#endif
+  if(mc_read_flag)
+    printf("Reading initial condition and checkpoint parameters from checkpoint file.\n");
   openflag=MC_detect_initial_condition(mpi_id);
-#ifdef MPIMC
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
   /**********initialization************/
-  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag, NULL);
+  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag, mc_read_flag, NULL);
   /************************************/
   
-#ifdef MPIMC
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
   /* before running */
-  
   /******************/
   int n;
   nt_n=mc_n/N_PARTS_PER_NT;
   //IF -R IS GIVEN, Mc_i0=0
-  if(argc>2 && !strcmp(argv[2],"-r")) mc_i0=tempinit;
+  if(mc_read_flag) mc_i0=tempinit;
   else mc_i0=0;
   
-  //if(mpi_id==0)
   printf("Simulation %d . Run %d MC steps. Saving trajectory and checkpointing every %d and %d swaps.\n", mpi_id, mc_iter, mc_traj_steps, mc_chkp_steps);
   energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   printf("INITIAL ENERGY IS %lf at step %d\n", energy_t, mc_i0);
 #ifdef ERMSDR
-  //energy_t+=0.5*ERMSD_PREF*ERMSD_SQ;
   energy_t+=ERMSD_ENERG;
 #endif
   for(i=mc_i0;i<mc_iter;++i) {
@@ -127,9 +109,5 @@ int main(int argc, char **argv) {
   fclose(ermsd_obs);
 #endif
   
-#ifdef MPIMC
-  MPI_Finalize();
-#else
   return 0;
-#endif
 }

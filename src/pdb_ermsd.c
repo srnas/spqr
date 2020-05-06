@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
   const char *last_three=&argv[1][len-3];
   if(!strcmp(last_three, ".mc")){
     MC_read_params(&mc_iter, &rand_a,-1);
-    tempinit=MC_read_checkpoint(&mc_n, &rx, &ry, &rz, &rand_a, -1, argv[1], NULL);
+    tempinit=MC_read_checkpoint(&mc_n, &rx, &ry, &rz, &rand_a, -1, argv[1], 0, NULL);
   }
   else if(!strcmp(last_three, "pdb")){
     MC_read_nsolute(&mc_n,-1, argv[1]);

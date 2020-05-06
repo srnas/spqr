@@ -3,21 +3,23 @@
  float nrran2(){
   int j; 
   long k; 
-  static long idum2=123456789; 
-  static long iy=0; 
-  static long iv[NTAB]; 
+  //static long idum2=123456789; 
+  //static long iy=0; 
+  //static long iv[NTAB]; 
   float temp; 
   if (*idum <= 0){
-      if (-(*idum) < 1) *idum=1; 
-      else *idum =-(*idum); 
-      idum2=(*idum); 
-      for (j=NTAB+7;j>=0;j--) {
-	k=(*idum)/IQ1; 
-	*idum=IA1*(*idum-k*IQ1)-k*IR1; 
-	if(*idum < 0) *idum += IM1; 
-	if(j < NTAB) iv[j] = *idum; 
-      } 
-      iy=iv[0]; 
+    idum2=123456789;
+    iy=0;
+    if (-(*idum) < 1) *idum=1; 
+    else *idum =-(*idum); 
+    idum2=(*idum); 
+    for (j=NTAB+7;j>=0;j--) {
+      k=(*idum)/IQ1; 
+      *idum=IA1*(*idum-k*IQ1)-k*IR1; 
+      if(*idum < 0) *idum += IM1; 
+      if(j < NTAB) iv[j] = *idum; 
+    } 
+    iy=iv[0]; 
   } 
   k=(*idum)/IQ1;
   *idum=IA1*(*idum-k*IQ1)-k*IR1;

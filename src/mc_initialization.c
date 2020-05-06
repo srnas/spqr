@@ -40,8 +40,7 @@ int MC_detect_initial_condition(int mpi_id){
   return flag;
 }
 
-
-int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_iter, int *rand_a, int mpi_id, int init_type, double *add_data){
+int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_iter, int *rand_a, int mpi_id, int init_type, int read_flag, double *add_data){
   int nt_n;
   int init=0;
   char initfile[256];
@@ -50,7 +49,7 @@ int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_i
     else  sprintf(initfile, "pdb_inits/init.mc"  );
     MC_read_params(mc_iter, rand_a,mpi_id);
    
-    init=MC_read_checkpoint(mc_n, rsx, rsy, rsz, rand_a, mpi_id, initfile, add_data);
+    init=MC_read_checkpoint(mc_n, rsx, rsy, rsz, rand_a, mpi_id, initfile, read_flag, add_data);
   }
   else{
     if(init_type==2) sprintf(initfile, "pdb_inits/init.p%02d.pdb", mpi_id);
@@ -300,6 +299,11 @@ void MC_initialize_global(int mc_n, int mcseed, int mpi_id){
     *idum=-((double) mcseed+(double)mpi_id);
   else 
     *idum=-((double) mcseed);
+  if(*idum>=0){
+    printf("ERROR: Wrong sign of random seed!\n");
+    exit(ERR_INPUT);
+  }
+
   /* GENERAL INITIALIZATION */
   double lx=100.0, ly=100.0, lz=100.0;
   box_l[0]=lx;
@@ -591,6 +595,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   *rand_a=(double)MC_RAND_SEED_DEF;
   *mc_iter=(double)MC_ITER_DEF;
   KRG=0;
+  RG_target=0;
   mc_params=fopen(PARAMS_NAME, "r");
   if(mc_params==NULL){
     printf("No MC parameters file found.\n");
@@ -611,7 +616,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      cnt++;
 	    }
 	    else if(!strcmp(s, "RG_COUPL")) {
-	      if(sscanf(line, "%s %lf", s2, &KRG)!=2){printf("Invalid value of RG_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+	      if(sscanf(line, "%s %lf %lf", s2, &KRG, &RG_target)!=3){printf("Invalid value of RG_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      cnt++;
 	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
@@ -674,5 +679,6 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   
   /*********************************/
   //if(mpi_id==0)
+  if(mpi_id>-1)
   MC_print_params(*mc_iter, *rand_a);
 }

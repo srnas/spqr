@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
   int mpi_root=0;
   int openflag;
   int mc_iter, mc_ini;
+  int mc_read_flag=0;
   /* initialization */
   
   /*MPI STUFF*/
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
 
   openflag=MC_detect_initial_condition(mpi_id);
   MPI_Barrier(MPI_COMM_WORLD);
-  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag, NULL);
+  tempinit=MC_initialize(&mc_n, &rx, &ry, &rz, &mc_iter, &rand_a, mpi_id, openflag, mc_read_flag, NULL);
   
   /* PARALLEL TEMPERING */
   /* each processor reads its PT parameters */

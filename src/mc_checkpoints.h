@@ -22,7 +22,7 @@ void MC_save_configuration(int, double *, double*, double*, double,int);
 void MC_save_xyz_configuration(int, double *, double *, double *, double, double, int);
 void MC_save_current_configuration(int, double *, double *, double *, double, int, double, int);
 void MC_min_energ_xyz_configuration(int, double *, double *, double *, double, double, int );
-int MC_read_checkpoint(int *, double **, double **, double **, int *, int, char *, double *);
+int MC_read_checkpoint(int *, double **, double **, double **, int *, int, char *, int, double *);
 void MC_save_checkpoint(int, double *, double *, double *, int, double, int, double *);
 void MC_append_pdb(int, double *, double *, double *, double,int);
 #endif
