@@ -47,6 +47,7 @@ extern int **loop1;
 extern int **loop2;
 extern int *nnt_loop1;
 extern int *nnt_loop2;
+extern int *my_link;
 extern int *my_loop;
 extern double Dlnksq;
 

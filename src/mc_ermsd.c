@@ -28,11 +28,15 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
   static size_t st_l=0;
   int group, *nnt_group, ntg, nt;//, grflag;
   int N_LINKS,ntl,lind,exloops[8],inl;
-  
+  int typ1=-1, typ2=-1;
   FILE *lnkdloopsfile;
   char filename[256];
+  int tempnl1=0,tempnl2=0;
+  int start2;
+
+  my_link=(int*)malloc(sizeof(int)*nt_n);
   my_loop=(int*)malloc(sizeof(int)*nt_n);
-  for(i=0;i<nt_n;i++) my_loop[i]=-1;
+  for(i=0;i<nt_n;i++){my_link[i]=-1;my_loop[i]=-1;}
   sprintf(filename, "linked_loops.lst");
   if((lnkdloopsfile=fopen(filename, "r"))==NULL){
     printf("PULL AWAY LINKS: No reference structure found for LINK pulling %s. No pulling.\n", filename);
@@ -40,6 +44,7 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
   else{
     for(i=0;i<nt_n;i++){
       fr_is_mobile[i]=FR_MOB_FROZ;
+      //HERE MAKE NUCLEOTIDES INVISIBLE
     }
     
     //HERE WE DEAL WITH THE FRAGMENTS
@@ -65,27 +70,42 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
       l=getline(&lline,&st_l,lnkdloopsfile);
       cpline=strndup(lline,MAXSTR);
       for(d=0;d<8;d++) exloops[d]=-1;
-      ntl=0;
-      tmp=strtok(cpline, " ");while(tmp!=NULL){if(atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0')) {exloops[ntl]=atoi(tmp);ntl++;} tmp=strtok(NULL, " ");}free(cpline);
-      //we consider that the first loop is always a hairpin, in case there is a hairpin and a duplex
+      ntl=-1;
+      tmp=strtok(cpline, " ");
+      while(tmp!=NULL){
+	if(ntl==-1){
+	  //check type string
+	  //HAIRPIN=0, STEM=1
+	  if(tmp[0]=='h' && tmp[1]=='p') typ1=0;
+	  if(tmp[0]=='s' && tmp[1]=='t') typ1=1;
+	  if(tmp[2]=='h' && tmp[3]=='p') typ2=0;
+	  if(tmp[2]=='s' && tmp[3]=='t') typ2=1;
+	  ntl++;
+	}
+	if(ntl>-1){
+	  if(atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0')) {
+	    exloops[ntl]=atoi(tmp);ntl++;
+	  }}
+	tmp=strtok(NULL, " ");
+      }
+      free(cpline);
       //case hairpir-hairpin or hairpin-duplex
-      int tempnl1=0,tempnl2=0;
-      if(ntl==4 || ntl==6)
+      tempnl1=0,tempnl2=0;
+      if(typ1==0) start2=2;
+      if(typ1==1) start2=4;
+      if(typ1==0 || typ1==1)
 	for(inl=exloops[0];inl<=exloops[1];inl++)
 	  tempnl1++;
-      if(ntl==8)
+      if(typ1==1)
 	for(inl=exloops[2];inl<=exloops[3];inl++)
 	  tempnl1++;
       nnt_loop1[nl]=tempnl1;
       /***/
-      if(ntl==4 || ntl==6)
-	for(inl=exloops[2];inl<=exloops[3];inl++)
+      if(typ2==0 || typ2==1)
+	for(inl=exloops[start2];inl<=exloops[start2+1];inl++)
 	  tempnl2++;
-      if(ntl==6 || ntl==8)
-	for(inl=exloops[4];inl<=exloops[5];inl++)
-	  tempnl2++;
-      if(ntl==8)
-	for(inl=exloops[6];inl<=exloops[7];inl++)
+      if(typ2==1)
+	for(inl=exloops[start2+2];inl<=exloops[start2+3];inl++)
 	  tempnl2++;
       nnt_loop2[nl]=tempnl2;
       /***/
@@ -93,43 +113,74 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
       loop2[nl]=(int*)malloc(sizeof(int)*nnt_loop2[nl]);
       
       lind=0;
-      if(ntl==4 || ntl==6)
+      if(typ1==0 || typ1==1)
 	for(inl=exloops[0];inl<=exloops[1];inl++){
-	  my_loop[inl]=nl;
-	  loop1[nl][lind]=inl;lind++;}
-      if(ntl==8)
+	  my_link[inl]=nl;
+	  my_loop[inl]=0;
+	  loop1[nl][lind]=inl;lind++;
+	}
+      if(typ1==1)
 	for(inl=exloops[2];inl<=exloops[3];inl++){
-	  my_loop[inl]=nl;
+	  my_link[inl]=nl;
+	  my_loop[inl]=0;
 	  loop1[nl][lind]=inl;lind++;}
+      /* if(ntl==4 || ntl==6) */
+      /* 	for(inl=exloops[0]; */
+      /* 	    inl<=exloops[1];inl++){ */
+      /* 	  my_link[inl]=nl; */
+      /* 	  loop1[nl][lind]=inl;lind++;} */
+      /* if(ntl==8) */
+      /* 	for(inl=exloops[2];inl<=exloops[3];inl++){ */
+      /* 	  my_link[inl]=nl; */
+      /* 	  loop1[nl][lind]=inl;lind++;} */
       /***/
       lind=0;
-      if(ntl==4 || ntl==6)
-	for(inl=exloops[2];inl<=exloops[3];inl++){
-	  my_loop[inl]=nl;
+      if(typ2==0 || typ2==1)
+	for(inl=exloops[start2];inl<=exloops[start2+1];inl++){
+	  my_link[inl]=nl;
+	  my_loop[inl]=1;
 	  loop2[nl][lind]=inl;lind++;}
-      tempnl2++;
-      if(ntl==6 || ntl==8)
-	for(inl=exloops[4];inl<=exloops[5];inl++){
-	  my_loop[inl]=nl;
+      if(typ2==1)
+	for(inl=exloops[start2+2];inl<=exloops[start2+3];inl++){
+	  my_link[inl]=nl;
+	  my_loop[inl]=1;
 	  loop2[nl][lind]=inl;lind++;}
-      if(ntl==8)
-	for(inl=exloops[6];inl<=exloops[7];inl++){
-	  my_loop[inl]=nl;
-	  loop2[nl][lind]=inl;lind++;}
-
-      if(ntl==4 || ntl==6){
-	for(inl=0;inl<nnt_loop1[nl];inl++){
-	  fr_is_mobile[loop1[nl][inl]]=FR_MOB_FULL;
-	}
-      }
-      if(ntl==4){
-	for(inl=0;inl<nnt_loop2[nl];inl++){
-	  fr_is_mobile[loop2[nl][inl]]=FR_MOB_FULL;
-	}
-      }
       
+      /* if(ntl==4 || ntl==6) */
+      /* 	for(inl=exloops[2];inl<=exloops[3];inl++){ */
+      /* 	  my_link[inl]=nl; */
+      /* 	  loop2[nl][lind]=inl;lind++;} */
+      
+      /* if(ntl==6 || ntl==8) */
+      /* 	for(inl=exloops[4];inl<=exloops[5];inl++){ */
+      /* 	  my_link[inl]=nl; */
+      /* 	  loop2[nl][lind]=inl;lind++;} */
+      /* if(ntl==8) */
+      /* 	for(inl=exloops[6];inl<=exloops[7];inl++){ */
+      /* 	  my_link[inl]=nl; */
+      /* 	  loop2[nl][lind]=inl;lind++;} */
+      
+      //if(ntl==4 || ntl==6){
+      printf("LINK %d\n", nl);
+      printf("Loop 1 (%d) : ",nnt_loop1[nl]);
+      for(inl=0;inl<nnt_loop1[nl];inl++){
+	printf("%d (%d) ",loop1[nl][inl],my_loop[loop1[nl][inl]]);
+	fr_is_mobile[loop1[nl][inl]]=FR_MOB_FULL;
+      }
+      printf("\t");
+      printf("Loop 2 (%d) : ", nnt_loop2[nl]);
+      for(inl=0;inl<nnt_loop2[nl];inl++){
+	printf("%d (%d) ",loop2[nl][inl],my_loop[loop2[nl][inl]]);
+	fr_is_mobile[loop2[nl][inl]]=FR_MOB_FULL;
+      }
+      printf("\n");
+      //}
+      //if(ntl==4){
+      //for(inl=0;inl<nnt_loop2[nl];inl++){
+      //  fr_is_mobile[loop2[nl][inl]]=FR_MOB_FULL;
+      //}
+      //} 
     }
-    
   }
   phpull_K=(double*)malloc(sizeof(double)*N_LINKS);
   for(i=0;i<N_LINKS;i++){ 
@@ -141,10 +192,10 @@ double calc_link_energy(int nt_c, double *rx, double *ry, double *rz){
   //here we calculate the centers of mass of the loops
   int i,d,nt1,nt2;
   double CM1[DIM],CM2[DIM];
-  int thslp=my_loop[nt_c];
+  int thslp=my_link[nt_c];
   double energ=0,cmdistsq;
   Dlnksq=100;
-  if(my_loop[nt_c]>-1){
+  if(my_link[nt_c]>-1){
     //we calculate the centers of mass of both loops
     for(d=0;d<DIM;d++){
       CM1[d]=0;CM2[d]=0;

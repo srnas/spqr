@@ -251,6 +251,7 @@ int **loop1;
 int **loop2;
 int *nnt_loop1;
 int *nnt_loop2;
+int *my_link;
 int *my_loop;
 double Dlnksq;
 
