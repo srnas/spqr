@@ -3,7 +3,7 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/spoblete/data/53_ernwin_contacts/01_thiel_jan/spqr
+SPQR_PATH=/home/
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
