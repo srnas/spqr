@@ -1486,7 +1486,9 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	  at_ne=N_PARTS_PER_NT*nt2;
 	  at_c=N_PARTS_PER_NT*nt_c;
 #ifdef ERMSDR
+#ifdef NOCTCS
 	  if(G_groups[nt_c][nt2]<0)
+#endif
 #endif
 	    {
 	      centdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
