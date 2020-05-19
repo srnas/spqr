@@ -3,12 +3,11 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/
+SPQR_PATH=/home/spoblete/data/53_ernwin_contacts/02_for_trushar/spqr
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
-SRC_DIR=mini_files
-INTRAC=no_bph_intrac.btb
+INTRAC=intrac.btb
 NPROC=1
 MPROC=$((NPROC - 1))
 CLASH_NMC=20000
@@ -46,29 +45,29 @@ write_params ( )
     file=$1
     echo "TEMPERATURE     "$2 > $file
     echo "PDB_OUTPUT	  "$3 >> $file
-    echo "RG_COUPL	  "$4 >> $file
-    echo "MC_PH_XYZ 	  "$5 >> $file
-    echo "MC_NT_XYZ	  "$6 >> $file
-    echo "MC_STEPS        "$7 >> $file
-    echo "MC_TRAJ_STEPS   "$8 >> $file
-    echo "MC_CHKP_STEPS   "$9 >> $file
-    echo "RANDOM_SEED     "${10} >> $file
-    echo "MC_NT_ANGLE     "${11}  " " ${12} >> $file
-    echo "ENERGS_PATH     "${13}  >> $file
-    if [ "${14}" -eq 1 ] ; then 
-	echo "SA_TINI		"${15}  >> $file
-	echo "SA_TMIN		"${16}  >> $file
-	echo "SA_TFAC		"${17}  >> $file
-	echo "SA_STEP		"${18}  >> $file
-	echo "SA_NT		"${19}  >> $file
-	echo "SA_PREENERG	"${20}  >> $file
-	echo "SA_SFAC		"${21}  >> $file
-	echo "SA_RTIMES	        "${22}  >> $file
+    echo "RG_COUPL	  "$4 " " $5 >> $file
+    echo "MC_PH_XYZ 	  "$6 >> $file
+    echo "MC_NT_XYZ	  "$7 >> $file
+    echo "MC_STEPS        "$8 >> $file
+    echo "MC_TRAJ_STEPS   "$9 >> $file
+    echo "MC_CHKP_STEPS   "${10} >> $file
+    echo "RANDOM_SEED     "${11} >> $file
+    echo "MC_NT_ANGLE     "${12}  " " ${13} >> $file
+    echo "ENERGS_PATH     "${14}  >> $file
+    if [ "${15}" -eq 1 ] ; then 
+	echo "SA_TINI		"${16}  >> $file
+	echo "SA_TMIN		"${17}  >> $file
+	echo "SA_TFAC		"${18}  >> $file
+	echo "SA_STEP		"${19}  >> $file
+	echo "SA_NT		"${20}  >> $file
+	echo "SA_PREENERG	"${21}  >> $file
+	echo "SA_SFAC		"${22}  >> $file
+	echo "SA_RTIMES	        "${23}  >> $file
     fi
 }
 
 #DEFAULTS#
-MC_PARAMS=(1 0 0 0.2 0.1 1 1 1 10 0.03 0.1 intrac)
+MC_PARAMS=(1 0 0 0 0.2 0.1 1 1 1 10 0.03 0.1 intrac)
 SA_PARAMS=(sa_ti 0.4 0.75 0 sa_nt  0 0.75 0)
 ##########
 
@@ -142,11 +141,11 @@ mkdir $DIRNAME/01
 MCPARAMS1=(${MC_PARAMS[@]})
 SAPARAMS1=(${SA_PARAMS[@]})
 #echo ${MCPARAMS1[@]}
-MCPARAMS1[5]=$CLASH_NMC
 MCPARAMS1[6]=$CLASH_NMC
 MCPARAMS1[7]=$CLASH_NMC
+MCPARAMS1[8]=$CLASH_NMC
 #echo ${MCPARAMS1[@]}
-MCPARAMS1[11]="$ENERGY_PATH/$INTRAC"
+MCPARAMS1[12]="$ENERGY_PATH/$INTRAC"
 SAPARAMS1[0]=$CLASH_TSA
 SAPARAMS1[4]=$CLASH_NSA
 #echo write_params $DIRNAME/01/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
@@ -195,10 +194,10 @@ mkdir $DIRNAME/02
 mkdir $DIRNAME/02/configs $DIRNAME/02/pdb_inits
 MCPARAMS2=(${MC_PARAMS[@]})
 SAPARAMS2=(${SA_PARAMS[@]})
-MCPARAMS2[5]=$ERMSD_NMC
 MCPARAMS2[6]=$ERMSD_NMC
 MCPARAMS2[7]=$ERMSD_NMC
-MCPARAMS2[11]=$ENERGY_PATH/$INTRAC
+MCPARAMS2[8]=$ERMSD_NMC
+MCPARAMS2[12]=$ENERGY_PATH/$INTRAC
 SAPARAMS2[0]=$ERMSD_TSA
 SAPARAMS2[4]=$ERMSD_NSA
 write_params $DIRNAME/02/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
@@ -230,10 +229,10 @@ mkdir $DIRNAME/03
 mkdir $DIRNAME/03/configs $DIRNAME/03/pdb_inits
 MCPARAMS3=(${MC_PARAMS[@]})
 SAPARAMS3=(${SA_PARAMS[@]})
-MCPARAMS3[5]=$ENERG_NMC
 MCPARAMS3[6]=$ENERG_NMC
 MCPARAMS3[7]=$ENERG_NMC
-MCPARAMS3[11]=$ENERGY_PATH/$INTRAC
+MCPARAMS3[8]=$ENERG_NMC
+MCPARAMS3[12]=$ENERGY_PATH/$INTRAC
 SAPARAMS3[0]=$ENERG_TSA
 SAPARAMS3[4]=$ENERG_NSA                                                                                                                           
 write_params $DIRNAME/03/params.spqr ${MCPARAMS3[@]} 1 ${SAPARAMS3[@]}
