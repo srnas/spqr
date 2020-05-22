@@ -3,11 +3,11 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/spoblete/data/53_ernwin_contacts/02_for_trushar/spqr
+SPQR_PATH=""
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
-INTRAC=intrac.btb
+INTRAC=no_bph_intrac.btb
 NPROC=1
 MPROC=$((NPROC - 1))
 CLASH_NMC=20000
@@ -116,6 +116,11 @@ while (( "$#" )); do
     esac
 done
 
+if [ ! $SPQR_PATH  ] ; then
+    echo "ERROR: No SPQR path specified. Change the SPQR_PATH variable in the script."
+    exit 1
+fi
+
 if [ ! $PDBSTRUCT ] ; then
     echo "No pdb file introduced!"
     show_usage
@@ -216,7 +221,7 @@ if [ "$LNKRMV" ]; then
     ./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
     check=`python SPQR_DLINK.py -i final.p00.pdb -t $SSTRUCT -o check`
     if [ "$check" ] ; then
-	echo "ERROR: Link not removed. Try longer simulations."
+	echo "ERROR: Link not removed. Try longer simulations increasing the LINKRM_NMC variable in the script."
 	exit 1
     fi
     SELECTED=configs/chk.last.p00.mc
