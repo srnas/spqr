@@ -20,10 +20,13 @@ ERMSD_NTO=$((ERMSD_NMC*ERMSD_NSA))
 ENERG_NMC=1000
 ENERG_NSA=5
 ENERG_TSA=1
+LNKRM_NMC=100000
+LNKRM_TMC=6
 BINCLASH=SPQR_wSA
 BINANNOT=SPQR_ENERG
 BINERMSD=SPQR_eSA
 BINENERG=SPQR_SA
+BINLNKRMV=SPQR_cMC
 ERMSD_PREF=5000
 ERMSD_CUTOFF=4
 ############
@@ -33,10 +36,14 @@ PDBSTRUCT=""
 NAME=""
 PARAMS=""
 CONVERT=""
+SSTRUCT=""
+LNKRMV=""
+
 show_usage ()
 {
-    echo "Usage: SPQR_MINI -i <input_file> [ -o <output_suffix> ] [ -c ]"
+    echo "Usage: SPQR_MINI -i <input_file> [ -o <output_suffix> ] [ -c ]  [ -t <secondary structure file> ]"
     echo "input_file must be in SPQR-pdb format. If not, the flag -c will take care of that."
+    echo "Secondary structure is optional. It must contain the sequence in the first line and the secondary structure in Vienna format in the second line."
 }
 
 write_params ( )
@@ -67,7 +74,7 @@ write_params ( )
 }
 
 #DEFAULTS#
-MC_PARAMS=(1 0 0 0 0.2 0.1 1 1 1 10 0.03 0.1 intrac)
+MC_PARAMS=(3 0 0 0 0.2 0.1 1 1000000 1000000 10 0.03 0.1 intrac)
 SA_PARAMS=(sa_ti 0.4 0.75 0 sa_nt  0 0.75 0)
 ##########
 
@@ -85,6 +92,11 @@ while (( "$#" )); do
 	    CONVERT=1
 	    shift
 	    ;;
+	-t|--sstruct)
+	    LNKRMV=1
+	    SSTRUCT=$2
+	    shift 2
+	    ;;	
 	-h|--help)
 	    show_usage
 	    exit 1
@@ -126,7 +138,6 @@ eval set -- "$PARAMS"
 #################
 
 #STEP 1#
-
 mkdir $DIRNAME
 if [ $CONVERT ] ; then 
     echo "Creating SPQR pdb format structure..."
@@ -135,63 +146,137 @@ if [ $CONVERT ] ; then
     rm pdb2spqr.py
 else cp $PDBSTRUCT init.pdb
 fi
-
 echo "Creating files for clash removal..."
 mkdir $DIRNAME/01
 MCPARAMS1=(${MC_PARAMS[@]})
 SAPARAMS1=(${SA_PARAMS[@]})
-#echo ${MCPARAMS1[@]}
 MCPARAMS1[6]=$CLASH_NMC
-MCPARAMS1[7]=$CLASH_NMC
-MCPARAMS1[8]=$CLASH_NMC
-#echo ${MCPARAMS1[@]}
+MCPARAMS1[7]=$((CLASH_NMC*CLASH_NSA+1))
+MCPARAMS1[8]=$((CLASH_NMC*CLASH_NSA+1))
 MCPARAMS1[12]="$ENERGY_PATH/$INTRAC"
 SAPARAMS1[0]=$CLASH_TSA
 SAPARAMS1[4]=$CLASH_NSA
-#echo write_params $DIRNAME/01/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
 write_params $DIRNAME/01/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
-#cp $SRC_DIR/opt.spqr $DIRNAME/01/params.spqr
 mkdir $DIRNAME/01/configs $DIRNAME/01/pdb_inits
 cp init.pdb $DIRNAME/01/pdb_inits
 cp $BIN_PATH/$BINCLASH $DIRNAME/01
 cp $BIN_PATH/$BINANNOT $DIRNAME/01
-
 echo "Setting up the parameters for clashing removal..."
-#sed -i "s/mc_steps/$CLASH_NMC/g" $DIRNAME/01/params.spqr
-#sed -i "s/sa_nt/$CLASH_NSA/g" $DIRNAME/01/params.spqr
-#sed -i "s/sa_ti/$CLASH_TSA/g" $DIRNAME/01/params.spqr
-#sed -i "s:intrac:$ENERGY_PATH/$INTRAC:g" $DIRNAME/01/params.spqr
-
 echo "Running clash removal annealing..."
 cd $DIRNAME/01
-#ln -s $ENERGY_PATH/no_bph_intrac.btb 
 for iconf in `seq 0 $MPROC`;do
-./$BINCLASH $iconf > clash_$NAME.out
+    ./$BINCLASH -i $iconf > clash_$NAME.out
 done
 touch temp1; rm temp1 ; touch temp2 ; rm temp2
 for iconf in `seq 0 $MPROC`;do
     IND=`printf %02d $iconf`
-    mcconf=`ls configs/chk*p$IND.mc | tail -1`
+    mcconf=configs/chk.last.p$IND.mc
     ./$BINANNOT $mcconf -t > temp2
     fc=`grep "No clashes found" temp2 | wc | awk '{print $1}'`
     en=`grep "TOTAL ENERGY" temp2 | awk '{print $4}'`
     if [ "$fc" -eq "1" ] ; then echo $mcconf $en >>  temp1 ; fi
 done
-
 if [ ! -f temp1 ] ; then echo "There are still clashes in the initial condition. Try increasing the CLASH_NMC variable in the script." ; exit ; fi
 NSEL=`wc temp1 | awk '{print $1}'`
 sort -g -k 2 temp1 > temp3;
 SELECTED=`head -1 temp3 | awk '{print $1}'` ;
+cp $SELECTED ../01.mc
+slinit=`echo $SELECTED | awk 'BEGIN {FS="."}; {print $3}'`
+PDBSELECTED=final.$slinit.pdb
 rm temp1 temp2 temp3
-
 cd ../..
 echo "Clashes removed successfuly"
+
+#######
+#HERE DETECT AND REMOVE LINKS IF THEY EXIST!#
+if [ "$LNKRMV" ]; then
+    echo "Detecting links between loops..."
+    THISSIM=LR1
+    PREVSIM=01
+    mkdir $DIRNAME/$THISSIM
+    MCPARAMSL1=(${MC_PARAMS[@]})
+    SAPARAMSL1=(${SA_PARAMS[@]})
+    MCPARAMSL1[0]=$LNKRM_TMC
+    MCPARAMSL1[6]=$LNKRM_NMC
+    MCPARAMSL1[7]=$LNKRM_NMC
+    MCPARAMSL1[8]=$LNKRM_NMC
+    MCPARAMSL1[12]="$ENERGY_PATH/$INTRAC"
+    SAPARAMSL1[0]=$CLASH_TSA
+    SAPARAMSL1[4]=$CLASH_NSA
+    write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMSL1[@]} 0 ${SAPARAMSL1[@]}
+    mkdir $DIRNAME/$THISSIM/pdb_inits
+    cp $DIRNAME/$PREVSIM/$SELECTED $DIRNAME/$THISSIM/pdb_inits/init.mc
+    cp $DIRNAME/$PREVSIM/$PDBSELECTED $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    cp $BIN_PATH/$BINLNKRMV $DIRNAME/$THISSIM
+    cp $TOOLS_PATH/SPQR_DLINK.py $DIRNAME/$THISSIM
+    cp $SSTRUCT $DIRNAME/$THISSIM
+    cd $DIRNAME/$THISSIM
+    python SPQR_DLINK.py -i pdb_inits/init.pdb -t $SSTRUCT -o linked_loops.lst
+    echo "Attempting to remove detected links..."
+    ./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
+    check=`python SPQR_DLINK.py -i final.p00.pdb -t $SSTRUCT -o check`
+    if [ "$check" ] ; then
+	echo "ERROR: Link not removed. Try longer simulations."
+	exit 1
+    fi
+    SELECTED=configs/chk.last.p00.mc
+    cd ../..
+    echo "Links removed. Proceeding to remove clashes."
+
+    ########
+
+    #NOW, REMOVE CLASHES ONCE MORE#
+    THISSIM=LR2
+    PREVSIM=LR1
+    mkdir $DIRNAME/$THISSIM
+    MCPARAMSL2=(${MC_PARAMS[@]})
+    SAPARAMSL2=(${SA_PARAMS[@]})
+    MCPARAMSL2[6]=$CLASH_NMC
+    MCPARAMSL2[7]=$((CLASH_NMC*CLASH_NSA+1))
+    MCPARAMSL2[8]=$((CLASH_NMC*CLASH_NSA+1))
+    MCPARAMSL2[12]="$ENERGY_PATH/$INTRAC"
+    SAPARAMSL2[0]=$CLASH_TSA
+    SAPARAMSL2[4]=$CLASH_NSA
+    write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMSL2[@]} 1 ${SAPARAMSL2[@]}
+    mkdir $DIRNAME/$THISSIM/pdb_inits
+    cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
+    cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
+    cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
+    cd $DIRNAME/$THISSIM
+    for iconf in `seq 0 $MPROC`;do
+	./$BINCLASH -i $iconf > clash_$NAME.out
+    done
+    touch temp1; rm temp1 ; touch temp2 ; rm temp2
+    for iconf in `seq 0 $MPROC`;do
+	IND=`printf %02d $iconf`
+	mcconf=configs/chk.last.p$IND.mc
+	./$BINANNOT $mcconf -t > temp2
+	fc=`grep "No clashes found" temp2 | wc | awk '{print $1}'`
+	en=`grep "TOTAL ENERGY" temp2 | awk '{print $4}'`
+	if [ "$fc" ] ; then echo $mcconf $en >>  temp1 ; fi
+    done
+    if [ ! -f temp1 ] ; then echo "There are still clashes in the initial condition. Try increasing the CLASH_NMC variable in the script." ; exit ; fi
+    NSEL=`wc temp1 | awk '{print $1}'`
+    sort -g -k 2 temp1 > temp3;
+    SELECTED=`head -1 temp3 | awk '{print $1}'` ;
+    slinit=`echo $SELECTED | awk 'BEGIN {FS="."}; {print $3}'`
+    PDBSELECTED=final.$slinit.pdb
+    rm temp1 temp2 temp3
+    cp $SELECTED ../$PREVSIM.mc
+    cd ../..
+    echo "Links removed successfuly"
+else
+    echo "Skipped detection of links"
+fi
+
 ########
+
 #STEP 2#
 echo "Structure refinement: minimization of ERMSD with respect to original structure"
-mkdir $DIRNAME/02
-#; cp $SRC_DIR/opt.spqr $DIRNAME/02/params.spqr ;
-mkdir $DIRNAME/02/configs $DIRNAME/02/pdb_inits
+THISSIM=02
+PREVSIM=01
+mkdir $DIRNAME/$THISSIM
+mkdir $DIRNAME/$THISSIM/configs $DIRNAME/$THISSIM/pdb_inits
 MCPARAMS2=(${MC_PARAMS[@]})
 SAPARAMS2=(${SA_PARAMS[@]})
 MCPARAMS2[6]=$ERMSD_NMC
@@ -200,33 +285,26 @@ MCPARAMS2[8]=$ERMSD_NMC
 MCPARAMS2[12]=$ENERGY_PATH/$INTRAC
 SAPARAMS2[0]=$ERMSD_TSA
 SAPARAMS2[4]=$ERMSD_NSA
-write_params $DIRNAME/02/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
-#write_params(MCPARAMS2, SAPARAMS2, $DIRNAME/02/params.spqr, 1)
-#sed -i "s/mc_steps/$ERMSD_NMC/g" $DIRNAME/02/params.spqr
-#sed -i "s/sa_nt/$ERMSD_NSA/g" $DIRNAME/02/params.spqr
-#sed -i "s/sa_ti/$ERMSD_TSA/g" $DIRNAME/02/params.spqr
-#sed -i "s:intrac:$ENERGY_PATH/$INTRAC:g" $DIRNAME/02/params.spqr
-#echo $SELECTED 
-cp $DIRNAME/01/$SELECTED $DIRNAME/02/pdb_inits/init.mc
+write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
+cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
 echo  "REMARK ERMSD PARAMS 1 $ERMSD_PREF $ERMSD_CUTOFF" > ermsd_frags.lst
 NATS=`wc init.pdb | awk '{print $1}'`; NGROUPS=`echo $NATS | awk '{print int($1/5)-1}'` 
 echo "REMARK ERMSD GROUP `seq 0 $NGROUPS | tr "\n" " " `" >> ermsd_frags.lst
-grep -v REMARK init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/02
-cp $BIN_PATH/$BINERMSD $DIRNAME/02
-cd $DIRNAME/02
-
-#ln -s $ENERGY_PATH/no_bph_intrac.btb
+grep -v REMARK init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/$THISSIM
+cp $BIN_PATH/$BINERMSD $DIRNAME/$THISSIM
+cd $DIRNAME/$THISSIM
 ./$BINERMSD params.spqr > ermsd_$NAME.out
-#cp final.p* ..
 cd ../..
-
 echo "ERMSD minimization successful!"
+
 ########
+
 #STEP 3#
 echo "Structure refinement: minimization of SPQR energy"
-mkdir $DIRNAME/03
-#; cp $SRC_DIR/eopt.spqr $DIRNAME/03/params.spqr ;
-mkdir $DIRNAME/03/configs $DIRNAME/03/pdb_inits
+THISSIM=03
+PPREVSIM=02
+mkdir $DIRNAME/$THISSIM
+mkdir $DIRNAME/$THISSIM/configs $DIRNAME/$THISSIM/pdb_inits
 MCPARAMS3=(${MC_PARAMS[@]})
 SAPARAMS3=(${SA_PARAMS[@]})
 MCPARAMS3[6]=$ENERG_NMC
@@ -235,29 +313,33 @@ MCPARAMS3[8]=$ENERG_NMC
 MCPARAMS3[12]=$ENERGY_PATH/$INTRAC
 SAPARAMS3[0]=$ENERG_TSA
 SAPARAMS3[4]=$ENERG_NSA                                                                                                                           
-write_params $DIRNAME/03/params.spqr ${MCPARAMS3[@]} 1 ${SAPARAMS3[@]}
-#write_params(MCPARAMS3, SAPARAMS3, $DIRNAME/03/params.spqr, 1)
-#sed -i "s/mc_steps/$ENERG_NMC/g" $DIRNAME/03/params.spqr
-#sed -i "s/sa_nt/$ENERG_NSA/g" $DIRNAME/03/params.spqr
-#sed -i "s/sa_ti/$ENERG_TSA/g" $DIRNAME/03/params.spqr
-#sed -i "s:intrac:$ENERGY_PATH/$INTRAC:g" $DIRNAME/03/params.spqr
-#echo $SELECTED
+write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS3[@]} 1 ${SAPARAMS3[@]}
 for p in `seq 0 $MPROC` ; do
     pind=`printf %02d $p`
-    #cp $DIRNAME/02/configs/chk.`printf %010d $ERMSD_NTO`.p$pind.mc $DIRNAME/03/pdb_inits/init.p$pind.mc
-    SEL_ERMSD_FILE=`ls -t $DIRNAME/02/configs/chk*.p$pind.mc | head -1`
-    cp $SEL_ERMSD_FILE $DIRNAME/03/pdb_inits/init.p$pind.mc
+    SEL_ERMSD_FILE=`ls -t $DIRNAME/$PREVSIM/configs/chk*.p$pind.mc | head -1`
+    cp $SEL_ERMSD_FILE $DIRNAME/$THISSIM/pdb_inits/init.p$pind.mc
 done
-cp $BIN_PATH/$BINENERG $DIRNAME/03
-cd $DIRNAME/03
-
-#ln -s $ENERGY_PATH/no_bph_intrac.btb
+cp $BIN_PATH/$BINENERG $DIRNAME/$THISSIM
+cd $DIRNAME/$THISSIM
 ./$BINENERG params.spqr > energ_$NAME.out
 cp final.p* ..
 cp configs/chk.last.p*.mc ..
-cd ../..
-mv init.pdb $DIRNAME
-echo "Optimization successfully ended."
-########
+cp $TOOLS_PATH/SPQR_BBACKMAP.py .
+for cgstruct in `ls final.p*`; do
+    IND=`echo $cgstruct | awk 'BEGIN {FS="."}; {print $2}'`
+    python SPQR_BBACKMAP.py -i $cgstruct -o mini_at_$IND.pdb
+done
 
+cd ../..
+
+
+########
+#CLEANING
+mv init.pdb $DIRNAME
+rm $DIRNAME/01.mc
+
+echo "Optimization successfully ended."
+
+########
+#END
 #################

@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   double smc_nt_xyz, smc_ph_xyz, smc_nt_ang;
   int sa_resc_times=0;
   int sa_flag=1;
-  int sa_mark=0;
+  int sa_mark=-1;
   //we read from params.spqr or update the data found in the checkpoint file
   SA_read_params(&sa_tmax, &sa_tmin, &sa_tfac, &sa_ini, &sa_NT, &sa_prev_energ, &sa_sfac, &sa_resc_times, mpi_id);
   if(sa_read_flag){
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
     eff_iter=mc_iter;
     if(sa_temp<=6.0) {
       eff_iter=mc_iter/10;
-      if(sa_mark==0) sa_mark=ann_step;
+      if(sa_mark==-1) sa_mark=ann_step;
     }
     for(i=mc_i0;i<eff_iter;++i) {
       /* do your MC here */

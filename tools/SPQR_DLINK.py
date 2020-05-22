@@ -34,25 +34,32 @@ def difloops(l1,l2):
     return fl
 
 parser=argparse.ArgumentParser()
-parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
+parser.add_argument("-t","--sstruct", help="Secondary structure file. First line must be sequence. Second, secondary structure in Vienna format.",type=str,default="")
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
 parser.add_argument("-o","--output", help="Output file",type=str,default="linked_loops_output.lst")
 args=parser.parse_args()
-fullss=list(args.sstruct)
+SSFILE=args.sstruct
+
+#fullss=list(args.sstruct)
 INPUTFILE=args.input
 LINKFILE=args.output
-if INPUTFILE=="":
-    print "ERROR : input file needed."
+if INPUTFILE=="" or SSFILE=="":
+    print "ERROR : input or secondary structure files missing."
     parser.print_help()
     exit(1)
+
+ALLSSFILE=[]
+for line in open(SSFILE):
+    ALLSSFILE.append(line.strip())
+fullss=list(ALLSSFILE[1])
+
 SSDICT = {
     "(":")",
     "[":"]",
     "{":"}",
     "<":">"
 }
-KL=5000
-
+KL=50
 ##FIND HAIRPINS##
 HAIRPINS=[]
 loops=[]
@@ -244,9 +251,5 @@ if NLINKS>0:
         
         print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
         
-        #print ''.join(str(loop2))
-        #print ''.join(li[0][0])
-        
-
     OUTFILE.close()
     sys.stdout=orig_stdout
