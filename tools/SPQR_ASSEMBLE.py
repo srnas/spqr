@@ -12,12 +12,13 @@ parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,defaul
 parser.add_argument("-c","--centers", help="Strand centers",type=str,default="")
 parser.add_argument("-o","--output", help="Output name",type=str,default="init")
 parser.add_argument("-p","--pairs", help="No stacks, only pairs",action='store_true',default=False)
+parser.add_argument("-d","--duplex", help="Makes duplex with complementary structure",action='store_true',default=False)
 
 args=parser.parse_args()
 ssflag=False
 PFLAG=args.pairs
-#DUPLEX=args.DUPLEX
 DUPLEX=True
+PRDUPLEX=args.duplex
 splseq=args.sequences.split("&")
 splsst=args.sstruct.split("&")
 OUTNAME=args.output
@@ -27,6 +28,9 @@ if(args.sequences==""):
     parser.print_help()
     exit(1)
 NSTRANDS=len(splseq)
+if NSTRANDS > 1:
+    print "ERROR: More than one strand not supported yet. Please try splitting your job."
+    exit(1)
 SSNSTRAN=len(splsst)
 CENTERS,ZCENTERS=[],[]
 for st in xrange(0,NSTRANDS):
@@ -54,6 +58,9 @@ if(not errfl):
 if(errfl and len(args.sstruct)>0):
     print "ERROR: Number of nucleotides must be consistent between secondary structure and sequence!"
     parser.print_help()
+    exit(1)
+if PRDUPLEX and ssflag :
+    print "ERROR:It is not recommended to use options -d and -t simultaneously."
     exit(1)
 
 seq=[]
@@ -144,28 +151,24 @@ def pdbprint(nt, resind, bas, chain,center):
     xpos,ypos,zpos='{:8.3f}'.format(xtemp+xc),'{:8.3f}'.format(ytemp+yc),'{:8.3f}'.format(ztemp+zc)
     line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos
     print line
-    
     atindex='{:5}'.format(resind*NAT+1)
     atname="XVEC"
     xtemp, ytemp, ztemp=nt[1][0],nt[1][1],nt[1][2]
     xpos,ypos,zpos='{:8.3f}'.format(xtemp+xc),'{:8.3f}'.format(ytemp+yc),'{:8.3f}'.format(ztemp+zc)
     line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos
     print line
-    
     atindex='{:5}'.format(resind*NAT+2)
     atname="YVEC"
     xtemp, ytemp, ztemp=nt[2][0],nt[2][1],nt[2][2]
     xpos,ypos,zpos='{:8.3f}'.format(xtemp+xc),'{:8.3f}'.format(ytemp+yc),'{:8.3f}'.format(ztemp+zc)
     line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos
     print line
-    
     atindex='{:5}'.format(resind*NAT+3)
     atname="SUGR"
     xtemp, ytemp, ztemp=nt[3][0],nt[3][1],nt[3][2]
     xpos,ypos,zpos='{:8.3f}'.format(xtemp+xc),'{:8.3f}'.format(ytemp+yc),'{:8.3f}'.format(ztemp+zc)
     line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos
     print line
-    
     atindex='{:5}'.format(resind*NAT+4)
     atname="PHOS"
     xtemp, ytemp, ztemp=nt[4][0],nt[4][1],nt[4][2]
@@ -209,7 +212,7 @@ def get_stacked_basis(refcoords, current_base, ntdo, ntup,info,wchain,wchain2,DU
     for a in xrange(0,NAT):
         for d in xrange(0,DIM):
             nnew_stack[a][d]=nnew_stack[a][d]+current_base[0][d]
-    wchain.append([nnew_stack, info])
+    wchain.append([nnew_stack, info[0]])
     ret=get_basis(nnew_stack)
     
     ##DUPLEX
@@ -231,7 +234,7 @@ def get_stacked_basis(refcoords, current_base, ntdo, ntup,info,wchain,wchain2,DU
         for a in xrange(0,NAT):
             for d in xrange(0,DIM):
                 nnew_stack[a][d]=nnew_stack[a][d]+current_base[0][d]
-        wchain2.append([nnew_stack, info])
+        wchain2.append([nnew_stack, info[1]])
     return ret
 
 #READ THE SEQUENCE AND PRINT THE COORDINATES
@@ -239,22 +242,23 @@ def get_chain(sequ,initnt,refcoords,strand):
     chain1,chain2=[],[]
     nnt=len(sequ)
     nst=nnt-1
+    info=[]
     #print first nt
     nt=base_index(sequ[0])
     current_base=get_basis(refcoords[nt][0][0])
-    info=[initnt, sequ[0].upper(),strand]
-    chain1.append([refcoords[nt][0][0], info])
+    info=[[initnt, sequ[0].upper(),strand], [2*nnt-1-initnt,get_complb(sequ[0].upper()),strand+1]]
+    chain1.append([refcoords[nt][0][0], info[0]])
     if(DUPLEX):
-        info=[nnt, get_complb(sequ[0].upper()),strand]
-        chain2.append([refcoords[nt][0][3], info])
-    
+        #info.append([nnt, get_complb(sequ[0].upper()),strand])
+        chain2.append([refcoords[nt][0][3], info[1]])
     initnt=initnt+1
     #relabel duplex chain index
     for st in xrange(0,nst):
         stack=sequ[st:st+2]
-        info=[initnt, stack[1].upper(), strand]
+        info=[[initnt, stack[1].upper(), strand],[2*nnt-1-initnt,get_complb(stack[1].upper()),strand+1]]
         current_base=get_stacked_basis(refcoords,current_base, base_index(stack[0]), base_index(stack[1]), info, chain1, chain2, DUPLEX)
         initnt=initnt+1
+    
     return [chain1,initnt,chain2]
 
 ############################STACK COORDINATES#####################################            
@@ -598,31 +602,6 @@ FILEUU=["ATOM      0 BASE U   0   0       4.602  -3.515   1.027",
 
 ALLCFILES=[[FILEAA, FILEAU, FILEAG, FILEAC],[FILEUA, FILEUU, FILEUG, FILEUC],[FILEGA, FILEGU, FILEGG, FILEGC],[FILECA,FILECU, FILECG, FILECC]]
 
-#READ THE TEMPLATES
-#refcoord=[]
-#for nt1 in xrange(0,NBA):
-#    wr2=[]
-#    for nt2 in xrange(0,NBA):
-#        ant1, ant2=get_bname(nt1), get_bname(nt2)
-#        print ant1, ant2
-#        nam="src_assemble/"+ant1+ant2+"_spqr.pdb"
-#        ALLFILE=[]
-#        for line in open(nam):
-#            nam=line[:4]
-#            if(nam.strip()=="ATOM"):
-#                ALLFILE.append(line)
-#        stack=[]
-#        for nnt in xrange(0,STTOT):
-#            ntcoords=[]
-#            for at in xrange(0,NAT):
-#                x=float(ALLFILE[nnt*NAT+at][30:38].strip())
-#                y=float(ALLFILE[nnt*NAT+at][38:46].strip())
-#                z=float(ALLFILE[nnt*NAT+at][46:54].strip())
-#                ntcoords.append([x,y,z])
-#            stack.append(ntcoords)
-#        wr2.append(stack)
-#    refcoord.append(wr2)
-
 ############################HERE STARTS THE CODE##################################
 refcoord=[]
 for nt1 in xrange(0,NBA):
@@ -650,17 +629,20 @@ currnt=0
 ALLCHAINS=[]
 for strand in xrange(0,len(seq)):
     lchain,currnt,rchain=get_chain(seq[strand],currnt,refcoord,strand)
-    ALLCHAINS.append(lchain)
+    ALLCHAINS.append([lchain,rchain])
 
-#print the chains
+
+
 pdbfile=open(OUTNAME+".pdb","w")
 orig_stdout=sys.stdout
 sys.stdout=pdbfile
 for strand in xrange(0,len(seq)):
-    cnt=0
-    for nt in xrange(0,len(seq[strand])):
-        pdbprint(ALLCHAINS[strand][cnt][0], ALLCHAINS[strand][cnt][1][0],ALLCHAINS[strand][cnt][1][1],ALLCHAINS[strand][cnt][1][2],CENTERS[strand])
-        cnt=cnt+1
+    lnnt=len(seq[strand])
+    for nt in xrange(0,lnnt):
+        pdbprint(ALLCHAINS[strand][0][nt][0], ALLCHAINS[strand][0][nt][1][0],ALLCHAINS[strand][0][nt][1][1],ALLCHAINS[strand][0][nt][1][2],CENTERS[strand])
+    if(PRDUPLEX):
+        for nt in xrange(0,len(seq[strand])):
+            pdbprint(ALLCHAINS[strand][1][lnnt-1-nt][0], ALLCHAINS[strand][1][lnnt-1-nt][1][0],ALLCHAINS[strand][1][lnnt-1-nt][1][1],ALLCHAINS[strand][1][lnnt-1-nt][1][2],CENTERS[strand])
 sys.stdout=orig_stdout
 pdbfile.close()
 
@@ -730,7 +712,7 @@ if(ssflag):
         frags.write("\n")
 
     orig_stdout=sys.stdout
-    sys.stdout=frags
+    sys.stdout=frags 
     for ST in xrange(0,len(STACKSEQS)):
         lchain,currnt,rchain=get_chain(STACKSEQS[ST],0,refcoord,ST)
         lnnt=len(STACKSEQS[ST])
@@ -740,6 +722,6 @@ if(ssflag):
         if(DUPLEX):
             for nt in xrange(0,lnnt):
                 pdbprint(rchain[lnnt-1-nt][0], rchain[lnnt-1-nt][1][0], get_complb(lchain[lnnt-1-nt][1][1]), rchain[lnnt-1-nt][1][2],ZCENTERS[0])
-    #ssf.close()
+   #ssf.close()
     frags.close()
     sys_stdout=orig_stdout
