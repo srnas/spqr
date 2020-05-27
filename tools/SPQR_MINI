@@ -7,7 +7,7 @@ SPQR_PATH=""
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
-INTRAC=no_bph_intrac.btb
+INTRAC=intrac.btb
 NPROC=1
 MPROC=$((NPROC - 1))
 CLASH_NMC=20000
@@ -143,16 +143,17 @@ eval set -- "$PARAMS"
 #################
 
 #STEP 1#
+THISSIM=01
 mkdir $DIRNAME
 if [ $CONVERT ] ; then 
     echo "Creating SPQR pdb format structure..."
     cp $TOOLS_PATH/pdb2spqr.py .
-    python pdb2spqr.py $PDBSTRUCT > init.pdb
+    python pdb2spqr.py $PDBSTRUCT > $DIRNAME/init.pdb
     rm pdb2spqr.py
-else cp $PDBSTRUCT init.pdb
+else cp $PDBSTRUCT $DIRNAME/init.pdb
 fi
 echo "Creating files for clash removal..."
-mkdir $DIRNAME/01
+mkdir $DIRNAME/$THISSIM
 MCPARAMS1=(${MC_PARAMS[@]})
 SAPARAMS1=(${SA_PARAMS[@]})
 MCPARAMS1[6]=$CLASH_NMC
@@ -161,14 +162,21 @@ MCPARAMS1[8]=$((CLASH_NMC*CLASH_NSA+1))
 MCPARAMS1[12]="$ENERGY_PATH/$INTRAC"
 SAPARAMS1[0]=$CLASH_TSA
 SAPARAMS1[4]=$CLASH_NSA
-write_params $DIRNAME/01/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
-mkdir $DIRNAME/01/configs $DIRNAME/01/pdb_inits
-cp init.pdb $DIRNAME/01/pdb_inits
-cp $BIN_PATH/$BINCLASH $DIRNAME/01
-cp $BIN_PATH/$BINANNOT $DIRNAME/01
+write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
+mkdir $DIRNAME/$THISSIM/pdb_inits
+cp $DIRNAME/init.pdb $DIRNAME/$THISSIM/pdb_inits/init.pdb
+cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
+cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
+
+
+if [ "$LNKRMV" ]; then
+    cp $TOOLS_PATH/SPQR_DLINK.py $DIRNAME/$THISSIM
+    cp $SSTRUCT $DIRNAME/$THISSIM
+    NPSSTRUCT=`basename $SSTRUCT`
+fi
 echo "Setting up the parameters for clashing removal..."
 echo "Running clash removal annealing..."
-cd $DIRNAME/01
+cd $DIRNAME/$THISSIM
 for iconf in `seq 0 $MPROC`;do
     ./$BINCLASH -i $iconf > clash_$NAME.out
 done
@@ -188,14 +196,25 @@ SELECTED=`head -1 temp3 | awk '{print $1}'` ;
 cp $SELECTED ../01.mc
 slinit=`echo $SELECTED | awk 'BEGIN {FS="."}; {print $3}'`
 PDBSELECTED=final.$slinit.pdb
+
+LNKFLAG=""
+if [ "$LNKRMV" ]; then
+    echo "Detecting links between loops..."
+    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o linked_loops.lst
+    if [ -s linked_loops.lst ] ; then
+	LNKFLAG=1
+	echo "Links detected. Removal will be needed"
+    fi
+fi
+
 rm temp1 temp2 temp3
 cd ../..
 echo "Clashes removed successfuly"
 
 #######
 #HERE DETECT AND REMOVE LINKS IF THEY EXIST!#
-if [ "$LNKRMV" ]; then
-    echo "Detecting links between loops..."
+if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
+    echo "Attempting to remove links..."
     THISSIM=LR1
     PREVSIM=01
     mkdir $DIRNAME/$THISSIM
@@ -212,13 +231,13 @@ if [ "$LNKRMV" ]; then
     mkdir $DIRNAME/$THISSIM/pdb_inits
     cp $DIRNAME/$PREVSIM/$SELECTED $DIRNAME/$THISSIM/pdb_inits/init.mc
     cp $DIRNAME/$PREVSIM/$PDBSELECTED $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    cp $DIRNAME/$PREVSIM/linked_loops.lst $DIRNAME/$THISSIM
     cp $BIN_PATH/$BINLNKRMV $DIRNAME/$THISSIM
     cp $TOOLS_PATH/SPQR_DLINK.py $DIRNAME/$THISSIM
     cp $SSTRUCT $DIRNAME/$THISSIM
     NPSSTRUCT=`basename $SSTRUCT`
     cd $DIRNAME/$THISSIM
-    python SPQR_DLINK.py -i pdb_inits/init.pdb -t $NPSSTRUCT -o linked_loops.lst
-    echo "Attempting to remove detected links..."
+    #python SPQR_DLINK.py -i pdb_inits/init.pdb -t $NPSSTRUCT -o linked_loops.lst
     ./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
     check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o check`
     if [ "$check" ] ; then
@@ -268,7 +287,7 @@ if [ "$LNKRMV" ]; then
     slinit=`echo $SELECTED | awk 'BEGIN {FS="."}; {print $3}'`
     PDBSELECTED=final.$slinit.pdb
     rm temp1 temp2 temp3
-    cp $SELECTED ../$PREVSIM.mc
+    cp $SELECTED ../01.mc
     cd ../..
     echo "Links removed successfuly"
 else
@@ -282,7 +301,7 @@ echo "Structure refinement: minimization of ERMSD with respect to original struc
 THISSIM=02
 PREVSIM=01
 mkdir $DIRNAME/$THISSIM
-mkdir $DIRNAME/$THISSIM/configs $DIRNAME/$THISSIM/pdb_inits
+mkdir $DIRNAME/$THISSIM/pdb_inits
 MCPARAMS2=(${MC_PARAMS[@]})
 SAPARAMS2=(${SA_PARAMS[@]})
 MCPARAMS2[6]=$ERMSD_NMC
@@ -294,12 +313,12 @@ SAPARAMS2[4]=$ERMSD_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
 cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
 echo  "REMARK ERMSD PARAMS 1 $ERMSD_PREF $ERMSD_CUTOFF" > ermsd_frags.lst
-NATS=`wc init.pdb | awk '{print $1}'`; NGROUPS=`echo $NATS | awk '{print int($1/5)-1}'` 
+NATS=`wc $DIRNAME/init.pdb | awk '{print $1}'`; NGROUPS=`echo $NATS | awk '{print int($1/5)-1}'` 
 echo "REMARK ERMSD GROUP `seq 0 $NGROUPS | tr "\n" " " `" >> ermsd_frags.lst
-grep -v REMARK init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/$THISSIM
+grep -v REMARK $DIRNAME/init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/$THISSIM
 cp $BIN_PATH/$BINERMSD $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
-./$BINERMSD params.spqr > ermsd_$NAME.out
+./$BINERMSD > ermsd_$NAME.out
 cd ../..
 echo "ERMSD minimization successful!"
 
@@ -308,9 +327,9 @@ echo "ERMSD minimization successful!"
 #STEP 3#
 echo "Structure refinement: minimization of SPQR energy"
 THISSIM=03
-PPREVSIM=02
+PREVSIM=02
 mkdir $DIRNAME/$THISSIM
-mkdir $DIRNAME/$THISSIM/configs $DIRNAME/$THISSIM/pdb_inits
+mkdir $DIRNAME/$THISSIM/pdb_inits
 MCPARAMS3=(${MC_PARAMS[@]})
 SAPARAMS3=(${SA_PARAMS[@]})
 MCPARAMS3[6]=$ENERG_NMC
@@ -322,12 +341,12 @@ SAPARAMS3[4]=$ENERG_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS3[@]} 1 ${SAPARAMS3[@]}
 for p in `seq 0 $MPROC` ; do
     pind=`printf %02d $p`
-    SEL_ERMSD_FILE=`ls -t $DIRNAME/$PREVSIM/configs/chk*.p$pind.mc | head -1`
+    SEL_ERMSD_FILE=`ls -t $DIRNAME/$PREVSIM/configs/chk.last.p$pind.mc | head -1`
     cp $SEL_ERMSD_FILE $DIRNAME/$THISSIM/pdb_inits/init.p$pind.mc
 done
 cp $BIN_PATH/$BINENERG $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
-./$BINENERG params.spqr > energ_$NAME.out
+./$BINENERG  > energ_$NAME.out
 cp final.p* ..
 cp configs/chk.last.p*.mc ..
 cp $TOOLS_PATH/SPQR_BBACKMAP.py .
@@ -341,7 +360,6 @@ cd ../..
 
 ########
 #CLEANING
-mv init.pdb $DIRNAME
 rm $DIRNAME/01.mc
 
 echo "Optimization successfully ended."

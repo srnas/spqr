@@ -44,7 +44,6 @@ install:
 	rm -rf $(localinteractions)
 	mkdir -p $(localinteractions)
 	./WRITETABLES
-	mv $(localinteractions)/intrac.btb $(localinteractions)/no_bph_intrac.btb
 clean:
 	rm -f *.o $(binaries)
 	rm -rf bin

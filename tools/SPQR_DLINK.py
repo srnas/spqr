@@ -50,7 +50,8 @@ if INPUTFILE=="" or SSFILE=="":
 
 ALLSSFILE=[]
 for line in open(SSFILE):
-    ALLSSFILE.append(line.strip())
+    if line[0]!=">":
+        ALLSSFILE.append(line.strip())
 fullss=list(ALLSSFILE[1])
 
 SSDICT = {
