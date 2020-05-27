@@ -215,11 +215,12 @@ if [ "$LNKRMV" ]; then
     cp $BIN_PATH/$BINLNKRMV $DIRNAME/$THISSIM
     cp $TOOLS_PATH/SPQR_DLINK.py $DIRNAME/$THISSIM
     cp $SSTRUCT $DIRNAME/$THISSIM
+    NPSSTRUCT=`basename $SSTRUCT`
     cd $DIRNAME/$THISSIM
-    python SPQR_DLINK.py -i pdb_inits/init.pdb -t $SSTRUCT -o linked_loops.lst
+    python SPQR_DLINK.py -i pdb_inits/init.pdb -t $NPSSTRUCT -o linked_loops.lst
     echo "Attempting to remove detected links..."
     ./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
-    check=`python SPQR_DLINK.py -i final.p00.pdb -t $SSTRUCT -o check`
+    check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o check`
     if [ "$check" ] ; then
 	echo "ERROR: Link not removed. Try longer simulations increasing the LINKRM_NMC variable in the script."
 	exit 1
@@ -334,7 +335,7 @@ for cgstruct in `ls final.p*`; do
     IND=`echo $cgstruct | awk 'BEGIN {FS="."}; {print $2}'`
     python SPQR_BBACKMAP.py -i $cgstruct -o mini_at_$IND.pdb
 done
-
+cp mini_at_*.pdb ..
 cd ../..
 
 
