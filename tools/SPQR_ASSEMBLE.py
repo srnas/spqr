@@ -4,8 +4,8 @@ import argparse
 import sys
 
 #DUPLEX=False
-KERMSD=5000
-RERMSD=4
+KERMSD=50
+RERMSD=100
 parser=argparse.ArgumentParser()
 parser.add_argument("-s","--sequences", help="Sequences",type=str,default="")
 parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
@@ -141,7 +141,8 @@ def normalize(vec):
 
 def pdbprint(nt, resind, bas, chain,center):
     resname='{:3}'.format(bas)
-    chindex='{:1}'.format(chain)
+    #chindex='{:1}'.format(chain)
+    chindex="0"
     resindex='{:4}'.format(resind)
     record="ATOM  "
     xc,yc,zc=center[0],center[1],center[2]
