@@ -92,7 +92,7 @@
 #define EPS 1.2e-7 
 #define RNMX (1.0-EPS) 
 #define SQ(x) ((x)*(x))
-#define MAXSTR 1000
+#define MAXSTR 10000
 
 
 /* MACROS */

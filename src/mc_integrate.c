@@ -22,6 +22,9 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
   for(nt_c=0;nt_c<nt_n;nt_c++){
     mc_trial_flag=0;
     if(fr_is_mobile[nt_c]!=FR_MOB_FROZ){
+/*       #ifdef ERMSDR */
+/*       double tempermsd = get_first_ermsd(rx, ry, rz, nt_n, &ERMSD_SQ, &ERMSD_ENERG); */
+/* #endif */
       MC_copy_nt(nt_c, *rx, *ry, *rz);
 
       /** CALC RADIUS OF GYRATION **/
@@ -1463,6 +1466,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
   if(my_link[nt_c]>-1){
     phenerg=calc_link_energy(nt_c, rx, ry, rz);
     energ+=phenerg;
+    //printf("%d  %lf\n", my_link[nt_c], phenerg);
   }
 #endif
   /* non bonded loop */
@@ -1479,6 +1483,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
       //if lnkrmv is working and  belong to the same loop, or if they are not being forced by ermsd in the same group 
       //if((my_link[nt2]==my_link[nt_c] || (my_link[nt_c]==-1 || my_link[nt2]==-1) ) && G_groups[nt_c][nt2]<0)
       //if((((my_link[nt2]==my_link[nt_c]) || G_groups[nt_c][nt2]<0) )  || (my_link[nt_c]==-1 || my_link[nt2]==-1))
+      
       if((my_link[nt2]==-1 || my_link[nt_c]==-1) || (my_link[nt2]>-1 && my_link[nt_c]>-1 && (my_link[nt2]!=my_link[nt_c] || (my_link[nt2]==my_link[nt_c] && my_loop[nt2]==my_loop[nt_c]) )))
 	//|| (fr_is_mobile[nt_c]==FR_MOB_FROZ || fr_is_mobile[nt2]==FR_MOB_FROZ))
 #endif
@@ -1487,9 +1492,11 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	  at_c=N_PARTS_PER_NT*nt_c;
 #ifdef ERMSDR
 #ifdef NOCTCS
+#ifdef LNKRMV
 	  if(G_groups[nt_c][nt2]<0)
 #endif
 #endif
+#endif	    
 	    {
 	      centdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
 	      if(centdistsq<mc_nb_rcut_sq){
