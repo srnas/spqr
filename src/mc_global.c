@@ -294,3 +294,11 @@ double bp_contacts[N_BASES][WC_FACES][DIM];
 double bp_hydros[N_BASES][WC_FACES][DIM];
 double bp_G_cont_W2[DIM];
 double bp_G_hydr_W2[DIM];
+
+double wall_epsilon;
+double wall_sigma;
+double wall_A;
+double wall_B;
+double wall_C;
+double wall_D;
+double wall_MODSQ;

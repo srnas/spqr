@@ -619,6 +619,12 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      if(sscanf(line, "%s %lf %lf", s2, &KRG, &RG_target)!=3){printf("Invalid value of RG_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      cnt++;
 	    }
+	    else if(!strcmp(s, "WALL_COUPL")) {
+	      if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D)!=7){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+	      wall_MODSQ=sqrt(SQ(wall_A)+SQ(wall_B)+SQ(wall_C));
+	      wall_epsilon*=4.0;
+	      cnt++;
+	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
 	      if(sscanf(line, "%s %d", s2, &PDB_OUTPUT)!=2){printf("Invalid value of PDB_OUTPUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      cnt++;
@@ -672,7 +678,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	  }
 	}
     }
-    if(cnt!=11){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
+    if(cnt!=12){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
   }
   fclose(mc_params);
   /***** check some parameters *****/

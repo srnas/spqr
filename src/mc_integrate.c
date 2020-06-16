@@ -1405,6 +1405,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
   double e_vec[DIM], e_vec_inv[DIM];
   double termsd_p, termsd_q;
   //double ermsd_energ;
+  double wall_energy=MC_wall_energy(mc_temp_x[at_c+IPHO],mc_temp_y[at_c+IPHO],mc_temp_z[at_c+IPHO]);
 #endif  
   double energ=0.0;
   int flag=0, tflag=0;
@@ -1527,6 +1528,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
     }
     *energ_calc=energ;
 #ifdef ERMSDR
+    *energ_calc+=wall_energy;
     TEMP_ERMSD_SQ/=((double)ERMSD_NNT);
     if(trial==-1){
       DELTA_ERMSD_SQ=-TEMP_ERMSD_SQ;

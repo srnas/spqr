@@ -51,7 +51,6 @@ extern int *my_link;
 extern int *my_loop;
 extern double Dlnksq;
 
-
 void MC_init_ermsd_restr(int);
 void MC_init_ermsd_out(int);
 void MC_copy_single_ermsd_g(int, int, int);
@@ -73,4 +72,5 @@ void MC_write_ermsd_obs(int, double);
 void MC_set_linked_loops(int, double*, double *, double*);
 double calc_link_energy(int, double*, double*, double*);
 
+double MC_wall_energy(double , double, double);
 #endif

@@ -556,3 +556,14 @@ void MC_write_ermsd_obs(int step, double energ){
   double ermsd=get_ermsd();
   fprintf(ermsd_obs, "%d %lf %lf %lf\n", step, energ-ERMSD_ENERG,ermsd, energ); 
 }
+
+double MC_wall_energy(double px, double py, double pz){
+  double ret=0;
+  if(wall_epsilon>0){
+    double dist=(wall_A*px+wall_B*py+wall_C*pz+wall_D)/wall_MODSQ;
+    double d4=1.0/(SQ(SQ(dist)));
+    ret=-wall_epsilon*exp(-dist/wall_sigma)+d4*d4*d4;
+    //printf("%lf  %lf\n", sqrt(wall_sigma*wall_sigma/distsq), ret);
+  }
+  return ret;
+}
