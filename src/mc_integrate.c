@@ -10,7 +10,7 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
   double d_energ=0.0;
 
   /** RG STUFF**/
-  double oRG2=0,nRG2=0,oeRG,neRG;
+  double oRG2=0,nRG2=0,oeRG,neRG,rgnats=0;
   double RCM[DIM];
   int rgat,d,rgnt;
 #ifdef MCVLISTS
@@ -30,31 +30,39 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
       /** CALC RADIUS OF GYRATION **/
       if(KRG>0){
 	for(d=0;d<DIM;d++) RCM[d]=0;oRG2=0;
-	for(rgat=0;rgat<mc_n;rgat++){
-	  RCM[0]+=(*rx)[rgat];
-	  RCM[1]+=(*ry)[rgat];
-	  RCM[2]+=(*rz)[rgat];
-	}
-	for(d=0;d<DIM;d++) RCM[d]/=(double)mc_n;
+	rgnats=0;
+	//for(rgat=0;rgat<mc_n;rgat++){
 	for(rgnt=0;rgnt<nt_n;rgnt++){
-	  for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
-	    if(rgnt==nt_c){
-	      oRG2+=SQ(mc_temp_x[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
-	      oRG2+=SQ(mc_temp_y[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
-	      oRG2+=SQ(mc_temp_z[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
-	    }
-	    else{
-	      oRG2+=SQ((*rx)[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
-	      oRG2+=SQ((*ry)[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
-	      oRG2+=SQ((*rz)[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	  if(fr_is_mobile[rgnt]!=FR_MOB_FROZ){
+	    for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
+	      RCM[0]+=(*rx)[rgnt*N_PARTS_PER_NT+rgat];
+	      RCM[1]+=(*ry)[rgnt*N_PARTS_PER_NT+rgat];
+	      RCM[2]+=(*rz)[rgnt*N_PARTS_PER_NT+rgat];
+	      rgnats++;
 	    }
 	  }
 	}
-	oRG2/=mc_n;
+	for(d=0;d<DIM;d++) RCM[d]/=(double)rgnats;
+	for(rgnt=0;rgnt<nt_n;rgnt++){
+	  if(fr_is_mobile[rgnt]!=FR_MOB_FROZ){
+	    for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
+	      if(rgnt==nt_c){
+		oRG2+=SQ(mc_temp_x[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
+		oRG2+=SQ(mc_temp_y[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
+		oRG2+=SQ(mc_temp_z[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	      }
+	      else{
+		oRG2+=SQ((*rx)[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
+		oRG2+=SQ((*ry)[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
+		oRG2+=SQ((*rz)[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	      }
+	    }
+	  }
+	}
+	oRG2/=(double)rgnats;
+	//printf("%lf %lf\t %lf %lf %lf   %lf\n", sqrt(oRG2), RG_target,RCM[0],RCM[1],RCM[2], rgnats);
       }
       /******************************/
-
-
       
       mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &old_energy, nt_n, -1); //here we calculate the energy of the selected particle, from temp position
       
@@ -73,40 +81,48 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
       /** CALC RADIUS OF GYRATION AGAIN**/
       if(KRG>0){
 	for(d=0;d<DIM;d++) RCM[d]=0;nRG2=0;
+	rgnats=0;
 	for(rgnt=0;rgnt<nt_n;rgnt++){
-	  for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
-	    if(rgnt==nt_c){
-	      RCM[0]+=mc_temp_x[rgnt*N_PARTS_PER_NT+rgat];
-	      RCM[1]+=mc_temp_y[rgnt*N_PARTS_PER_NT+rgat];
-	      RCM[2]+=mc_temp_z[rgnt*N_PARTS_PER_NT+rgat];
-	    }
-	    else{
-	      RCM[0]+=(*rx)[rgnt*N_PARTS_PER_NT+rgat];
-	      RCM[1]+=(*ry)[rgnt*N_PARTS_PER_NT+rgat];
-	      RCM[2]+=(*rz)[rgnt*N_PARTS_PER_NT+rgat];
+	  if(fr_is_mobile[rgnt]!=FR_MOB_FROZ){
+	    for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
+	      if(rgnt==nt_c){
+		RCM[0]+=mc_temp_x[rgnt*N_PARTS_PER_NT+rgat];
+		RCM[1]+=mc_temp_y[rgnt*N_PARTS_PER_NT+rgat];
+		RCM[2]+=mc_temp_z[rgnt*N_PARTS_PER_NT+rgat];
+		rgnats++;
+	      }
+	      else{
+		RCM[0]+=(*rx)[rgnt*N_PARTS_PER_NT+rgat];
+		RCM[1]+=(*ry)[rgnt*N_PARTS_PER_NT+rgat];
+		RCM[2]+=(*rz)[rgnt*N_PARTS_PER_NT+rgat];
+		rgnats++;
+	      }
 	    }
 	  }
 	}
-	for(d=0;d<DIM;d++) RCM[d]/=(double)mc_n;
+	for(d=0;d<DIM;d++) RCM[d]/=(double)rgnats;
 	for(rgnt=0;rgnt<nt_n;rgnt++){
-	  for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
-	    if(rgnt==nt_c){
-	      nRG2+=SQ(mc_temp_x[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
-	      nRG2+=SQ(mc_temp_y[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
-	      nRG2+=SQ(mc_temp_z[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
-	    }
-	    else{
-	      nRG2+=SQ((*rx)[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
-	      nRG2+=SQ((*ry)[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
-	      nRG2+=SQ((*rz)[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	  if(fr_is_mobile[rgnt]!=FR_MOB_FROZ){
+	    for(rgat=0;rgat<N_PARTS_PER_NT;rgat++){
+	      if(rgnt==nt_c){
+		nRG2+=SQ(mc_temp_x[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
+		nRG2+=SQ(mc_temp_y[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
+		nRG2+=SQ(mc_temp_z[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	      }
+	      else{
+		nRG2+=SQ((*rx)[rgnt*N_PARTS_PER_NT+rgat]-RCM[0]);
+		nRG2+=SQ((*ry)[rgnt*N_PARTS_PER_NT+rgat]-RCM[1]);
+		nRG2+=SQ((*rz)[rgnt*N_PARTS_PER_NT+rgat]-RCM[2]);
+	      }
 	    }
 	  }
 	}
-	nRG2/=mc_n;
+	nRG2/=(double)rgnats;
 	/******************************/
 	/** add RG energy **/
 	oeRG=KRG*SQ(sqrt(oRG2)-RG_target); 
 	neRG=KRG*SQ(sqrt(nRG2)-RG_target);
+	//printf("SECOND %lf %lf  \t %lf %lf %lf   %lf\n", sqrt(nRG2), RG_target,RCM[0],RCM[1],RCM[2], rgnats);
       }
 #ifndef NOCTCS
       dwce=MC_calculate_local_wc_energy(nt_n, nt_c, *rx, *ry, *rz);
