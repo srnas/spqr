@@ -2,7 +2,6 @@
 
 double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
   int nt_n=mc_n/N_PARTS_PER_NT, i;
-  
   int nt_c, trial;
   double old_energy, new_energy, wc_energ_diff=0.0, dwce=0; // wc energ is the difference between the new and the old : Ewc - Ewc_old
   int mc_trial_flag=0;
@@ -755,6 +754,7 @@ double MC_eval_displacement(int nt_n, double **rx, double **ry, double **rz, int
 #ifdef ERMSDR
     ERMSD_SQ=ERMSD_SQ+DELTA_ERMSD_SQ;
     ERMSD_ENERG=ERMSD_ENERG+DELTA_ERMSD_ENERG;
+    WALL_ENERG=WALL_ENERG+DELTA_WALL_ENERG;
 #endif
   }
   return d_energ;
@@ -1549,6 +1549,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
     if(trial==-1){
       DELTA_ERMSD_SQ=-TEMP_ERMSD_SQ;
       DELTA_ERMSD_ENERG=-TEMP_ERMSD_ENERG;
+      DELTA_WALL_ENERG=-wall_energy;
       //DELTA_ERMSD_SQ=0;
       //DELTA_ERMSD_ENERG=0;
       //printf("trial is minus 1! %lf  %lf\n", DELTA_ERMSD_SQ, DELTA_ERMSD_ENERG);
@@ -1557,15 +1558,18 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
       //this case is called in the initialization when checking the consistency of gkypuck. it must not affect the values of DELTA_ERMSD_SQ not DELTA_ERMSD_ENERG
       DELTA_ERMSD_SQ=0;
       DELTA_ERMSD_ENERG=0;
+      DELTA_WALL_ENERG=0;
       //printf("trial is minus 2! %lf  %lf\n", DELTA_ERMSD_SQ, DELTA_ERMSD_ENERG);
     }
     else{
       DELTA_ERMSD_SQ+=TEMP_ERMSD_SQ;
       DELTA_ERMSD_ENERG+=TEMP_ERMSD_ENERG;
+      DELTA_WALL_ENERG+=wall_energy;
       //in this manner, if the step is completely evaluated, we have that DELTA ERMSD = ERMSD_trial - ERMSD_curr. Once this is calculated, we add the corresponding difference of energy
       //ermsd_energ=0.5*ERMSD_PREF*DELTA_ERMSD_SQ;
       //*energ_calc+=ermsd_energ;
       *energ_calc+=DELTA_ERMSD_ENERG;
+      
     }
 #endif
     //printf("energ = %lf phenerg=%lf\n",energ, phenerg);

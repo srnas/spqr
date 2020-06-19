@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
   printf("INITIAL ENERGY IS %lf at step %d\n", energy_t, mc_i0);
 #ifdef ERMSDR
   energy_t+=ERMSD_ENERG;
+  energy_t+=WALL_ENERG;
 #endif
   for(i=mc_i0;i<mc_iter;++i) {
     /* do your MC here */

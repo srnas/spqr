@@ -302,3 +302,5 @@ double wall_B;
 double wall_C;
 double wall_D;
 double wall_MODSQ;
+double WALL_ENERG;
+double DELTA_WALL_ENERG;

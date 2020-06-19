@@ -151,3 +151,5 @@ extern double wall_B;
 extern double wall_C;
 extern double wall_D;
 extern double wall_MODSQ;
+extern double WALL_ENERG;
+extern double DELTA_WALL_ENERG;
