@@ -581,7 +581,8 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   char PARAMS_NAME[MAXSTR];
   sprintf(PARAMS_NAME,"params.spqr");
   char stmp[MAXSTR], s[MAXSTR], s2[MAXSTR], s3[MAXSTR], *line=NULL;  static size_t st_l=0;
-  int cnt=0, l;
+  int essential_flags=0, l;
+  int wall_flag=0;
   //*lx=100.0 ;*ly=100.0;*lz=100.0;
   mc_r_cut=DEFAULT_MC_RCUT;
   mc_wc_rcut=DEFAULT_MC_WC_RCUT;
@@ -604,6 +605,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   KRG=0;
   RG_target=0;
   mc_params=fopen(PARAMS_NAME, "r");
+  
   if(mc_params==NULL){
     printf("No MC parameters file found.\n");
     exit(ERR_INPUT);
@@ -620,42 +622,42 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	    //printf("read %s - line = %s\n", s2, line);
 	    if(!strcmp(s, "TEMPERATURE")) {
 	      if(sscanf(line, "%s %lf", s2, &mc_target_temp)!=2){printf("Invalid value of TEMPERATURE in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "RG_COUPL")) {
 	      if(sscanf(line, "%s %lf %lf", s2, &KRG, &RG_target)!=3){printf("Invalid value of RG_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "WALL_COUPL")) {
 	      if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D)!=7){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      wall_MODSQ=sqrt(SQ(wall_A)+SQ(wall_B)+SQ(wall_C));
 	      wall_epsilon*=4.0;
-	      cnt++;
+	      wall_flag++;
 	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
 	      if(sscanf(line, "%s %d", s2, &PDB_OUTPUT)!=2){printf("Invalid value of PDB_OUTPUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "ENERGS_PATH")) {
 	      if(sscanf(line, "%s %s", s2, s3)!=2){printf("Invalid value of ENERGS_PATH in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      strcpy(ENERG_PATH, s3);
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "MC_NT_XYZ")) {
 	      if(sscanf(line, "%s %lf", s2, &MC_NT_XYZ)!=2){printf("Invalid value of MC_NT_XYZ in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "MC_PH_XYZ")) {
 	      if(sscanf(line, "%s %lf", s2, &MC_PH_XYZ)!=2){printf("Invalid value of MC_PH_XYZ in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "MC_STEPS")) {
 	      if(sscanf(line, "%s %d", s2, mc_iter)!=2){printf("Invalid value of MC_STEPS in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "RANDOM_SEED")) {
 	      if(sscanf(line, "%s %d", s2, rand_a)!=2){printf("Invalid value of RANDOM_SEED in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "MC_NT_ANGLE")) {
 	      if(sscanf(line, "%s %lf %lf", s2, &MC_NT_ANGLE, &MC_BB_ANGLE)!=3){printf("Invalid values of MC_NT_ANGLE in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
@@ -663,29 +665,32 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      MC_NT_ANGLE_SIN=sin(MC_NT_ANGLE);
 	      MC_BB_ANGLE_COS=cos(MC_BB_ANGLE);
 	      MC_BB_ANGLE_SIN=sin(MC_BB_ANGLE);
-	      cnt++;
+	      essential_flags++;
 	    }
 	    /* else if(!strcmp(s, "MC_RCUT")) { */
 	    /*   if(sscanf(line, "%s %lf %lf %lf %lf", s2, &mc_r_cut, &mc_wc_rcut, &mc_bph_rcut, &mc_nb_rcut)!=5){printf("Invalid values of MC_RCUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);} */
-	    /*   cnt++; */
+	    /*   essential_flags++; */
 	    /* } */
 	    /* else if(!strcmp(s, "VL_SKIN")) { */
 	    /*   if(sscanf(line, "%s %lf", s2, &vl_skin)!=2){printf("Invalid value of VL_SKIN in %s\n", PARAMS_NAME);exit(ERR_INPUT);} */
-	    /*   cnt++; */
+	    /*   essential_flags++; */
 	    /* } */
 	    else if(!strcmp(s, "MC_TRAJ_STEPS")) {
 	      if(sscanf(line, "%s %d", s2, &mc_traj_steps)!=2){printf("Invalid value of MC_TRAJ_STEPS in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "MC_CHKP_STEPS")) {
 	      if(sscanf(line, "%s %d", s2, &mc_chkp_steps)!=2){printf("Invalid value of MC_CHKP_STEPS in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      cnt++;
+	      essential_flags++;
 	    }
 	    else {printf("Parameter %s not recognized in %s\n", s, PARAMS_NAME);exit(ERR_INPUT);}
 	  }
 	}
     }
-    if(cnt!=12){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
+    if(essential_flags!=12){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
+    if(wall_flag==0){wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0; // defaults}
+      
+    }
   }
   fclose(mc_params);
   /***** check some parameters *****/
