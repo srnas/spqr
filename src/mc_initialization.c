@@ -687,7 +687,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	  }
 	}
     }
-    if(essential_flags!=12){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
+    if(essential_flags!=11){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
     if(wall_flag==0){wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0; // defaults}
       
     }
