@@ -41,7 +41,7 @@ int MC_detect_initial_condition(int mpi_id){
 }
 
 int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_iter, int *rand_a, int mpi_id, int init_type, int read_flag, double *add_data){
-  int nt_n,at;
+  int nt_n,at,nt;
   int init=0;
   char initfile[256];
   if(init_type==0 || init_type==1){
@@ -73,9 +73,8 @@ int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_i
   
   WALL_ENERG=0;
   DELTA_WALL_ENERG=0;
-  for(at=0;at<*mc_n;at++){
-    WALL_ENERG+=MC_wall_energy((*rsx)[at*N_PARTS_PER_NT+IPHO],(*rsy)[at*N_PARTS_PER_NT+IPHO],(*rsz)[at*N_PARTS_PER_NT+IPHO]);
-    
+  for(nt=0;nt<nt_n;nt++){
+    WALL_ENERG+=MC_wall_energy((*rsx)[nt*N_PARTS_PER_NT+IPHO],(*rsy)[nt*N_PARTS_PER_NT+IPHO],(*rsz)[nt*N_PARTS_PER_NT+IPHO]);
   }
 #endif
 #ifdef LNKRMV
