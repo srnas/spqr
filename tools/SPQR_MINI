@@ -28,7 +28,7 @@ BINERMSD=SPQR_eSA
 BINENERG=SPQR_SA
 BINLNKRMV=SPQR_cMC
 ERMSD_PREF=5000
-ERMSD_CUTOFF=4
+ERMSD_CUTOFF=100
 ############
 
 #PARSE ARGUMENTS#
@@ -264,7 +264,9 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     SAPARAMSL2[4]=$CLASH_NSA
     write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMSL2[@]} 1 ${SAPARAMSL2[@]}
     mkdir $DIRNAME/$THISSIM/pdb_inits
-    cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
+    #cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
+    cp $DIRNAME/$PREVSIM/final.p00.pdb $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    sed -i 's/NN/NA/g' $DIRNAME/$THISSIM/pdb_inits/init.pdb
     cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
     cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
     cd $DIRNAME/$THISSIM
@@ -312,9 +314,9 @@ SAPARAMS2[0]=$ERMSD_TSA
 SAPARAMS2[4]=$ERMSD_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
 cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
-echo  "REMARK ERMSD PARAMS 1 $ERMSD_PREF $ERMSD_CUTOFF" > ermsd_frags.lst
+echo  "REMARK ERMSD PARAMS 1  $ERMSD_CUTOFF" > ermsd_frags.lst
 NATS=`wc $DIRNAME/init.pdb | awk '{print $1}'`; NGROUPS=`echo $NATS | awk '{print int($1/5)-1}'` 
-echo "REMARK ERMSD GROUP `seq 0 $NGROUPS | tr "\n" " " `" >> ermsd_frags.lst
+echo "REMARK ERMSD GROUP $ERMSD_PREF `seq 0 $NGROUPS | tr "\n" " " `" >> ermsd_frags.lst
 grep -v REMARK $DIRNAME/init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/$THISSIM
 cp $BIN_PATH/$BINERMSD $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
