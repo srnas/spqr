@@ -3,7 +3,7 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=""
+SPQR_PATH=/home/spoblete/data/53_ernwin_contacts/01_thiel_jan/FOR_SPQR/spqr-chain
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
@@ -314,10 +314,11 @@ SAPARAMS2[0]=$ERMSD_TSA
 SAPARAMS2[4]=$ERMSD_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
 cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
-echo  "REMARK ERMSD PARAMS 1  $ERMSD_CUTOFF" > ermsd_frags.lst
+echo  "REMARK ERMSD PARAMS 1  $ERMSD_CUTOFF" > $DIRNAME/$THISSIM/ermsd_frags.lst
 NATS=`wc $DIRNAME/init.pdb | awk '{print $1}'`; NGROUPS=`echo $NATS | awk '{print int($1/5)-1}'` 
-echo "REMARK ERMSD GROUP $ERMSD_PREF `seq 0 $NGROUPS | tr "\n" " " `" >> ermsd_frags.lst
-grep -v REMARK $DIRNAME/init.pdb >> ermsd_frags.lst ; mv ermsd_frags.lst $DIRNAME/$THISSIM
+echo "REMARK ERMSD GROUP $ERMSD_PREF `seq 0 $NGROUPS | tr "\n" " " `" >> $DIRNAME/$THISSIM/ermsd_frags.lst
+grep -v REMARK $DIRNAME/init.pdb >> $DIRNAME/$THISSIM/ermsd_frags.lst
+#; mv ermsd_frags.lst $DIRNAME/$THISSIM
 cp $BIN_PATH/$BINERMSD $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
 ./$BINERMSD > ermsd_$NAME.out
