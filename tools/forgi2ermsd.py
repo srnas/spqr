@@ -4,117 +4,86 @@ import numpy as np
 import argparse
 import sys
 
-#DUPLEX=False
 KERMSD=50
 RERMSD=100
 parser=argparse.ArgumentParser()
-parser.add_argument("-s","--sequences", help="Sequences",type=str,default="")
-parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
-parser.add_argument("-c","--centers", help="Strand centers",type=str,default="")
-parser.add_argument("-g","--forgi", help="Forgi vectors: coords and twists",type=str,default="")
-parser.add_argument("-o","--output", help="Output name",type=str,default="init")
-parser.add_argument("-p","--pairs", help="No stacks, only pairs",action='store_true',default=False)
-parser.add_argument("-d","--duplex", help="Makes duplex with complementary structure",action='store_true',default=False)
+parser.add_argument("-g","--forgi", help="Forgi file",type=str,default="")
+parser.add_argument("-o","--output", help="Output name",type=str,default="forgi_ermsd.lst")
+
 
 args=parser.parse_args()
 ssflag=False
-PFLAG=args.pairs
 DUPLEX=True
-FORGIFLAG=False
-FORGICG=args.forgi
-PRDUPLEX=args.duplex
-splseq=args.sequences.split("&")
-splsst=args.sstruct.split("&")
+FORGIFLAG=True
+
+FORGIFILE=args.forgi
 OUTNAME=args.output
+#FORGICG=args.forgi
 
-if(args.sequences==""):
-    print "ERROR: a sequence must be entered."
+
+if FORGIFILE=="":
+    print "ERROR: Input file name needed!"
     parser.print_help()
     exit(1)
-NSTRANDS=len(splseq)
-if NSTRANDS > 1:
-    print "ERROR: More than one strand not supported yet. Please try splitting your job."
-    exit(1)
-SSNSTRAN=len(splsst)
-CENTERS,ZCENTERS=[],[]
-for st in xrange(0,NSTRANDS):
-    ZCENTERS.append([0,0,0])
 
-if(args.centers==""):
-    for st in xrange(0,NSTRANDS):
-        CENTERS.append([0,0,0])
-else:
-    CENCOORDS=args.centers.split()
-    if(len(CENCOORDS)!=3*NSTRANDS):
-        print "Number of centers "+str(len(CENCOORDS))+ " inconsistent with number of coordinates of strand centers "+str(3*NSTRANDS)+ " !"
-        exit(1)
-    else:
-        for st in xrange(0,NSTRANDS):
-            CENTERS.append([float(CENCOORDS[st*3]),float(CENCOORDS[st*3+1]),float(CENCOORDS[st*3+2])])
+seq,definitions,ids,stems,coords,twists=[],[],[],[],[],[]
+    
+for line in open(FORGIFILE):
+    splline=line.split()
+    if splline==[] or line[0]=="=":
+        break
+    
+    comm=splline[0].strip()
+    if(comm=="seq"):
+        seq=splline[1].strip()
+    elif(comm=="define"):
+        if(splline[1].strip()[0]=="s"):
+            definitions.append((splline[1].strip(),[int(splline[2].strip()),int(splline[3].strip()),int(splline[4].strip()),int(splline[5].strip())]))
+    elif(comm=="coord"):
+        if(splline[1].strip()[0]=="s"):
+            coords.append((splline[1].strip(),[float(splline[2].strip()),float(splline[3].strip()),float(splline[4].strip()),float(splline[5].strip()),float(splline[6].strip()),float(splline[7].strip()) ]))
+    elif(comm=="twist"):
+        if(splline[1].strip()[0]=="s"):
+            twists.append((splline[1].strip(),[float(splline[2].strip()),float(splline[3].strip()),float(splline[4].strip()),float(splline[5].strip()),float(splline[6].strip()),float(splline[7].strip()) ]))
+    elif(comm=="seq_ids"):
+        ids=splline[1:]
 
+stemDict=dict(definitions)
+coordDict=dict(coords)
+twistDict=dict(twists)
 
-FGCOORDS,FGTWISTS=[np.array([0,0,0]),np.array([0,0,0])],[np.array([0,0,0]),np.array([0,0,0])]
-fgline=FORGICG.split()
-if FORGICG!="":
-    if(len(fgline)!=12):
-        print "Incorrect number of coordinates for forgi coordinates (must be 12)."
-        exit(1)
-    else:
-        FORGIFLAG=True
-        FGCOORDS[0]=np.array([float(fgline[0]),float(fgline[1]),float(fgline[2])])
-        FGCOORDS[1]=np.array([float(fgline[3]),float(fgline[4]),float(fgline[5])])
-        FGTWISTS[0]=np.array([float(fgline[6]),float(fgline[7]),float(fgline[8])])
-        FGTWISTS[1]=np.array([float(fgline[9]),float(fgline[10]),float(fgline[11])])
-        #FGCM=(FGCOORDS[0]+FGCOORDS[1])/2.0
-        FGCM=FGCOORDS[0]
-        FGAXIS=(FGCOORDS[1]-FGCOORDS[0])
-        FGAXIS=FGAXIS/sqrt(np.dot(FGAXIS,FGAXIS))
-        FORGIVECS=[FGCM,FGAXIS,FGTWISTS[0],FGTWISTS[1]]
+#make list
+STEMLIST=[]
+for st in definitions:
+    STEMLIST.append(st[0])
 
-if(args.sstruct!=""):
-    ssflag=True
-errfl=False
-if(SSNSTRAN!=NSTRANDS):
-    errfl=True
-if(not errfl):
-    for ii in xrange(0,NSTRANDS):
-        if(len(splseq[ii])!=len(splsst[ii])):
-            errfl=True
-if(errfl and len(args.sstruct)>0):
-    print "ERROR: Number of nucleotides must be consistent between secondary structure and sequence!"
-    parser.print_help()
-    exit(1)
-if PRDUPLEX and ssflag :
-    print "ERROR:It is not recommended to use options -d and -t simultaneously."
-    exit(1)
+#make sequences
+SEQS=[]
+for st in STEMLIST:
+    stseq=seq[stemDict[st][0]-1:stemDict[st][1]]
+    compst=seq[stemDict[st][2]-1:stemDict[st][3]]
+    SEQS.append((st,stseq))
+seqDict=dict(SEQS)
+NSTEMS=len(SEQS)
 
-seq=[]
-strandseq=[]
-fullss=[]
-rawseq=[]
-for i in xrange(0,len(args.sequences)):
-    if(args.sequences[i]!="&"):
-        strandseq.append(args.sequences[i])
-        rawseq.append(args.sequences[i])
-        if(ssflag):
-            fullss.append(args.sstruct[i])
-    if(args.sequences[i]=="&"):
-        seq.append(strandseq)
-        strandseq=[]
-seq.append(strandseq)
+FORGIPARAMS=[]
+for st in STEMLIST:
+    fgcoor1=np.array([coordDict[st][0],coordDict[st][1],coordDict[st][2]])
+    fgcoor2=np.array([coordDict[st][3],coordDict[st][4],coordDict[st][5]])
+    fgtwis1=np.array([twistDict[st][0],twistDict[st][1],twistDict[st][2]])
+    fgtwis2=np.array([twistDict[st][3],twistDict[st][4],twistDict[st][5]])
+    FGCM=0.5*(fgcoor1+fgcoor2)
+    FGAXIS=fgcoor2-fgcoor1
+    FGAXIS=FGAXIS/sqrt(np.dot(FGAXIS,FGAXIS))
+    #forgipar=[FGCM,FGAXIS,fgtwis1,fgtwis2]
+    forgipar=[fgcoor1,FGAXIS,fgtwis1,fgtwis2]
+    FORGIPARAMS.append((st,forgipar))
+fparamsDict=dict(FORGIPARAMS)
 
 DIM=3
 NAT=5
 NBA=4
-STTOT=2
-if (DUPLEX):
-    STTOT=4
-SSDICT = {
-    "(":")",
-    "[":"]",
-    "{":"}",
-    "<":">"
-}
+STTOT=4
 
 #sequence is arg1 - we read all the stacks
 ##########FUNCTIONS #################
@@ -131,7 +100,7 @@ def get_forgi_matrix(leftstrand, rightstrand, forgivecs,typ):
     for d in xrange(0,DIM):
         CM[d]=CM[d]/(2.0*len(leftstrand)*NAT)
 #        FORGIVECS=[FGCM,FGAXIS,FGTWISTS[0],FGTWISTS[1]]
-    t0,   CM,b0=np.array([0,0,1]),np.array(CM),twistdict[typ]
+    t0,   CM,b0=np.array([0,0,1]),np.array(CM),templtwistdict[typ]
     tgtCM,t1,b1=forgivecs[0],forgivecs[1],forgivecs[2]
     c0,c1=np.cross(t0,b0),np.cross(t1,b1)
     B1cart= np.array([[t0[0],b0[0],c0[0]],
@@ -144,7 +113,6 @@ def get_forgi_matrix(leftstrand, rightstrand, forgivecs,typ):
     cartB1= np.array([[t0[0],t0[1],t0[2]],
                       [b0[0],b0[1],b0[2]],
                       [c0[0],c0[1],c0[2]]])
-    #print np.dot(np.dot(B1cart,rotB1),cartB1)
     #return [np.dot(np.dot(B1cart,rotB1),cartB1),tgtCM-CM]
     return [np.dot(np.dot(B1cart,rotB1),cartB1),tgtCM]
 
@@ -204,13 +172,13 @@ def normalize(vec):
     norm=sqrt(vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2])
     return [vec[0]/norm, vec[1]/norm, vec[2]/norm]
 
-def pdbprint(nt, resind, bas, chain,center):
+def pdbprint(nt, resind, bas, chain):
     resname='{:3}'.format(bas)
-    #chindex='{:1}'.format(chain)
-    chindex="0"
+    chindex='{:1}'.format(chain)
+    #chindex="0"
     resindex='{:4}'.format(resind)
     record="ATOM  "
-    xc,yc,zc=center[0],center[1],center[2]
+    xc,yc,zc=0,0,0
     atindex='{:5}'.format(resind*NAT)
     atname="BASE"
     xtemp, ytemp, ztemp=nt[0][0],nt[0][1],nt[0][2]
@@ -314,9 +282,7 @@ def get_chain(sequ,initnt,refcoords,strand):
     current_base=get_basis(refcoords[nt][0][0])
     info=[[initnt, sequ[0].upper(),strand], [2*nnt-1-initnt,get_complb(sequ[0].upper()),strand+1]]
     chain1.append([refcoords[nt][0][0], info[0]])
-    if(DUPLEX):
-        #info.append([nnt, get_complb(sequ[0].upper()),strand])
-        chain2.append([refcoords[nt][0][3], info[1]])
+    chain2.append([refcoords[nt][0][3], info[1]])
     initnt=initnt+1
     #relabel duplex chain index
     for st in xrange(0,nst):
@@ -666,7 +632,7 @@ FILEUU=["ATOM      0 BASE U   0   0       4.602  -3.515   1.027",
         "ATOM     18 SUGR A   1   3       6.783   5.879  -2.766",
         "ATOM     19 PHOS A   1   3       2.907   8.210  -3.750"]
 
-twistdict={
+templtwistdict={
     "A" : np.array([0.99999, -0.00442147, 0]),
     "U" : np.array([0.99999, 0.00442147, 0]),
     "G" : np.array([0.999993, 0.00370642, 0]),
@@ -676,6 +642,7 @@ twistdict={
 ALLCFILES=[[FILEAA, FILEAU, FILEAG, FILEAC],[FILEUA, FILEUU, FILEUG, FILEUC],[FILEGA, FILEGU, FILEGG, FILEGC],[FILECA,FILECU, FILECG, FILECC]]
 
 ############################HERE STARTS THE CODE##################################
+#get reference coordinates
 refcoord=[]
 for nt1 in xrange(0,NBA):
     wr2=[]
@@ -697,120 +664,43 @@ for nt1 in xrange(0,NBA):
         wr2.append(stack)
     refcoord.append(wr2)
 
-#get the chains
-currnt=0
-ALLCHAINS=[]
-for strand in xrange(0,len(seq)):
-    lchain,currnt,rchain=get_chain(seq[strand],currnt,refcoord,strand)
-    ALLCHAINS.append([lchain,rchain])
-
-pdbfile=open(OUTNAME+".pdb","w")
+pdbfile=open(OUTNAME,"w")
 orig_stdout=sys.stdout
 sys.stdout=pdbfile
-for strand in xrange(0,len(seq)):
-    lnnt=len(seq[strand])
-    #print ALLCHAINS[strand][0],ALLCHAINS[strand][1], FORGIVECS, ALLCHAINS[strand][0][0][1][1]
-    if(FORGIFLAG):
-        forgiparams=get_forgi_matrix(ALLCHAINS[strand][0],ALLCHAINS[strand][1], FORGIVECS, ALLCHAINS[strand][0][0][1][1])
+
+#print header
+print "REMARK ERMSD PARAMS " + str(NSTEMS) + " "+str(RERMSD)
+stcnt=0
+for st in STEMLIST:
+    indexes=""
+    for ii in xrange(stemDict[st][0],stemDict[st][1]+1):
+        indexes=indexes+str(ii-1)+" "
+    for ii in xrange(stemDict[st][2],stemDict[st][3]+1):
+        indexes=indexes+str(ii-1)+" "
+    print "REMARK ERMSD GROUP "+str(KERMSD)+" "+indexes
+    stcnt=stcnt+1
+
+#print the chains
+currnt=0
+ALLCHAINS=[]
+for st in STEMLIST:
+    lchain,currnt,rchain=get_chain(seqDict[st],currnt,refcoord,0)
+    ALLCHAINS.append((st,[lchain,rchain]))
+chainDict=dict(ALLCHAINS)
+
+for st in STEMLIST:
+    lnnt=len(seqDict[st])
+    forgiparams=get_forgi_matrix(chainDict[st][0],chainDict[st][1], fparamsDict[st], chainDict[st][0][0][1][1])
+    ntcnt=0
     for nt in xrange(0,lnnt):
-        prnt=ALLCHAINS[strand][0][nt][0]
-        if(FORGIFLAG):
-            prnt=forgi_arrange(forgiparams,prnt)
-        pdbprint(prnt, ALLCHAINS[strand][0][nt][1][0],ALLCHAINS[strand][0][nt][1][1],ALLCHAINS[strand][0][nt][1][2],CENTERS[strand])
-    if(PRDUPLEX):
-        for nt in xrange(0,len(seq[strand])):
-            prnt=ALLCHAINS[strand][1][lnnt-1-nt][0]
-            if(FORGIFLAG):
-                prnt=forgi_arrange(forgiparams,prnt)
-            pdbprint(prnt, ALLCHAINS[strand][1][lnnt-1-nt][1][0],ALLCHAINS[strand][1][lnnt-1-nt][1][1],ALLCHAINS[strand][1][lnnt-1-nt][1][2],CENTERS[strand])
+        prnt=forgi_arrange(forgiparams,chainDict[st][0][nt][0])
+        #print chainDict[st][0][nt][1][0],chainDict[st][0][nt][1][1],chainDict[st][0][nt][1][2]
+        pdbprint(prnt, ntcnt,chainDict[st][0][nt][1][1],chainDict[st][0][nt][1][2])
+        ntcnt=ntcnt+1
+    for nt in xrange(0,lnnt):
+        prnt=forgi_arrange(forgiparams,chainDict[st][1][lnnt-1-nt][0])
+        #print chainDict[st][1][lnnt-1-nt][1][0],chainDict[st][1][lnnt-1-nt][1][1],chainDict[st][1][lnnt-1-nt][1][2]
+        pdbprint(prnt, ntcnt,chainDict[st][1][lnnt-1-nt][1][1],chainDict[st][1][lnnt-1-nt][1][2])
+        ntcnt=ntcnt+1
 sys.stdout=orig_stdout
 pdbfile.close()
-
-###############SECONDARY STRUCTURE FILES####################
-#we look for the fragments to be built in the ermsd fashion#
-#ssf=open("ss.temp","w")
-if(ssflag):
-    frags=open("ermsd_frags_"+OUTNAME+".lst","w")
-    ERMSDFRAGS=[]
-    bpairs=[]
-    for br in SSDICT:
-        pnt=-1
-        restart=True
-        while(restart):
-            restart=False
-            for nt in xrange(0,len(fullss)):
-                if(fullss[nt]==br):
-                    pnt=nt
-                if(fullss[nt]==SSDICT[br] and pnt>=0):
-                    bpairs.append([pnt,nt])
-                    fullss[nt]="."
-                    fullss[pnt]="."
-                    restart=True
-                    break
-    
-    opairs=bpairs.sort()
-    SSSTACKS=[]
-    CSTACK=[bpairs[0]]
-    for bp in xrange(1,len(bpairs)):
-        if(bpairs[bp][0]==bpairs[bp-1][0]+1 and bpairs[bp][1]==bpairs[bp-1][1]-1):
-            CSTACK.append(bpairs[bp])
-        else:
-            if(len(CSTACK)>0):
-                SSSTACKS.append(CSTACK)
-            CSTACK=[bpairs[bp]]
-    if(len(CSTACK)>0):
-        SSSTACKS.append(CSTACK)
-    
-    if PFLAG:
-        SSSTACKS=[]
-        for pair in bpairs:
-            SSSTACKS.append([pair])
-    
-    
-    STACKSEQS=[]
-    stra=[]
-    for ST in xrange(0,len(SSSTACKS)):
-        stra=[]
-        for nt in xrange(0,len(SSSTACKS[ST])):
-            stra.append(rawseq[SSSTACKS[ST][nt][0]])
-        STACKSEQS.append(stra)  
-    #for ST in xrange(0,len(STACKSEQS)):
-    #    ssf.write(''.join(STACKSEQS[ST]))
-    #    ssf.write("\n")
-
-    frags.write( "REMARK ERMSD PARAMS " + str(len(STACKSEQS)) + " "+str(RERMSD)+"\n")
-    for ST in xrange(0,len(SSSTACKS)):
-        frags.write( "REMARK ERMSD GROUP "+str(KERMSD)+" ")
-        #for ind in xrange(0,len(SSSTACKS[ST])):
-        #    frags.write(str(SSSTACKS[ST][ind][0])+" ")
-        #for ind in xrange(0,len(SSSTACKS[ST])):
-        #    frags.write(str(SSSTACKS[ST][ind][1])+" ")
-        for ist in SSSTACKS[ST]:
-            frags.write(str(ist[0])+" ")
-        for ist in reversed(SSSTACKS[ST]):
-            frags.write(str(ist[1])+" ")
-        frags.write("\n")
-
-    orig_stdout=sys.stdout
-    sys.stdout=frags 
-    for ST in xrange(0,len(STACKSEQS)):
-        lchain,currnt,rchain=get_chain(STACKSEQS[ST],0,refcoord,ST)
-        lnnt=len(STACKSEQS[ST])
-        for nt in xrange(0,lnnt):
-            if not FORGIFLAG:
-                tpcoords=lchain[nt][0]
-            else:
-                tpcoords=lchain[nt][0]
-            pdbprint(tpcoords, lchain[nt][1][0],lchain[nt][1][1],lchain[nt][1][2],ZCENTERS[0])
-
-        if(DUPLEX):
-            for nt in xrange(0,lnnt):
-                if not FORGIFLAG:
-                    tpcoords=rchain[lnnt-1-nt][0]
-                else:
-                    tpcoords=rchain[lnnt-1-nt][0]
-                pdbprint(tpcoords, rchain[lnnt-1-nt][1][0], get_complb(lchain[lnnt-1-nt][1][1]), rchain[lnnt-1-nt][1][2],ZCENTERS[0])
-                #pdbprint(rchain[lnnt-1-nt][0], rchain[lnnt-1-nt][1][0], get_complb(lchain[lnnt-1-nt][1][1]), rchain[lnnt-1-nt][1][2],ZCENTERS[0])
-   #ssf.close()
-    frags.close()
-    sys_stdout=orig_stdout
