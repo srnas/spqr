@@ -10,7 +10,6 @@ parser=argparse.ArgumentParser()
 parser.add_argument("-g","--forgi", help="Forgi file",type=str,default="")
 parser.add_argument("-o","--output", help="Output name",type=str,default="forgi_ermsd.lst")
 
-
 args=parser.parse_args()
 ssflag=False
 DUPLEX=True
@@ -19,7 +18,6 @@ FORGIFLAG=True
 FORGIFILE=args.forgi
 OUTNAME=args.output
 #FORGICG=args.forgi
-
 
 if FORGIFILE=="":
     print "ERROR: Input file name needed!"
@@ -669,16 +667,17 @@ orig_stdout=sys.stdout
 sys.stdout=pdbfile
 
 #print header
-print "REMARK ERMSD PARAMS " + str(NSTEMS) + " "+str(RERMSD)
-stcnt=0
+#print "REMARK ERMSD PARAMS " + str(NSTEMS) + " "+str(RERMSD)
+print "REMARK ERMSD PARAMS 1 " + str(RERMSD)
+
+indexes=""
 for st in STEMLIST:
-    indexes=""
+
     for ii in xrange(stemDict[st][0],stemDict[st][1]+1):
         indexes=indexes+str(ii-1)+" "
     for ii in xrange(stemDict[st][2],stemDict[st][3]+1):
         indexes=indexes+str(ii-1)+" "
-    print "REMARK ERMSD GROUP "+str(KERMSD)+" "+indexes
-    stcnt=stcnt+1
+print "REMARK ERMSD GROUP "+str(KERMSD)+" "+indexes
 
 #print the chains
 currnt=0
@@ -694,7 +693,6 @@ for st in STEMLIST:
     ntcnt=0
     for nt in xrange(0,lnnt):
         prnt=forgi_arrange(forgiparams,chainDict[st][0][nt][0])
-        #print chainDict[st][0][nt][1][0],chainDict[st][0][nt][1][1],chainDict[st][0][nt][1][2]
         pdbprint(prnt, ntcnt,chainDict[st][0][nt][1][1],chainDict[st][0][nt][1][2])
         ntcnt=ntcnt+1
     for nt in xrange(0,lnnt):

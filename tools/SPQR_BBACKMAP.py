@@ -566,7 +566,7 @@ for i in xrange(0,NNT):
         chindex=chain
         resindex='{:4}'.format(resind)
         xpos,ypos,zpos='{:8.3f}'.format(newx),'{:8.3f}'.format(newy),'{:8.3f}'.format(newz)
-        line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos
+        line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos+"  1.00  0.00"
         print line
         #print "ATOM ", str(COUNTAT ).rjust(5), attype.rjust(4),  str(basetyp).rjust(3), chain, str(resind).rjust(3),"   ",  strX, strY, strZ," 1.00  0.00"
         COUNTAT=COUNTAT+1
