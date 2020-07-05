@@ -304,3 +304,4 @@ double wall_D;
 double wall_MODSQ;
 double WALL_ENERG;
 double DELTA_WALL_ENERG;
+int WALL_TYPE;

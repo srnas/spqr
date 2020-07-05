@@ -628,7 +628,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "WALL_COUPL")) {
-	      if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D)!=7){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+	      if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf %d", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D,&WALL_TYPE)!=8){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
 	      wall_MODSQ=sqrt(SQ(wall_A)+SQ(wall_B)+SQ(wall_C));
 	      wall_epsilon*=4.0;
 	      wall_flag++;
@@ -687,7 +687,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	}
     }
     if(essential_flags!=11){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
-    if(wall_flag==0){wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0; // defaults}
+    if(wall_flag==0){wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0;WALL_TYPE=0; // defaults}
       
     }
   }
