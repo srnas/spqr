@@ -144,13 +144,14 @@ extern double KRG;
 extern double RG_target;
 
 //wall
-extern double wall_epsilon;
-extern double wall_sigma;
-extern double wall_A;
-extern double wall_B;
-extern double wall_C;
-extern double wall_D;
-extern double wall_MODSQ;
+extern double *wall_epsilon;
+extern double *wall_sigma;
+extern double *wall_A;
+extern double *wall_B;
+extern double *wall_C;
+extern double *wall_D;
+extern double *wall_MODSQ;
 extern double WALL_ENERG;
 extern double DELTA_WALL_ENERG;
-extern int WALL_TYPE;
+extern int *WALL_TYPE;
+extern int N_WALLS;

@@ -581,7 +581,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
   sprintf(PARAMS_NAME,"params.spqr");
   char stmp[MAXSTR], s[MAXSTR], s2[MAXSTR], s3[MAXSTR], *line=NULL;  static size_t st_l=0;
   int essential_flags=0, l;
-  int wall_flag=0;
+  int wall_flag=0,w;double w1,w2,w3,w4,w5,w6;int w7,itemp;char *tok,*templine;
   //*lx=100.0 ;*ly=100.0;*lz=100.0;
   mc_r_cut=DEFAULT_MC_RCUT;
   mc_wc_rcut=DEFAULT_MC_WC_RCUT;
@@ -628,10 +628,42 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      essential_flags++;
 	    }
 	    else if(!strcmp(s, "WALL_COUPL")) {
-	      if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf %d", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D,&WALL_TYPE)!=8){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
-	      wall_MODSQ=sqrt(SQ(wall_A)+SQ(wall_B)+SQ(wall_C));
-	      wall_epsilon*=4.0;
+	      /* if(sscanf(line, "%s %lf %lf %lf %lf %lf %lf %d", s2, &wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D,&WALL_TYPE)!=8){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);} */
+	      /* wall_MODSQ=sqrt(SQ(wall_A)+SQ(wall_B)+SQ(wall_C)); */
+	      /* wall_epsilon*=4.0; */
+	      
+	      if(sscanf(line, "%s %d ", s2, &N_WALLS)!=2){
+		//&wall_epsilon, &wall_sigma, &wall_A, &wall_B, &wall_C, &wall_D,&WALL_TYPE)!=8){printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+		printf("Invalid value of WALL_COUPL in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
+	      if(N_WALLS>0){
+		wall_epsilon=(double*)malloc(sizeof(double)*N_WALLS);
+		wall_sigma  =(double*)malloc(sizeof(double)*N_WALLS);
+		wall_A=(double*)malloc(sizeof(double)*N_WALLS);
+		wall_B=(double*)malloc(sizeof(double)*N_WALLS);
+		wall_C=(double*)malloc(sizeof(double)*N_WALLS);
+		wall_D=(double*)malloc(sizeof(double)*N_WALLS);
+		WALL_TYPE=(int*)malloc(sizeof(int)*N_WALLS);
+		wall_MODSQ=(double *)malloc(sizeof(double)*N_WALLS);
+		templine=strndup(line, MAXSTR);
+		tok=strtok(templine," ");tok=strtok(NULL," ");
+		
+		for(w=0;w<N_WALLS;w++){
+		  tok=strtok(NULL," ");wall_epsilon[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");wall_sigma[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");wall_A[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");wall_B[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");wall_C[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");wall_D[w]=strtof(tok,NULL);
+		  tok=strtok(NULL," ");WALL_TYPE[w]=atoi(tok);
+		  wall_MODSQ[w]=sqrt(SQ(wall_A[w])+SQ(wall_B[w])+SQ(wall_C[w]));
+		  wall_epsilon[w]*=4.0;
+		}
+		free(templine);
+	      }
 	      wall_flag++;
+	      /* printf("nwalls %d\n",N_WALLS); */
+	      /* for(w=0;w<N_WALLS;w++) */
+	      /* 	printf("%lf %lf %lf %lf %lf %lf %d\n", wall_epsilon[w], wall_sigma[w],wall_A[w],wall_B[w],wall_C[w],wall_D[w], WALL_TYPE[w]); */
 	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
 	      if(sscanf(line, "%s %d", s2, &PDB_OUTPUT)!=2){printf("Invalid value of PDB_OUTPUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
@@ -687,8 +719,16 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	}
     }
     if(essential_flags!=11){printf("Missing parameters in %s!\n", PARAMS_NAME); exit(ERR_INPUT);}
-    if(wall_flag==0){wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0;WALL_TYPE=0; // defaults}
-      
+    if(wall_flag==0){N_WALLS=0;
+      wall_epsilon=(double *)malloc(sizeof(double));wall_epsilon[0]=0;
+      wall_sigma  =(double *)malloc(sizeof(double));wall_sigma[0]=0;
+      wall_A=(double *)malloc(sizeof(double));wall_A[0]=0;
+      wall_B=(double *)malloc(sizeof(double));wall_B[0]=0;
+      wall_C=(double *)malloc(sizeof(double));wall_C[0]=0;
+      wall_D=(double *)malloc(sizeof(double));wall_D[0]=0;
+      WALL_TYPE=(int *)malloc(sizeof(int));WALL_TYPE[0]=0;
+      wall_MODSQ=(double *)malloc(sizeof(double));wall_MODSQ[0]=0;
+      //wall_epsilon=0; wall_sigma=0, wall_A=0; wall_B=0; wall_C=0;wall_D=0;WALL_TYPE=0; // defaults}
     }
   }
   fclose(mc_params);
