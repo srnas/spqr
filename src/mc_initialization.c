@@ -664,6 +664,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 	      /* printf("nwalls %d\n",N_WALLS); */
 	      /* for(w=0;w<N_WALLS;w++) */
 	      /* 	printf("%lf %lf %lf %lf %lf %lf %d\n", wall_epsilon[w], wall_sigma[w],wall_A[w],wall_B[w],wall_C[w],wall_D[w], WALL_TYPE[w]); */
+	      /* exit(1); */
 	    }
 	    else if(!strcmp(s, "PDB_OUTPUT")) {
 	      if(sscanf(line, "%s %d", s2, &PDB_OUTPUT)!=2){printf("Invalid value of PDB_OUTPUT in %s\n", PARAMS_NAME);exit(ERR_INPUT);}
