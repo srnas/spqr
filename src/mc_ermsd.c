@@ -75,10 +75,12 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
       while(tmp!=NULL){
 	if(ntl==-1){
 	  //check type string
-	  //HAIRPIN=0, STEM=1
+	  //HAIRPIN=0, STEM, UNSTL=1
 	  if(tmp[0]=='h' && tmp[1]=='p') typ1=0;
+	  if(tmp[0]=='u' && tmp[1]=='l') typ1=0;
 	  if(tmp[0]=='s' && tmp[1]=='t') typ1=1;
 	  if(tmp[2]=='h' && tmp[3]=='p') typ2=0;
+	  if(tmp[2]=='u' && tmp[3]=='l') typ2=0;
 	  if(tmp[2]=='s' && tmp[3]=='t') typ2=1;
 	  ntl++;
 	}
@@ -91,8 +93,12 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
       free(cpline);
       //case hairpir-hairpin or hairpin-duplex
       tempnl1=0,tempnl2=0;
-      if(typ1==0) start2=2;
-      if(typ1==1) start2=4;
+      if(typ1==0 && typ2==0) start2=2;
+      if(typ1==0 && typ2==1) start2=2;
+      if(typ1==1 && typ2==0) start2=4;
+      if(typ1==1 && typ2==0) start2=4;
+      //if(typ1==0) start2=2;
+      //if(typ1==1) start2=4;
       if(typ1==0 || typ1==1)
 	for(inl=exloops[0];inl<=exloops[1];inl++)
 	  tempnl1++;
