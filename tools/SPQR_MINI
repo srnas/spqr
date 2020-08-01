@@ -3,7 +3,7 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/spoblete/data/53_ernwin_contacts/01_thiel_jan/FOR_SPQR/spqr-chain
+SPQR_PATH=/home/spoblete/data/52_ernwin_big/09_NEW_MINI/spqr/
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
@@ -36,6 +36,7 @@ PDBSTRUCT=""
 NAME=""
 PARAMS=""
 CONVERT=""
+LINKDCHECK=""
 SSTRUCT=""
 LNKRMV=""
 
@@ -90,6 +91,10 @@ while (( "$#" )); do
 	    ;;
 	-c|--convert)
 	    CONVERT=1
+	    shift
+	    ;;
+	-d|--doublecheck)
+	    LINKDCHECK=1
 	    shift
 	    ;;
 	-t|--sstruct)
@@ -200,7 +205,14 @@ PDBSELECTED=final.$slinit.pdb
 LNKFLAG=""
 if [ "$LNKRMV" ]; then
     echo "Detecting links between loops..."
-    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o linked_loops.lst
+    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o linked_loops.lst -p > dlink.out
+    NLDL=`wc dlink.out | awk '{print $1}'`
+    if [ $LINKDCHECK ] ; then
+	if [ "$NLDL" -gt "0" ] ; then 
+	    echo "Piercings detected. Checking Gauss integrals."
+	    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o linked_loops.lst > dlink.out
+	fi
+    fi
     if [ -s linked_loops.lst ] ; then
 	LNKFLAG=1
 	echo "Links detected. Removal will be needed"
@@ -239,7 +251,7 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     cd $DIRNAME/$THISSIM
     #python SPQR_DLINK.py -i pdb_inits/init.pdb -t $NPSSTRUCT -o linked_loops.lst
     ./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
-    check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o check`
+    check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o check -p`
     if [ "$check" ] ; then
 	echo "ERROR: Link not removed. Try longer simulations increasing the LINKRM_NMC variable in the script."
 	exit 1
