@@ -1536,7 +1536,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	    termsd_p=MC_get_pair_ermsd(pr_vec[0]/ERMSDX    , pr_vec[1]/ERMSDY    , pr_vec[2]/ERMSDZ    , G_ref[nt_c][nt2][0], G_ref[nt_c][nt2][1], G_ref[nt_c][nt2][2], G_ref[nt_c][nt2][3]);
 	    termsd_q=MC_get_pair_ermsd(pr_vec_inv[0]/ERMSDX, pr_vec_inv[1]/ERMSDY, pr_vec_inv[2]/ERMSDZ, G_ref[nt2][nt_c][0], G_ref[nt2][nt_c][1], G_ref[nt2][nt_c][2], G_ref[nt2][nt_c][3]);
 	    TEMP_ERMSD_SQ+=(termsd_p+termsd_q);
-	    TEMP_ERMSD_ENERG+=(0.5*ERMSD_PREF[G_groups[nt_c][nt2]]*(termsd_p+termsd_q));
+	    TEMP_ERMSD_ENERG+=(0.5*ERMSD_PREF[G_groups[nt_c][nt2]]*(termsd_p+termsd_q)*ERMSD_SSTRUCT[nt_c][nt2]);
 	    //}
 	  }
 #endif  

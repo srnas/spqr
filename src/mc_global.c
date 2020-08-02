@@ -229,6 +229,7 @@ double ERMSD_ENERG;
 double DELTA_ERMSD_ENERG;
 int ERMSD_FLAG;
 double *ERMSD_PREF;
+double **ERMSD_SSTRUCT;
 double ERMSD_CUTOFF;
 double *ermsdref_X;
 double *ermsdref_Y;

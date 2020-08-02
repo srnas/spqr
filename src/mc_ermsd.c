@@ -400,6 +400,9 @@ void MC_init_ermsd_restr(int nt_n){
   ERMSD_N_GROUPS=1;
   ERMSD_NNT=nt_n;
   int do_init=0;
+  int ssrflag=0;
+  int ssind1=-1,ssind2=-1;
+  double ERMSD_SSPREF=1.0;
   
   printf("Initializing ERMSD arrays.\n");
   G_ref  =(double ***)malloc(sizeof(double**)*nt_n);
@@ -459,15 +462,41 @@ void MC_init_ermsd_restr(int nt_n){
       ERMSD_PREF=(double *)malloc(sizeof(double)*ERMSD_N_GROUPS);
       //ERMSD_PREF[0]=0.0;
       ERMSD_CUTOFF=dtemp2;
+
+      ERMSD_SSTRUCT=(double **) malloc(sizeof(double *)*nt_n);
+      for(i=0;i<nt_n;i++)
+	ERMSD_SSTRUCT[i]=(double *)malloc(sizeof(double)*nt_n);
+      for(i=0;i<nt_n;i++)
+	for(j=0;j<nt_n;j++)
+	  ERMSD_SSTRUCT[i][j]=1.0;
+      
       printf("ERMSD: %d fragments. Cutoff=%lf\n", ERMSD_N_GROUPS, ERMSD_CUTOFF);
       ntind_group=(int **) malloc(sizeof(int *)*ERMSD_N_GROUPS);
       nnt_group=(int *)malloc(sizeof(int)*ERMSD_N_GROUPS);
       //read groups
+
+      l=getline(&lline, &st_l, ermsdfile);
+      cpline=strndup(lline, MAXSTR);
+      sscanf(cpline, "%s %s %s %lf", s1, s2, s3, &dtemp1);
+      if(!strcmp(s1, "REMARK") && !strcmp(s2, "ERMSD") && !strcmp(s3, "SSPAIRS")){
+	ERMSD_SSPREF=dtemp1;
+	tt=0;
+	tmp=strtok(cpline, " ");while(tmp!=NULL){if(tt>3 && (atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0'))) {if(tt%2==0) ssind1=atoi(tmp);else {ssind2=atoi(tmp); ERMSD_SSTRUCT[ssind1][ssind2]=ERMSD_SSPREF;ERMSD_SSTRUCT[ssind2][ssind1]=ERMSD_SSPREF;ssind1=-1;ssind2=-1;}} tmp=strtok(NULL, " ");tt++;}free(cpline);
+      }
+      else if(!strcmp(s1, "REMARK") && !strcmp(s2, "ERMSD") && !strcmp(s3, "GROUP")){
+	ssrflag=1;
+      }
+      else{ printf("Wrong syntax in ERMSD file ermsd_frags.lst\n");exit(ERR_INPUT);}
+            
       for(group=0;group<ERMSD_N_GROUPS;group++){
-	l=getline(&lline, &st_l, ermsdfile);
-	cpline=strndup(lline, MAXSTR);
-	sscanf(cpline, "%s %s %s %lf", s1, s2, s3, &dtemp1);
+	if(ssrflag==0){
+	  l=getline(&lline, &st_l, ermsdfile);
+	  cpline=strndup(lline, MAXSTR);
+	  sscanf(cpline, "%s %s %s %lf", s1, s2, s3, &dtemp1);
+	  ssrflag=0;
+	}
 	if(!(!strcmp(s1, "REMARK") && !strcmp(s2, "ERMSD") && !strcmp(s3, "GROUP"))){printf("Wrong syntax in ERMSD file ermsd_frags.lst\n");exit(ERR_INPUT);}
+	
 	ERMSD_PREF[group]=dtemp1;
 	//printf("%lf   \n", ERMSD_PREF[group]);
 	nnt_group[group]=0;
@@ -530,6 +559,10 @@ void MC_init_ermsd_restr(int nt_n){
   /*   for(j=0;j<nt_n;j++) */
   /*     printf("%d  %d   %d   %lf %lf %lf\n", i,j,G_groups[i][j], G_ref[i][j][0], G_ref[i][j][1], G_ref[i][j][2]); */
   /* exit(1); */
+  printf("SECONDARY STRUCTURE CONSTRAINTS INVOLVED\n");
+  for(i=0;i<nt_n;i++)
+    for(j=0;j<nt_n;j++)
+      if(ERMSD_SSTRUCT[i][j]!=1) printf("%d  %d\n", i,j);
 }
 
 void MC_get_ermsd_pair_type(int i, int j, double *ervec, int ptype){

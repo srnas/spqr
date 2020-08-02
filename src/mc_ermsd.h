@@ -40,6 +40,7 @@ extern double ***G_ref;
 extern int **G_groups;
 extern int ERMSD_N_GROUPS;
 extern int ERMSD_NNT;
+extern double **ERMSD_SSTRUCT;
 
 extern double *phpull_K;
 extern double **phpull_p0;
