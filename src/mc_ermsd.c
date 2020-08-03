@@ -444,6 +444,12 @@ void MC_init_ermsd_restr(int nt_n){
 
   int group, *nnt_group, ntg, nt;//, grflag;
   int **ntind_group;
+  ERMSD_SSTRUCT=(double **) malloc(sizeof(double *)*nt_n);
+  for(i=0;i<nt_n;i++)
+    ERMSD_SSTRUCT[i]=(double *)malloc(sizeof(double)*nt_n);
+  for(i=0;i<nt_n;i++)
+    for(j=0;j<nt_n;j++)
+      ERMSD_SSTRUCT[i][j]=1.0;
   
   sprintf(filename, "ermsd_frags.lst");
   if((ermsdfile=fopen(filename, "r"))==NULL){
@@ -463,13 +469,7 @@ void MC_init_ermsd_restr(int nt_n){
       //ERMSD_PREF[0]=0.0;
       ERMSD_CUTOFF=dtemp2;
 
-      ERMSD_SSTRUCT=(double **) malloc(sizeof(double *)*nt_n);
-      for(i=0;i<nt_n;i++)
-	ERMSD_SSTRUCT[i]=(double *)malloc(sizeof(double)*nt_n);
-      for(i=0;i<nt_n;i++)
-	for(j=0;j<nt_n;j++)
-	  ERMSD_SSTRUCT[i][j]=1.0;
-      
+            
       printf("ERMSD: %d fragments. Cutoff=%lf\n", ERMSD_N_GROUPS, ERMSD_CUTOFF);
       ntind_group=(int **) malloc(sizeof(int *)*ERMSD_N_GROUPS);
       nnt_group=(int *)malloc(sizeof(int)*ERMSD_N_GROUPS);
@@ -495,10 +495,10 @@ void MC_init_ermsd_restr(int nt_n){
 	  sscanf(cpline, "%s %s %s %lf", s1, s2, s3, &dtemp1);
 	  ssrflag=0;
 	}
+	ssrflag=0;
 	if(!(!strcmp(s1, "REMARK") && !strcmp(s2, "ERMSD") && !strcmp(s3, "GROUP"))){printf("Wrong syntax in ERMSD file ermsd_frags.lst\n");exit(ERR_INPUT);}
 	
 	ERMSD_PREF[group]=dtemp1;
-	//printf("%lf   \n", ERMSD_PREF[group]);
 	nnt_group[group]=0;
 	tt=0;
 	tmp=strtok(cpline, " ");while(tmp!=NULL){if(tt>3 && (atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0'))) {nnt_group[group]++;} tmp=strtok(NULL, " ");tt++;}free(cpline);
@@ -559,10 +559,10 @@ void MC_init_ermsd_restr(int nt_n){
   /*   for(j=0;j<nt_n;j++) */
   /*     printf("%d  %d   %d   %lf %lf %lf\n", i,j,G_groups[i][j], G_ref[i][j][0], G_ref[i][j][1], G_ref[i][j][2]); */
   /* exit(1); */
-  printf("SECONDARY STRUCTURE CONSTRAINTS INVOLVED\n");
-  for(i=0;i<nt_n;i++)
-    for(j=0;j<nt_n;j++)
-      if(ERMSD_SSTRUCT[i][j]!=1) printf("%d  %d\n", i,j);
+  //printf("SECONDARY STRUCTURE CONSTRAINTS INVOLVED\n");
+  //for(i=0;i<nt_n;i++)
+  // for(j=0;j<nt_n;j++)
+  //   if(ERMSD_SSTRUCT[i][j]!=1) printf("%d  %d\n", i,j);
 }
 
 void MC_get_ermsd_pair_type(int i, int j, double *ervec, int ptype){
