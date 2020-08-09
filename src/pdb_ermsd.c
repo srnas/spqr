@@ -53,7 +53,8 @@ int main(int argc, char **argv) {
 
   nt_n=mc_n/N_PARTS_PER_NT;
   MC_init_ermsd_restr(nt_n);
-  ERMSD_SQ=get_first_ermsd(&rx, &ry, &rz, nt_n);
+  double ERMSD_SQ, temp;
+  get_first_ermsd(&rx, &ry, &rz, nt_n, &ERMSD_SQ, &temp);
   DELTA_ERMSD_SQ=0;
   printf("ERMSD: %lf\n", sqrt(ERMSD_SQ));
   //#endif
