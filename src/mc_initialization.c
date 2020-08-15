@@ -672,6 +672,7 @@ void MC_read_params(int *mc_iter, int *rand_a, int mpi_id){
 		tok=strtok(NULL," ");UCMK0=strtof(tok,NULL);
 		tok=strtok(NULL," ");UCMK1=strtof(tok,NULL);
 		tok=strtok(NULL," ");UCMK2=strtof(tok,NULL);
+		printf("UMBRELLA SAMPLING constraint : at ( %lf %lf %lf )  with constants ( %lf %lf %lf ) \n",UCM[0], UCM[1], UCM[2],UCMK0,UCMK1,UCMK2);
 		free(templine);
 	      }
 	    }
