@@ -155,3 +155,7 @@ extern double WALL_ENERG;
 extern double DELTA_WALL_ENERG;
 extern int *WALL_TYPE;
 extern int N_WALLS;
+
+extern double UCM[DIM];
+extern double UCMK0,UCMK1,UCMK2;
+extern int UMBRELLA_TYPE, N_UMBRELLAS;
