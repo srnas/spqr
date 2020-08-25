@@ -42,10 +42,10 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
     printf("PULL AWAY LINKS: No reference structure found for LINK pulling %s. No pulling.\n", filename);
   }
   else{
-    for(i=0;i<nt_n;i++){
-      fr_is_mobile[i]=FR_MOB_FROZ;
-      //HERE MAKE NUCLEOTIDES INVISIBLE
-    }
+    /* for(i=0;i<nt_n;i++){ */
+    /*   fr_is_mobile[i]=FR_MOB_FROZ; */
+    /*   //HERE MAKE NUCLEOTIDES INVISIBLE */
+    /* } */
     
     //HERE WE DEAL WITH THE FRAGMENTS
     printf("PULL LINKS AWAY: found structures to steer!\n");
