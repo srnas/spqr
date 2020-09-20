@@ -49,7 +49,7 @@ all: 	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  m
 install:
 	rm -rf $(localbin)
 	mkdir -p $(localbin)
-	mv SPQR_MC SPQR_eMC SPQR_cMC SPQR_mMC SPQR_ENERG SPQR_SA SPQR_wSA SPQR_eSA $(localbin)
+	mv SPQR_MC SPQR_eMC SPQR_bMC SPQR_cMC SPQR_mMC SPQR_ENERG SPQR_SA SPQR_wSA SPQR_eSA $(localbin)
 	rm -rf $(localinteractions)
 	mkdir -p $(localinteractions)
 	./WRITETABLES
