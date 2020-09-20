@@ -1495,40 +1495,39 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 #ifdef LNKRMV
   //double phenerg=calc_phpull_energ(nt_c,get_unf_coo_temp_x(at_c+IPHO),get_unf_coo_temp_y(at_c+IPHO),get_unf_coo_temp_z(at_c+IPHO));
   double phenerg=0;
-  if(my_link[nt_c]>-1){
+  //if(my_link[nt_c]>-1){
+  if(in_link[nt_c]>-1){
     phenerg=calc_link_energy(nt_c, rx, ry, rz);
     energ+=phenerg;
-    //printf("%d  %lf\n", my_link[nt_c], phenerg);
+    //printf("%d  %lf\n", nt_c, phenerg);
   }
 #endif
   /* non bonded loop */
   //printf("beg\n");
-    for(n=0;n<vl_n_pairs[nt_c];n++){
+  for(n=0;n<vl_n_pairs[nt_c];n++){
     nt2=vl_neighbor_tables[nt_c][n];
 #ifdef FROZEN
     if(fr_is_mobile[nt_c]!=FR_MOB_FROZ || fr_is_mobile[nt2]!=FR_MOB_FROZ)
 #endif
-      
+
+      {
+	at_ne=N_PARTS_PER_NT*nt2;
+	at_c=N_PARTS_PER_NT*nt_c;
+/* #ifdef ERMSDR */
+/* #ifdef NOCTCS */
+/* #ifdef LNKRMV */
+/* 	  if(G_groups[nt_c][nt2]<0) */
+/* #endif */
+/* #endif */
+/* #endif	 */    
 #ifdef LNKRMV
-      //if(phpull_K[nt2]!=0)
-      //if(my_link[nt2]!=my_link[nt_c] || (my_link[nt_c]==-1 || my_link[nt2]==-1))
-      //if lnkrmv is working and  belong to the same loop, or if they are not being forced by ermsd in the same group 
-      //if((my_link[nt2]==my_link[nt_c] || (my_link[nt_c]==-1 || my_link[nt2]==-1) ) && G_groups[nt_c][nt2]<0)
-      //if((((my_link[nt2]==my_link[nt_c]) || G_groups[nt_c][nt2]<0) )  || (my_link[nt_c]==-1 || my_link[nt2]==-1))
-      
-      if((my_link[nt2]==-1 || my_link[nt_c]==-1) || (my_link[nt2]>-1 && my_link[nt_c]>-1 && (my_link[nt2]!=my_link[nt_c] || (my_link[nt2]==my_link[nt_c] && my_loop[nt2]==my_loop[nt_c]) )))
-	//|| (fr_is_mobile[nt_c]==FR_MOB_FROZ || fr_is_mobile[nt2]==FR_MOB_FROZ))
+	if(in_link[nt_c]<0 || in_link[nt2]<0)
+	  if(nts_in_same_link_but_different_loops(nt_c, nt2)==0)
 #endif
-	{
-	  at_ne=N_PARTS_PER_NT*nt2;
-	  at_c=N_PARTS_PER_NT*nt_c;
-#ifdef ERMSDR
-#ifdef NOCTCS
-#ifdef LNKRMV
-	  if(G_groups[nt_c][nt2]<0)
+#ifdef EBUILD
+	    //this is for making nts inside ermsd group invisible. For building models from the scratch
+	    if(G_groups[nt_c][nt2]<0)
 #endif
-#endif
-#endif	    
 	    {
 	      centdistsq=calc_min_dist_sq(rx[at_ne+ISUG], ry[at_ne+ISUG], rz[at_ne+ISUG], mc_temp_x[at_c+ISUG], mc_temp_y[at_c+ISUG], mc_temp_z[at_c+ISUG]);
 	      if(centdistsq<mc_nb_rcut_sq){
@@ -1543,12 +1542,12 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	      }
 	    }	      
 #ifdef ERMSDR
-	  if(G_groups[nt_c][nt2]>-1){
-	    calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
-	    //if(r<ERMSD_CUTOFF*ERMSDX){
-	    proj_on_nt(r_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, pr_vec);
-	    proj_on_nt_inv(r_vec, rx, ry,rz, nt2, pr_vec_inv);
-	    termsd_p=MC_get_pair_ermsd(pr_vec[0]/ERMSDX    , pr_vec[1]/ERMSDY    , pr_vec[2]/ERMSDZ    , G_ref[nt_c][nt2][0], G_ref[nt_c][nt2][1], G_ref[nt_c][nt2][2], G_ref[nt_c][nt2][3]);
+	if(G_groups[nt_c][nt2]>-1){
+	  calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
+	  //if(r<ERMSD_CUTOFF*ERMSDX){
+	  proj_on_nt(r_vec, mc_temp_x, mc_temp_y, mc_temp_z, nt_c, pr_vec);
+	  proj_on_nt_inv(r_vec, rx, ry,rz, nt2, pr_vec_inv);
+	  termsd_p=MC_get_pair_ermsd(pr_vec[0]/ERMSDX    , pr_vec[1]/ERMSDY    , pr_vec[2]/ERMSDZ    , G_ref[nt_c][nt2][0], G_ref[nt_c][nt2][1], G_ref[nt_c][nt2][2], G_ref[nt_c][nt2][3]);
 	    termsd_q=MC_get_pair_ermsd(pr_vec_inv[0]/ERMSDX, pr_vec_inv[1]/ERMSDY, pr_vec_inv[2]/ERMSDZ, G_ref[nt2][nt_c][0], G_ref[nt2][nt_c][1], G_ref[nt2][nt_c][2], G_ref[nt2][nt_c][3]);
 	    TEMP_ERMSD_SQ+=(termsd_p+termsd_q);
 	    TEMP_ERMSD_ENERG+=(0.5*ERMSD_PREF[G_groups[nt_c][nt2]]*(termsd_p+termsd_q)*ERMSD_SSTRUCT[nt_c][nt2]);

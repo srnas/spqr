@@ -2,253 +2,228 @@
 
 
 #ifdef LNKRMV
-/* void MC_init_def_phpull(int nt_n){ */
-/*   int i; */
-/*   /\* phpull_K=(double*)malloc(sizeof(double)*nt_n); *\/ */
-/*   /\* phpull_p0=(double**)malloc(sizeof(double*)*nt_n); *\/ */
-/*   /\* for(i=0;i<nt_n;i++){ *\/ */
-/*   /\*   phpull_p0[i]=(double *)malloc(sizeof(double)*DIM); *\/ */
-/*   /\* } *\/ */
-/*   /\* for(i=0;i<nt_n;i++){ *\/ */
-/*   /\*   phpull_K[i]=0; *\/ */
-/*   /\* } *\/ */
-/* } */
 
 void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
   //we read a file like the ermsd frags
-  
-  int i,cnt,d;
-  int stloop,ini,end,p;
-  double pdx, pdy, pdz,len;
-  
-  char *lline=NULL,  *tmp, *tmp2, *cpline;
-  double KTEMP;
-  int l,nl, ll, at=0;
-  char s1[MAXSTR], s2[MAXSTR], s3[MAXSTR], s4[MAXSTR];
-  static size_t st_l=0;
-  int group, *nnt_group, ntg, nt;//, grflag;
-  int N_LINKS,ntl,lind,exloops[8],inl;
-  int typ1=-1, typ2=-1;
+  int i,j,d;
+  int tmpout;
+  char *ptmpout;
   FILE *lnkdloopsfile;
   char filename[256];
-  int tempnl1=0,tempnl2=0;
-  int start2;
-
-  my_link=(int*)malloc(sizeof(int)*nt_n);
-  my_loop=(int*)malloc(sizeof(int)*nt_n);
-  for(i=0;i<nt_n;i++){my_link[i]=-1;my_loop[i]=-1;}
+  char ltyp[MAXSTR], loopline[MAXSTR];
+  int ini1,ini2,end1,end2,loo1,loo2;
+  in_link=(int*)malloc(sizeof(int)*nt_n);
+  for(i=0;i<nt_n;i++)in_link[i]=-1;
+  
   sprintf(filename, "linked_loops.lst");
   if((lnkdloopsfile=fopen(filename, "r"))==NULL){
     printf("PULL AWAY LINKS: No reference structure found for LINK pulling %s. No pulling.\n", filename);
   }
   else{
-    /* for(i=0;i<nt_n;i++){ */
-    /*   fr_is_mobile[i]=FR_MOB_FROZ; */
-    /*   //HERE MAKE NUCLEOTIDES INVISIBLE */
-    /* } */
+    ptmpout=fgets(loopline,MAXSTR,lnkdloopsfile);
+    sscanf(loopline, "%d %d %lf %lf", &mc_N_links, &mc_N_loops, &LOOP_K_cmcm, &LOOP_K_cmclp);
     
-    //HERE WE DEAL WITH THE FRAGMENTS
-    printf("PULL LINKS AWAY: found structures to steer!\n");
-    l=getline(&lline, &st_l, lnkdloopsfile);
-    cpline=strndup(lline, MAXSTR);
-    sscanf(cpline, "%s %s %s %s", s1, s2, s3, s4);
-    //sscanf(lline, "%s %s %s", s1, s2, s3);
-    if(!(!strcmp(s1, "REMARK") && !strcmp(s2, "LNKDLPS"))){printf("Wrong syntax in LNKDLPS file linked_loops.lst\n");exit(ERR_INPUT);}
-    KTEMP=atof(s3);
-    N_LINKS=atoi(s4);
-    //nnt_group[group]=0;
-    //tmp=strtok(cpline, " ");while(tmp!=NULL){if(atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0')) {nnt_group[group]++;} tmp=strtok(NULL, " ");}free(cpline);
-    //ntind_group[group]=(int *)malloc(sizeof(int)*nnt_group[group]);
-    //ntemp+=nnt_group[group];
-    //printf("tmp = %d \n", tmp);
-    //printf("File open with %d links, K=%lf\n", N_LINKS,KTEMP);
-    loop1=(int**)malloc(sizeof(int*)*N_LINKS);
-    loop2=(int**)malloc(sizeof(int*)*N_LINKS);
-    nnt_loop1=(int*)malloc(sizeof(int)*N_LINKS);
-    nnt_loop2=(int*)malloc(sizeof(int)*N_LINKS);
-    for(nl=0;nl<N_LINKS;nl++){
-      l=getline(&lline,&st_l,lnkdloopsfile);
-      cpline=strndup(lline,MAXSTR);
-      for(d=0;d<8;d++) exloops[d]=-1;
-      ntl=-1;
-      tmp=strtok(cpline, " ");
-      while(tmp!=NULL){
-	if(ntl==-1){
-	  //check type string
-	  //HAIRPIN=0, STEM, UNSTL=1
-	  if(tmp[0]=='h' && tmp[1]=='p') typ1=0;
-	  if(tmp[0]=='u' && tmp[1]=='l') typ1=0;
-	  if(tmp[0]=='s' && tmp[1]=='t') typ1=1;
-	  if(tmp[2]=='h' && tmp[3]=='p') typ2=0;
-	  if(tmp[2]=='u' && tmp[3]=='l') typ2=0;
-	  if(tmp[2]=='s' && tmp[3]=='t') typ2=1;
-	  ntl++;
+    mc_links=(int **)malloc(sizeof(int *)*mc_N_links);
+    mc_loops=(int **)malloc(sizeof(int *)*mc_N_loops);
+    mc_loop_type=(int *)malloc(sizeof(int)*mc_N_loops);
+    mc_loop_size=(int *)malloc(sizeof(int)*mc_N_loops);
+    mc_loop_CM=(double **)malloc(sizeof(double)*mc_N_loops);
+    mc_loop_clpair=(double **)malloc(sizeof(double)*mc_N_loops);
+
+    for(i=0;i<mc_N_links;i++) mc_links[i]=(int *)malloc(sizeof(int)*2);
+    for(i=0;i<mc_N_loops;i++){
+      ptmpout=fgets(loopline,MAXSTR,lnkdloopsfile);
+      sscanf(loopline,"%s",ltyp);
+      //printf("i=%d  typ = %s\n", i,ltyp);
+      if(!strcmp(ltyp,"hp")) mc_loop_type[i]=LOOP_HP;
+      else if(!strcmp(ltyp,"st")) mc_loop_type[i]=LOOP_ST;
+      else if(!strcmp(ltyp,"il")) mc_loop_type[i]=LOOP_IL;
+      else {printf("Wrong loop type at file %s!\n", filename);exit(ERR_INPUT);}
+      if(mc_loop_type[i]==LOOP_HP || mc_loop_type[i]==LOOP_IL) {sscanf(loopline,"%s %d %d", ltyp,  &ini1,&end1);mc_loop_size[i]=end1-ini1+1;}
+      else{sscanf(loopline,"%s %d %d %d %d", ltyp, &ini1,&end1,&ini2,&end2); mc_loop_size[i]=end1-ini1+1+end2-ini2+1;}
+      mc_loops[i]=(int*)malloc(sizeof(int)*mc_loop_size[i]);
+      for(j=ini1;j<end1+1;j++){
+	mc_loops[i][j-ini1]=j;
+	in_link[j]++;
+      }
+      if(mc_loop_type[i]==LOOP_ST){
+	for(j=ini2;j<end2+1;j++){
+	  mc_loops[i][j-ini2+(end1+1-ini1)]=j;
+	  in_link[j]++;
 	}
-	if(ntl>-1){
-	  if(atoi(tmp)!=0 ||(atoi(tmp)==0 && tmp[0]=='0')) {
-	    exloops[ntl]=atoi(tmp);ntl++;
-	  }}
-	tmp=strtok(NULL, " ");
+	//printf("%d %d %d %d\n", ini1,end1,ini2,end2);
       }
-      free(cpline);
-      //case hairpir-hairpin or hairpin-duplex
-      tempnl1=0,tempnl2=0;
-      if(typ1==0 && typ2==0) start2=2;
-      if(typ1==0 && typ2==1) start2=2;
-      if(typ1==1 && typ2==0) start2=4;
-      if(typ1==1 && typ2==0) start2=4;
-      //if(typ1==0) start2=2;
-      //if(typ1==1) start2=4;
-      if(typ1==0 || typ1==1)
-	for(inl=exloops[0];inl<=exloops[1];inl++)
-	  tempnl1++;
-      if(typ1==1)
-	for(inl=exloops[2];inl<=exloops[3];inl++)
-	  tempnl1++;
-      nnt_loop1[nl]=tempnl1;
-      /***/
-      if(typ2==0 || typ2==1)
-	for(inl=exloops[start2];inl<=exloops[start2+1];inl++)
-	  tempnl2++;
-      if(typ2==1)
-	for(inl=exloops[start2+2];inl<=exloops[start2+3];inl++)
-	  tempnl2++;
-      nnt_loop2[nl]=tempnl2;
-      /***/
-      loop1[nl]=(int*)malloc(sizeof(int)*nnt_loop1[nl]);
-      loop2[nl]=(int*)malloc(sizeof(int)*nnt_loop2[nl]);
-      
-      lind=0;
-      if(typ1==0 || typ1==1)
-	for(inl=exloops[0];inl<=exloops[1];inl++){
-	  my_link[inl]=nl;
-	  my_loop[inl]=0;
-	  loop1[nl][lind]=inl;lind++;
-	}
-      if(typ1==1)
-	for(inl=exloops[2];inl<=exloops[3];inl++){
-	  my_link[inl]=nl;
-	  my_loop[inl]=0;
-	  loop1[nl][lind]=inl;lind++;}
-      /* if(ntl==4 || ntl==6) */
-      /* 	for(inl=exloops[0]; */
-      /* 	    inl<=exloops[1];inl++){ */
-      /* 	  my_link[inl]=nl; */
-      /* 	  loop1[nl][lind]=inl;lind++;} */
-      /* if(ntl==8) */
-      /* 	for(inl=exloops[2];inl<=exloops[3];inl++){ */
-      /* 	  my_link[inl]=nl; */
-      /* 	  loop1[nl][lind]=inl;lind++;} */
-      /***/
-      lind=0;
-      if(typ2==0 || typ2==1)
-	for(inl=exloops[start2];inl<=exloops[start2+1];inl++){
-	  my_link[inl]=nl;
-	  my_loop[inl]=1;
-	  loop2[nl][lind]=inl;lind++;}
-      if(typ2==1)
-	for(inl=exloops[start2+2];inl<=exloops[start2+3];inl++){
-	  my_link[inl]=nl;
-	  my_loop[inl]=1;
-	  loop2[nl][lind]=inl;lind++;}
-      
-      /* if(ntl==4 || ntl==6) */
-      /* 	for(inl=exloops[2];inl<=exloops[3];inl++){ */
-      /* 	  my_link[inl]=nl; */
-      /* 	  loop2[nl][lind]=inl;lind++;} */
-      
-      /* if(ntl==6 || ntl==8) */
-      /* 	for(inl=exloops[4];inl<=exloops[5];inl++){ */
-      /* 	  my_link[inl]=nl; */
-      /* 	  loop2[nl][lind]=inl;lind++;} */
-      /* if(ntl==8) */
-      /* 	for(inl=exloops[6];inl<=exloops[7];inl++){ */
-      /* 	  my_link[inl]=nl; */
-      /* 	  loop2[nl][lind]=inl;lind++;} */
-      
-      //if(ntl==4 || ntl==6){
-      printf("LINK %d\n", nl);
-      printf("Loop 1 (%d) : ",nnt_loop1[nl]);
-      for(inl=0;inl<nnt_loop1[nl];inl++){
-	printf("%d (%d) ",loop1[nl][inl],my_loop[loop1[nl][inl]]);
-	fr_is_mobile[loop1[nl][inl]]=FR_MOB_FULL;
-      }
-      printf("\t");
-      printf("Loop 2 (%d) : ", nnt_loop2[nl]);
-      for(inl=0;inl<nnt_loop2[nl];inl++){
-	printf("%d (%d) ",loop2[nl][inl],my_loop[loop2[nl][inl]]);
-	fr_is_mobile[loop2[nl][inl]]=FR_MOB_FULL;
-      }
-      printf("\n");
-      //}
-      //if(ntl==4){
-      //for(inl=0;inl<nnt_loop2[nl];inl++){
-      //  fr_is_mobile[loop2[nl][inl]]=FR_MOB_FULL;
-      //}
-      //} 
+      mc_loop_CM[i]=(double *)malloc(sizeof(double)*DIM);
+      mc_loop_clpair[i]=(double *)malloc(2*sizeof(double)*DIM);
+    }
+    
+    for(i=0;i<mc_N_links;i++){
+      ptmpout=fgets(loopline,MAXSTR,lnkdloopsfile);
+      sscanf(loopline,"%d %d", &loo1,&loo2);
+      mc_links[i][0]=loo1;
+      mc_links[i][1]=loo2;
     }
   }
-  phpull_K=(double*)malloc(sizeof(double)*N_LINKS);
-  for(i=0;i<N_LINKS;i++){ 
-    phpull_K[i]=KTEMP; 
-  } 
+  printf("Number of links: %d\n",mc_N_links);
+  printf("Number of involved loops: %d\n--------------------\n",mc_N_loops);
+  for(i=0;i<mc_N_links;i++) printf("Link %d : %d %d\n", i, mc_links[i][0],mc_links[i][1]);
+  for(i=0;i<mc_N_loops;i++) {printf("Loop %d (type %d, size %d) : ", i,mc_loop_type[i],mc_loop_size[i]);for(j=0;j<mc_loop_size[i];j++) printf("%d ", mc_loops[i][j]);printf("\n");}
+  
+}
+
+void mc_update_loop(int iloop, int nt_c, double *rx, double *ry, double *rz){
+  int d, ntind, nt1,nt2,nt3,nt4;
+  double pos1[DIM],pos2[DIM],pos3[DIM],pos4[DIM];
+  for(d=0;d<DIM;d++){
+    mc_loop_CM[iloop][d]=0;
+    mc_loop_clpair[iloop][d]=0;
+    mc_loop_clpair[iloop][2*d]=0;
+  }
+  /*CALCULATE CENTER OF MASS*/
+  for(ntind=0;ntind<mc_loop_size[iloop];ntind++){
+    nt1=mc_loops[iloop][ntind];
+    if(nt1!=nt_c){
+      mc_loop_CM[iloop][0]+=(rx[nt1*N_PARTS_PER_NT+IPHO]+rx[nt1*N_PARTS_PER_NT+ISUG]);
+      mc_loop_CM[iloop][1]+=(ry[nt1*N_PARTS_PER_NT+IPHO]+ry[nt1*N_PARTS_PER_NT+ISUG]);
+      mc_loop_CM[iloop][2]+=(rz[nt1*N_PARTS_PER_NT+IPHO]+rz[nt1*N_PARTS_PER_NT+ISUG]);
+    }
+    else{
+      mc_loop_CM[iloop][0]+=(get_unf_coo_temp_x(nt1*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_x(nt1*N_PARTS_PER_NT+ISUG));
+      mc_loop_CM[iloop][1]+=(get_unf_coo_temp_y(nt1*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_y(nt1*N_PARTS_PER_NT+ISUG));
+      mc_loop_CM[iloop][2]+=(get_unf_coo_temp_z(nt1*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_z(nt1*N_PARTS_PER_NT+ISUG));
+    }
+  }
+  for(d=0;d<DIM;d++)
+    mc_loop_CM[iloop][d]/=(2.0*(double)mc_loop_size[iloop]);
+
+  /*CALCULATE CLOSING PAIR*/
+  if(mc_loop_type[iloop]==LOOP_HP){
+    nt1=mc_loops[iloop][0];
+    nt2=mc_loops[iloop][mc_loop_size[iloop]-1];
+    get_real_sugpos(nt1,nt_c,rx,ry,rz,pos1);
+    get_real_sugpos(nt2,nt_c,rx,ry,rz,pos2);
+    for(d=0;d<DIM;d++)
+      mc_loop_clpair[iloop][d]=0.5*(pos1[d]+pos2[d]);
+  } else if(mc_loop_type[iloop]==LOOP_ST){
+    nt1=mc_loops[iloop][0];
+    nt2=mc_loops[iloop][mc_loop_size[iloop]-1];
+    get_real_sugpos(nt1,nt_c,rx,ry,rz,pos1);
+    get_real_sugpos(nt2,nt_c,rx,ry,rz,pos2);
+    for(d=0;d<DIM;d++){
+      mc_loop_clpair[iloop][d]=pos1[d];
+      mc_loop_clpair[iloop][2*d]=pos2[d];
+    }
+  } else if(mc_loop_type[iloop]==LOOP_IL){
+    nt1=mc_loops[iloop][0];
+    nt2=mc_loops[iloop][mc_loop_size[iloop]/2-1];
+    nt3=mc_loops[iloop][mc_loop_size[iloop]/2];
+    nt4=mc_loops[iloop][mc_loop_size[iloop]-1];
+    get_real_sugpos(nt1,nt_c,rx,ry,rz,pos1);
+    get_real_sugpos(nt2,nt_c,rx,ry,rz,pos2);
+    get_real_sugpos(nt3,nt_c,rx,ry,rz,pos3);
+    get_real_sugpos(nt4,nt_c,rx,ry,rz,pos4);
+    for(d=0;d<DIM;d++){
+      mc_loop_clpair[iloop][d]=0.5*(pos1[d]+pos4[d]);
+      mc_loop_clpair[iloop][2*d]=0.5*(pos2[d]+pos3[d]);
+    }
+  } else {
+    printf("Unrecognized loop type.\n"); exit(ERR_INTEG);
+  }
+}
+
+int nt_is_in_link(int ilink, int nt_c){
+  int ret=0;
+  int loop1,loop2;
+  int i;
+  loop1=mc_links[ilink][0];
+  loop2=mc_links[ilink][1];
+  for(i=0;i<mc_loop_size[loop1];i++){
+    if(mc_loops[loop1][i]==nt_c){ret=1;
+      continue;}
+  }
+  for(i=0;i<mc_loop_size[loop2];i++){
+    if(mc_loops[loop2][i]==nt_c){ret=1;
+      continue;}
+  }
+  return ret;
+}
+
+int nt_is_in_loop(int iloop, int nt_c){
+  int ret=0;
+  int loop1;
+  int i;
+  for(i=0;i<mc_loop_size[iloop];i++){
+    if(mc_loops[iloop][i]==nt_c){
+      ret=1;
+      continue;
+    }
+  }
+  return ret;
+}
+
+int nts_in_same_link_but_different_loops(int nt_a, int nt_b){
+  int i, ret=0;
+  for(i=0;i<mc_N_links;i++){
+    if((nt_is_in_loop(mc_links[i][0],nt_a)==1 &&  nt_is_in_loop(mc_links[i][1],nt_b)==1 )  || ( nt_is_in_loop(mc_links[i][0],nt_b)==1 &&  nt_is_in_loop(mc_links[i][1],nt_a)==1 )){
+      ret=1;
+      continue;
+    }
+  }
+}
+
+void get_real_sugpos(int nt, int nt_c, double *rx, double *ry, double *rz, double *rpos){
+  if(nt !=nt_c){
+    rpos[0]=rx[nt*N_PARTS_PER_NT+ISUG];
+    rpos[1]=ry[nt*N_PARTS_PER_NT+ISUG];
+    rpos[2]=rz[nt*N_PARTS_PER_NT+ISUG];
+  } else {
+    rpos[0]=get_unf_coo_temp_x(nt*N_PARTS_PER_NT+ISUG);
+    rpos[1]=get_unf_coo_temp_y(nt*N_PARTS_PER_NT+ISUG);
+    rpos[2]=get_unf_coo_temp_z(nt*N_PARTS_PER_NT+ISUG);
+  }
 }
 
 double calc_link_energy(int nt_c, double *rx, double *ry, double *rz){
-  //here we calculate the centers of mass of the loops
-  int i,d,nt1,nt2;
-  double CM1[DIM],CM2[DIM];
-  int thslp=my_link[nt_c];
-  double energ=0,cmdistsq;
-  Dlnksq=100;
-  if(my_link[nt_c]>-1){
-    //we calculate the centers of mass of both loops
-    for(d=0;d<DIM;d++){
-      CM1[d]=0;CM2[d]=0;
-    }
-
-    for(nt1=0;nt1<nnt_loop1[thslp];nt1++){
-      if(loop1[thslp][nt1]!=nt_c){
-	CM1[0]+=(rx[loop1[thslp][nt1]*N_PARTS_PER_NT+IPHO]+rx[loop1[thslp][nt1]*N_PARTS_PER_NT+ISUG]);
-	CM1[1]+=(ry[loop1[thslp][nt1]*N_PARTS_PER_NT+IPHO]+ry[loop1[thslp][nt1]*N_PARTS_PER_NT+ISUG]);
-	CM1[2]+=(rz[loop1[thslp][nt1]*N_PARTS_PER_NT+IPHO]+rz[loop1[thslp][nt1]*N_PARTS_PER_NT+ISUG]);
-      }
-      else{
-	//printf("making the difference nt1!\n");
-	CM1[0]+=(get_unf_coo_temp_x(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_x(nt_c*N_PARTS_PER_NT+ISUG));
-	CM1[1]+=(get_unf_coo_temp_y(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_y(nt_c*N_PARTS_PER_NT+ISUG));
-	CM1[2]+=(get_unf_coo_temp_z(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_z(nt_c*N_PARTS_PER_NT+ISUG));
-      }
-    }
-    for(nt2=0;nt2<nnt_loop2[thslp];nt2++){
-      if(loop1[thslp][nt2]!=nt_c){
-	CM2[0]+=(rx[loop2[thslp][nt2]*N_PARTS_PER_NT+IPHO]+rx[loop2[thslp][nt2]*N_PARTS_PER_NT+ISUG]);
-	CM2[1]+=(ry[loop2[thslp][nt2]*N_PARTS_PER_NT+IPHO]+ry[loop2[thslp][nt2]*N_PARTS_PER_NT+ISUG]);
-	CM2[2]+=(rz[loop2[thslp][nt2]*N_PARTS_PER_NT+IPHO]+rz[loop2[thslp][nt2]*N_PARTS_PER_NT+ISUG]);
-      }
-      else{
-	//printf("making the difference nt2!\n");
-	CM2[0]+=(get_unf_coo_temp_x(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_x(nt_c*N_PARTS_PER_NT+ISUG));
-	CM2[1]+=(get_unf_coo_temp_y(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_y(nt_c*N_PARTS_PER_NT+ISUG));
-	CM2[2]+=(get_unf_coo_temp_z(nt_c*N_PARTS_PER_NT+IPHO)+get_unf_coo_temp_z(nt_c*N_PARTS_PER_NT+ISUG));
-      }
-    }
-    for(d=0;d<DIM;d++){
+  int i,d,ilink;
+  int l1,l2;
+  double energ=0.0, d1sq, d2sq;
+  for(ilink=0;ilink<mc_N_links;ilink++){
+    if(nt_is_in_link(ilink,nt_c)==1) {
+      l1=mc_links[ilink][0];
+      l2=mc_links[ilink][1];
       
-      CM1[d]/=(2.0*(double)nnt_loop1[thslp]);
-      CM2[d]/=(2.0*(double)nnt_loop2[thslp]);
+      mc_update_loop(l1, nt_c, rx, ry, rz);
+      mc_update_loop(l2, nt_c, rx, ry, rz);
+      //HERE ADD THE ENERGY BETWEEN THE LOOPS
+      d1sq=0;d2sq=0;
+      for(d=0;d<DIM;d++){
+	d1sq+=SQ(mc_loop_CM[l1][d]-mc_loop_clpair[l2][d]);
+	d2sq+=SQ(mc_loop_CM[l2][d]-mc_loop_clpair[l1][d]);
+      }
+      energ+=-LOOP_K_cmclp*(sqrt(d1sq)+sqrt(d2sq));
+      if(mc_loop_type[l1]!=LOOP_HP){
+	d2sq=0;
+	for(d=0;d<DIM;d++)
+	  d2sq+=SQ(mc_loop_CM[l2][2*d]-mc_loop_clpair[l1][d]);
+	energ+=-LOOP_K_cmclp*sqrt(d2sq);
+      }
+      if(mc_loop_type[l2]!=LOOP_HP){
+	d1sq=0;
+	for(d=0;d<DIM;d++)
+	  d1sq+=SQ(mc_loop_CM[l1][d]-mc_loop_clpair[l2][2*d]);
+	energ+=-LOOP_K_cmclp*sqrt(d1sq);
+      }
+      if(mc_loop_type[l1]==LOOP_ST || mc_loop_type[l2]==LOOP_ST){
+	d1sq=0;
+	for(d=0;d<DIM;d++)
+	  d1sq+=SQ(mc_loop_CM[l1][d]-mc_loop_CM[l2][d]);
+	energ+=-LOOP_K_cmcm*sqrt(d1sq);
+      }
     }
-    
-    cmdistsq=SQ(CM1[0]-CM2[0])+SQ(CM1[1]-CM2[1])+SQ(CM1[2]-CM2[2]);
-    energ=phpull_K[thslp]*exp(-cmdistsq/Dlnksq);
   }
-  //if(phpull_K[nt_c]!=0){
-  //printf("%d  %lf\n", nt_c, 0.5*phpull_K[nt_c]*(SQ(phpull_p0[nt_c][0]-posx)+SQ(phpull_p0[nt_c][1]-posy)+SQ(phpull_p0[nt_c][2])-posz));
-  //turn 0.5*phpull_K[nt_c]*(SQ(phpull_p0[nt_c][0]-posx)+SQ(phpull_p0[nt_c][1]-posy)+SQ(phpull_p0[nt_c][2])-posz);
-  //
-  //printf("%lf %lf %lf   %lf %lf %lf    %lf %lf\n",CM1[0], CM1[1], CM1[2], CM2[0], CM2[1], CM2[2],sqrt(cmdistsq), energ);
   return energ;
 }
+
 #endif
 
 void MC_copy_single_ermsd_g(int trial, int nt_c, int nt_n){
@@ -535,12 +510,26 @@ void MC_init_ermsd_restr(int nt_n){
 	    get_ermsd_g_pair(ntind_group[group][i],ntind_group[group][j],&ermsdref_X, &ermsdref_Y, &ermsdref_Z, G_ref);
 	  }
       }
-      printf("ERMSD: ENERGY PREFACTORS\t");
-      for(group=0;group<ERMSD_N_GROUPS;group++)
-	printf("%d: %lf   ", group, ERMSD_PREF[group]);
+      printf("ERMSD: ENERGY GROUPS AND PREFACTORS\t");
+      for(group=0;group<ERMSD_N_GROUPS;group++){
+	printf("%d: %lf   ( ", group, ERMSD_PREF[group]);
+	for(nt=0;nt<nnt_group[group];nt++)
+	  printf("%d ",ntind_group[group][nt]); 
+	printf(" ) ");
+      }
       printf("\n");
-      for(group=0;group<ERMSD_N_GROUPS;group++)
-	ERMSD_PREF[group]*(0.5/((double)nnt_group[group]));
+      if(ERMSD_SSPREF==1){
+	printf("No constrained pairs\n");
+      } else{
+	printf("Constrained pairs (K=%lf):  ", ERMSD_SSPREF);
+	for(i=0;i<nt_n;i++)
+	  for(j=0;j<nt_n;j++)
+	    if(ERMSD_SSTRUCT[i][j]!=1)
+	      printf("(%d %d)  ", i,j);
+	printf("\n");
+      }
+      //for(group=0;group<ERMSD_N_GROUPS;group++)
+      //	ERMSD_PREF[group]*(0.5/((double)nnt_group[group]));
     }
     else{
       printf("Wrong syntax in ERMSD file ermsd_frags.lst\n");

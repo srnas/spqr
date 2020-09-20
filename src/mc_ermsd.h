@@ -17,6 +17,11 @@
 #define ERMSD_GC_y 5.04514
 #define ERMSD_GC_z -0.0492806
 
+#define LOOP_HP 0
+#define LOOP_ST 1
+#define LOOP_IL 2
+
+
 #include "mc_global.h"
 #include "mc_utils.h"
 
@@ -48,9 +53,18 @@ extern int **loop1;
 extern int **loop2;
 extern int *nnt_loop1;
 extern int *nnt_loop2;
-extern int *my_link;
-extern int *my_loop;
+extern int *in_link;
 extern double Dlnksq;
+extern int mc_N_links;
+extern int mc_N_loops;
+extern int **mc_links;
+extern int **mc_loops;
+extern int *mc_loop_size;
+extern int *mc_loop_type;
+extern double **mc_loop_CM;
+extern double **mc_loop_clpair;
+extern double LOOP_K_cmcm;
+extern double LOOP_K_cmclp;
 
 void MC_init_ermsd_restr(int);
 void MC_init_ermsd_out(int);
@@ -71,6 +85,11 @@ void MC_write_ermsd_obs(int, double);
 
 //void MC_init_def_phpull(int);
 void MC_set_linked_loops(int, double*, double *, double*);
+void mc_update_loop(int, int, double*, double*, double*);
+int nt_is_in_link(int, int);
+int nt_is_in_loop(int, int);
+int nts_in_same_link_but_different_loops(int, int);
+void get_real_sugpos(int, int, double*, double*, double*, double*);
 double calc_link_energy(int, double*, double*, double*);
 
 double MC_wall_energy(double , double, double);

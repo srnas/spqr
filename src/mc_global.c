@@ -252,9 +252,18 @@ int **loop1;
 int **loop2;
 int *nnt_loop1;
 int *nnt_loop2;
-int *my_link;
-int *my_loop;
+int *in_link;
 double Dlnksq;
+int mc_N_links;
+int mc_N_loops;
+int **mc_links;
+int **mc_loops;
+int *mc_loop_size;
+int *mc_loop_type;
+double **mc_loop_CM;
+double **mc_loop_clpair;
+double LOOP_K_cmcm;
+double LOOP_K_cmclp;
 
 /* mc_verlet_lists */
 int *vl_n_pairs;

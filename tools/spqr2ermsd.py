@@ -14,15 +14,30 @@ parser.add_argument("-o","--output", help="Output file",type=str,default="out_er
 parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
 parser.add_argument("-r","--onlystems", help="Only stems",action="store_true")
 parser.add_argument("-e","--ensurestems", help="Ensure integrity of stems",action="store_true")
+parser.add_argument("-k1","--K_ERMSD", help="K ERMSD",type=float,default=KERMSD)
+parser.add_argument("-k2","--K_SS_ERMSD", help="K ERMSD secondary structure",type=float,default=KSSERMSD)
+parser.add_argument("-kr","--R_ERMSD", help="R ERMSD ",type=float,default=RERMSD)
+
 
 
 args=parser.parse_args()
+INPUTFILE=args.input
+if INPUTFILE=="":
+    print "ERROR : input file needed."
+    parser.print_help()
+    exit(1)
+
 ssfile=open(args.sstruct,"r")
 ssfile.readline()
 SEQ=ssfile.readline().strip()
 rawSSTR=list(ssfile.readline().strip())
 ONLYSS=args.onlystems
 ENSUSS=args.ensurestems
+KERMSD=args.K_ERMSD
+KSSERMSD=args.K_SS_ERMSD
+RERMSD=args.R_ERMSD
+
+
 
 for nt in xrange(0,len(rawSSTR)):
     if rawSSTR[nt]!="." and rawSSTR[nt]!=")" and rawSSTR[nt]!="(":
@@ -53,32 +68,8 @@ for nt in bpairs:
     ssnts.append(nt[0])
     ssnts.append(nt[1])
 
-##
-#SSSTACKS=[]
-#CSTACK=[bpairs[0]]
-#for bp in xrange(1,len(bpairs)):
-#    if(bpairs[bp][0]==bpairs[bp-1][0]+1 and bpairs[bp][1]==bpairs[bp-1][1]-1):
-#        CSTACK.append(bpairs[bp])
-#    else:
-#        if(len(CSTACK)>0):
-#            SSSTACKS.append(CSTACK)
-#        CSTACK=[bpairs[bp]]
-#if(len(CSTACK)>0):
-#    SSSTACKS.append(CSTACK)
-#STACKSEQS=[]
-#stra=[]
-#for ST in xrange(0,len(SSSTACKS)):
-#    stra=[]
-#    for nt in xrange(0,len(SSSTACKS[ST])):
-#        stra.append(rawseq[SSSTACKS[ST][nt][0]])
-#    STACKSEQS.append(stra)  
 ##########
 
-INPUTFILE=args.input
-if INPUTFILE=="":
-    print "ERROR : input file needed."
-    parser.print_help()
-    exit(1)
 ERMSDFILE=args.output
 for line in open(INPUTFILE):
     nam=line[:4]
@@ -108,17 +99,12 @@ if ENSUSS:
 
 stp="REMARK ERMSD GROUP " + str(KERMSD)
 
-
-
 for nt in NTLIST:
     stp=stp+" "+str(nt)
 print stp
 for nt in NTLIST:
     for at in xrange(0,NATNT):
         print ALLFILE[nt*NATNT+at].strip()
-#for at in xrange(0,len(ALLFILE)):
-#    print ALLFILE[at].strip()
-    
 
 sys.stdout=orig_stdout
 OUTFILE.close()

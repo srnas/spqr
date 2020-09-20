@@ -1,4 +1,4 @@
-from math import sqrt,pi
+from math import sqrt,pi,fabs
 from scipy import integrate
 import numpy as np
 import argparse
@@ -7,7 +7,7 @@ import sys
 parser=argparse.ArgumentParser()
 parser.add_argument("-t","--sstruct", help="Secondary structure file. First line must be sequence. Second, secondary structure in Vienna format.",type=str,default="")
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
-parser.add_argument("-o","--output", help="Output file",type=str,default="linked_loops_output.lst")
+parser.add_argument("-o","--output", help="Output file",type=str,default="output")
 parser.add_argument("-p","--calc_type_pierce", help="Perform piercing calculation",action="store_true")
 parser.add_argument("-v","--verbose", help="Prints loop indexes",action="store_true")
 args=parser.parse_args()
@@ -20,7 +20,8 @@ verboseflag=False
 if args.verbose:
     verboseflag=True
 INPUTFILE=args.input
-LINKFILE=args.output
+OUTPUT=args.output
+LINKFILE="linked_loops_"+OUTPUT+".lst"
 if INPUTFILE=="" or SSFILE=="":
     print "ERROR : input or secondary structure files missing."
     parser.print_help()
@@ -40,16 +41,16 @@ SSDICT = {
 #   "<":">"
 #
 
-KL=50
+KL=500
 
 def make_triangles(vertlist):
     #remember that in the current nomenclature, the last vertex is repeated
     triangles=[]
     NL=len(vertlist)
     CM=(np.add.reduce(vertlist)-vertlist[NL-1])/float(NL-1)
-    for tr in xrange(0,NL-2):
+    for tr in xrange(0,NL-1):
         triangles.append([vertlist[tr],vertlist[tr+1],CM])
-    triangles.append([vertlist[NL-2],vertlist[0],CM])
+        #xtriangles.append([vertlist[NL-2],vertlist[0],CM])
     return triangles
 
 def check_pierce(tri, vlist):
@@ -111,52 +112,6 @@ def inddifloops(l1,l2):
     return fl
 
 
-#FIND UNSTRUCTURED LOOPS
-UNSTLS=[]
-loops=[]
-tloop=[]
-op=0
-for nt in xrange(0,len(fullss)):
-    if fullss[nt] == ".":
-        tloop.append(nt)
-        op=1
-    if(op==1 and fullss[nt]!="."):
-        op=0
-        loops.append(tloop)
-        tloop=[]
-if op==1:
-    loops.append(tloop)
-
-#f calctype=="g":
-for lo in loops:
-    fl=1
-    linit,lend=lo[0],lo[len(lo)-1]
-    if(linit > 0 and lend<len(fullss)-1):
-        fl=1
-        for br in SSDICT:
-            #if(fullss[linit-1]!=br or fullss[lend+1]!=SSDICT[br]):
-            #    fl=1
-            if(fullss[linit-1]==br and fullss[lend+1]==SSDICT[br]):
-                fl=0
-    if(fl==1 and len(lo)>2):
-        if(linit>1):
-            linit=linit-1
-        if(lend<NNT-1):
-            lend=lend+1
-        UNSTLS.append(range(linit,lend+1))
-
-#f calctype=="p":
-#   for lo in loops:
-#       fl=0
-#       linit,lend=lo[0],lo[len(lo)-1]
-#       if(linit>1):
-#           linit=linit-1
-#       if(lend<NNT-1):
-#           lend=lend+1
-#       
-#       if len(lo)>2:
-#           UNSTLS.append(range(linit,lend+1))
-
 
 ##FIND HAIRPINS##
 HAIRPINS=[]
@@ -164,7 +119,7 @@ loops=[]
 tloop=[]
 op=0
 #f calctype=="g":
-for nt in xrange(0,len(fullss)):
+for nt in xrange(0,NNT):
     if fullss[nt] == ".":
         tloop.append(nt)
         op=1
@@ -177,7 +132,7 @@ if op==1:
 for lo in loops:
     fl=0
     linit,lend=lo[0],lo[len(lo)-1]
-    if(linit > 0 and lend<len(fullss)-1):
+    if(linit > 0 and lend<NNT-1):
         for br in SSDICT:
             if(fullss[linit-1]==br and fullss[lend+1]==SSDICT[br]):
                 fl=1
@@ -194,7 +149,7 @@ for br in SSDICT:
     restart=True
     while(restart):
         restart=False
-        for nt in xrange(0,len(fullss)):
+        for nt in xrange(0,NNT):
             if(fullss[nt]==br):
                 pnt=nt
             if(fullss[nt]==SSDICT[br] and pnt>=0):
@@ -203,6 +158,17 @@ for br in SSDICT:
                 fullss[pnt]="."
                 restart=True
                 break
+
+PAIRLIST=[]
+for nt in xrange(0,NNT):
+    cpair=-1
+    for pair in bpairs:
+        if(nt==pair[0]):
+            cpair=pair[1]
+        if(nt==pair[1]):
+            cpair=pair[0]
+    PAIRLIST.append(cpair)
+
 
 ##FIND STACKS##
 opairs=bpairs.sort()
@@ -225,10 +191,80 @@ for st in preSTEMS:
         unf.append(pa[1])
     STEMS.append(unf)
 
+
+#FIND UNSTRUCTURED LOOPS
+FULLUNSTLS=[]
+loops=[]
+tloop=[]
+op=0
+prevst=0
+for nt in xrange(0,NNT-1):
+    ist,ihp,iul,nist=-1,-1,-1,-1
+    for st in xrange(0,len(STEMS)):
+        if(nt in STEMS[st]):
+            ist=st
+        if(nt+1 in STEMS[st]):
+            nist=st
+    for hp in xrange(0,len(HAIRPINS)):
+        if(nt in HAIRPINS[hp]):
+            ihp=hp
+    for ul in xrange(0,len(FULLUNSTLS)):
+        if(nt in FULLUNSTLS[ul]):
+            iul=ul
+    if(((ist!=-1 and nist==-1 and ihp==-1) or (ist!=-1 and nist!=-1 and nist!=ist) or (ist==-1 and nt==0)) and (iul==-1)):
+        #start internal loop
+        lstart,lnt=nt,nt
+        tloop.append(nt)
+        lendfl=False
+        lnt=lnt+1
+        vpair=-1
+        while lendfl is False:
+            if(lnt!=lstart):
+                tloop.append(lnt)
+            else:
+                FULLUNSTLS.append(tloop)
+                tloop=[]
+                lendfl=True
+            if(PAIRLIST[lnt]==-1):
+                lnt=lnt+1
+            else:
+                if(vpair==-1):
+                    lnt=PAIRLIST[lnt]
+                else:
+                    lnt=lnt+1
+                vpair=-vpair
+#USE THE FULL UNSTRUCTURED LOOPS FOR GAUSSIAN INTEGRALS
+#now we split the unstructured loops for piercings
+UNSTLS=[]
+for uloop in FULLUNSTLS:
+    tloop=[]
+    tloop.append(uloop[0])
+    for nt in xrange(0,len(uloop)-1):
+        if(uloop[nt+1]-uloop[nt]>1):
+            UNSTLS.append(tloop)
+            tloop=[]
+        tloop.append(uloop[nt+1])
+    UNSTLS.append(tloop)
+    
 if verboseflag:
-    print "UNSTLS" , UNSTLS
-    print "HAIRPINS", HAIRPINS
-    print "STEMS" , STEMS
+    FILENAME=OUTPUT+"_LOOPS.dat"
+    tfile=open(FILENAME,"w")
+    tfile.write( "UNSTRUCTURED\n")
+    for lo in UNSTLS:
+        for nt in lo:
+            tfile.write(str(nt)+" ")
+        tfile.write("\n")
+    tfile.write( "HAIRPINS\n")
+    for lo in HAIRPINS:
+        for nt in lo:
+            tfile.write(str(nt)+" ")
+        tfile.write("\n")
+    tfile.write("STEMS\n")
+    for lo in STEMS:
+        for nt in lo:
+            tfile.write(str(nt)+" ")
+        tfile.write("\n")
+
 
 ##GET COORDINATES##
 N_PARTS_PER_NT=5
@@ -256,6 +292,32 @@ for i in xrange(0,NNT):
 HPCOORDS=[]
 STCOORDS=[]
 ULCOORDS=[]
+FULLULCOORDS=[]
+
+for ful in FULLUNSTLS:
+    ulc=[]
+    fflag=True
+    for nt in xrange(0,len(ful)-1):
+        if(fflag==True):
+            if(nt>0):
+                ulc.append(np.array(COORDS[ful[nt-1]][0]))
+            ulc.append(np.array(COORDS[ful[nt]][0]))
+            ulc.append(np.array(COORDS[ful[nt]][1]))
+
+
+        else:
+            ulc.append(np.array(COORDS[ful[nt]][2]))
+            ulc.append(np.array(COORDS[ful[nt]][1]))
+        if(ful[nt+1]-ful[nt]==1):
+            fflag=False
+        else:
+            fflag=True
+    ulc.append(np.array(COORDS[ful[len(ful)-1]][2]))
+    ulc.append(np.array(COORDS[ful[len(ful)-1]][1]))
+    ulc.append(np.array(COORDS[ful[len(ful)-1]][0]))
+    ulc.append(np.array(COORDS[ful[0]][0]))
+    FULLULCOORDS.append(ulc)
+
 
 for ul in UNSTLS:
     ulc=[]
@@ -265,7 +327,7 @@ for ul in UNSTLS:
         ulc.append(np.array(COORDS[ul[nt]][2]))
         ulc.append(np.array(COORDS[ul[nt]][1]))
     ulc.append(np.array(COORDS[ul[len(ul)-1]][0]))
-    ulc.append(np.array(COORDS[ul[0]][0]))
+    #ulc.append(np.array(COORDS[ul[0]][0]))
     ULCOORDS.append(ulc)
 
 
@@ -297,53 +359,100 @@ for st in STEMS:
     stc.append(np.array(COORDS[st[0]][0]))
     STCOORDS.append(stc)
 #print STCOORDS
+
+if verboseflag:
+    lcnt=0
+    cnt=0
+    for loo in FULLULCOORDS:
+        FILENAME=OUTPUT+"_LOOP_UL"+str(cnt)+".xyz"
+        tfile=open(FILENAME,"w")
+        tfile.write(str( len(loo))+"\n")
+        tfile.write("Unstructured"+" "+str( cnt)+"\n")
+        for nt in loo:
+            line="C "+str( nt[0])+" "+str( nt[1])+" "+str( nt[2])+"\n"
+            tfile.write(line)
+
+        cnt,lcnt=cnt+1,lcnt+1
+        tfile.close()
+
+    cnt=0
+    for loo in HPCOORDS:
+        FILENAME=OUTPUT+"_LOOP_HP"+str(cnt)+".xyz"
+        tfile=open(FILENAME,"w")
+        tfile.write(str( len(loo))+"\n")
+        tfile.write("Hairpin"+" "+str( cnt)+"\n")
+        for nt in loo:
+             line="C "+str( nt[0])+" "+str( nt[1])+" "+str( nt[2])+"\n"
+             tfile.write(line)
+        cnt,lcnt=cnt+1,lcnt+1
+    cnt=0
+    for loo in STCOORDS:
+        FILENAME=OUTPUT+"_LOOP_ST"+str(cnt)+".xyz"
+        tfile=open(FILENAME,"w")
+        tfile.write(str( len(loo))+"\n")
+        tfile.write("Stem"+" "+str( cnt)+"\n")
+        for nt in loo:
+             line="C "+str( nt[0])+" "+str( nt[1])+" "+str( nt[2])+"\n"
+             tfile.write(line)
+        cnt,lcnt=cnt+1,lcnt+1
+    
+    exit(1)
 ALLINDEXES=[]
 if calctype=="g":
+    print "Calculating with Gaussian integrals"
     LOOPCOORDS=[]
     for hp in xrange(0,len(HPCOORDS)):
         LOOPCOORDS.append([HPCOORDS[hp],["hairpin ",hp]])
     for st in xrange(0,len(STCOORDS)):
         LOOPCOORDS.append([STCOORDS[st],["stem ", st]])
-    for ul in xrange(0,len(ULCOORDS)):
-        LOOPCOORDS.append([ULCOORDS[ul],["unst ", ul]])
+    for ul in xrange(0,len(FULLULCOORDS)):
+        LOOPCOORDS.append([FULLULCOORDS[ul],["unstl ", ul]])
     SEGF=lambda t1,t2 : np.dot(((p1- q1)* t1+ q1- ((p2- q2)*t2+ q2)),(np.cross((p1- q1), (p2- q2))))/np.linalg.norm((p1- q1)*t1+ q1-((p2- q2)*t2+ q2))**3
 
     for iloop1 in xrange(0,len(LOOPCOORDS)):
         for iloop2 in xrange(iloop1+1,len(LOOPCOORDS)):
     #for iloop1 in xrange(0,0):
     #    for iloop2 in xrange(iloop1+1,0):
+            #print "Loop " + str(iloop1)+" and " +str(iloop2)
             GAUSSINT=0
             dist,sameflag=diloops(LOOPCOORDS[iloop1][0],LOOPCOORDS[iloop2][0]),difloops(LOOPCOORDS[iloop1][0],LOOPCOORDS[iloop2][0])
+            
             if(dist and sameflag):
+                #print "Loop " + str(iloop1)+","+str(LOOPCOORDS[iloop1][1])+" and " +str(iloop2)+" + "+str(LOOPCOORDS[iloop2][1])+" with "+str(dist)+" "+str(sameflag)
                 for pa1 in xrange(0,len(LOOPCOORDS[iloop1][0])-1):
                     for pa2 in xrange(0,len(LOOPCOORDS[iloop2][0])-1):
                         p1,q1,p2,q2=LOOPCOORDS[iloop1][0][pa1+1],LOOPCOORDS[iloop1][0][pa1],LOOPCOORDS[iloop2][0][pa2+1],LOOPCOORDS[iloop2][0][pa2]
                         #print p1, q1, p2, q2
                         GAUSSINT=GAUSSINT+integrate.dblquad(SEGF,0,1,lambda x: 0, lambda y: 1)[0]
                 GAUSSINT=GAUSSINT/(4.0*pi)
-                if(GAUSSINT>0.5):
+                #print GAUSSINT
+                if(fabs(GAUSSINT)>0.5):
                     type1,looi1=LOOPCOORDS[iloop1][1][0],LOOPCOORDS[iloop1][1][1]
                     type2,looi2=LOOPCOORDS[iloop2][1][0],LOOPCOORDS[iloop2][1][1]
-                    print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+". Gauss integral = "+str(GAUSSINT)
                     indexes=[]
                     if(type1=="hairpin "):
                         indexes.append([HAIRPINS[looi1],"hp"])
                     elif(type1=="stem "):
                         indexes.append([STEMS[looi1],"st"])
                     elif(type1=="unstl "):
-                        indexes.append([UNSTLS[looi1],"ul"])
+                        indexes.append([FULLUNSTLS[looi1],"il"])
                     if(type2=="hairpin "):
                         indexes.append([HAIRPINS[looi2],"hp"])
                     elif(type2=="stem "):
                         indexes.append([STEMS[looi2],"st"])
                     elif(type2=="unstl "):
-                        indexes.append([UNSTLS[looi2],"ul"])
+                        indexes.append([FULLUNSTLS[looi2],"il"])
                     ALLINDEXES.append(indexes)
+                    floop1=indexes[0]
+                    floop2=indexes[1]
+                    print "LINK DETECTED: loops "+str(floop1)+" ( "+type1+" )"+" and "+str( floop2)+" ( "+type2+")"+". Gauss integral = "+str(GAUSSINT)
+
     print "Link analysis finished"
 
 #print "Calculating pierces"
 #check piercings
 PIERCEINDEXES=[]
+REDUNDANTINDEXES=[]
 
 if calctype=="p":
     LOOPCOORDS=[]
@@ -375,111 +484,107 @@ if calctype=="p":
                 if totpierce>0:
                     type1,looi1=LOOPCOORDS[iloop1][1][0],LOOPCOORDS[iloop1][1][1]
                     type2,looi2=LOOPCOORDS[iloop2][1][0],LOOPCOORDS[iloop2][1][1]
-                    print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+" pierced " + str(totpierce) +" times."
+                    #print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+" pierced " + str(totpierce) +" times."
                     indexes=[]
                     if(type1=="hairpin "):
                         indexes.append([HAIRPINS[looi1],"hp"])
                     elif(type1=="stem "):
                         indexes.append([STEMS[looi1],"st"])
                     elif(type1=="unst "):
-                        indexes.append([UNSTLS[looi1],"ul"])
+                        indexes.append([UNSTLS[looi1],"il"])
                     if(type2=="hairpin "):
                         indexes.append([HAIRPINS[looi2],"hp"])
                     elif(type2=="stem "):
                         indexes.append([STEMS[looi2],"st"])
                     elif(type2=="unst "):
-                        indexes.append([UNSTLS[looi2],"ul"])
-                    if(iloop1<iloop2):
-                        PIERCEINDEXES.append(indexes)
+                        indexes.append([UNSTLS[looi2],"il"])
+                    #if(iloop1<iloop2):
+                    #PIERCEINDEXES.append(indexes)
+                    REDUNDANTINDEXES.append(indexes)
 
-#    for hp in xrange(0,len(ULCOORDS)):
-#        trianglist=make_triangles(ULCOORDS[hp])
-#        for ul in xrange(hp+1,len(ULCOORDS)):
-#            totpierce=0
-#            for triang in trianglist:
-#                npierce=check_pierce(triang,ULCOORDS[ul])
-#                totpierce=totpierce+npierce
-#            if totpierce>0:
-#                print "Unstructured loop ",ul, "pierces unstructured loop (",ul,")", totpierce, "times."
-#                indexes=[]
-#                type1,type2="ul","ul"
-#                indexes.append([UNSTLS[ul],type1])
-#                indexes.append([UNSTLS[hp],type2])
-#                PIERCEINDEXES.append(indexes)
-#for st in xrange(0,len(STCOORDS)):
-#    trianglist=make_triangles(STCOORDS[st])
-#    for ul in xrange(0,len(ULCOORDS)):
-#        totpierce=0
-#        for triang in trianglist:
-#            npierce=check_pierce(triang,ULCOORDS[ul])
-#            totpierce=totpierce+npierce
-#        if totpierce>0:
-#            print "Unstructured loop ",ul, "pierces stack (",st,")", totpierce, "times."
-#            indexes=[]
-#            type1,type2="ul","st"
-#            indexes.append([UNSTLS[ul],type1])
-#            indexes.append([STEMS[st],type2])
-#            PIERCEINDEXES.append(indexes)
+for pair in REDUNDANTINDEXES:
+    if(pair not in PIERCEINDEXES and [pair[1],pair[0]] not in PIERCEINDEXES):
+        PIERCEINDEXES.append(pair)
+        print "LINK DETECTED: ("+str(pair[0][1])+") : "+str(pair[0][0])+ "  and  ("+str(pair[1][1])+") : "+str(pair[1][0])
 
+        #print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+" pierced " + str(totpierce) +" times."
 NLINKS,NPIERCES=len(ALLINDEXES),len(PIERCEINDEXES)
+LINKOUTPUT=[]
+#if NLINKS>0 and calctype=="g":
+#    #print "REMARK LNKDLPS "+str(KL)+" "+str(NLINKS+NPIERCES)
+#    for li in ALLINDEXES:
+#        #typs=li[0][1]+li[1][1]
+#        loop1,loop2=[],[]
+#        if li[0][1]=='hp':
+#            loop1.append(li[0][0][0])
+#            loop1.append(li[0][0][len(li[0][0])-1])
+#        if li[0][1]=='il':
+#            loop1.append(li[0][0][0])
+#            loop1.append(li[0][0][len(li[0][0])-1])
+#        if li[0][1]=='st':
+#            loop1.append(li[0][0][0])
+#            loop1.append(li[0][0][len(li[0][0])/2-1])
+#            loop1.append(li[0][0][len(li[0][0])/2])
+#            loop1.append(li[0][0][len(li[0][0])-1])
+#        if li[1][1]=='hp':
+#            loop2.append(li[1][0][0])
+#            loop2.append(li[1][0][len(li[1][0])-1])
+#        if li[1][1]=='il':
+#            loop2.append(li[1][0][0])
+#            loop2.append(li[1][0][len(li[1][0])-1])
+#        if li[1][1]=='st':
+#            loop2.append(li[1][0][0])
+#            loop2.append(li[1][0][len(li[1][0])/2-1])
+#            loop2.append(li[1][0][len(li[1][0])/2])
+#            loop2.append(li[1][0][len(li[1][0])-1])
+#        #print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
+#        LINKOUTPUT.append([[li[0][1],' '.join(str(x) for x in loop1)] ,[li[1][1],' '.join(str(x) for x in loop2)]])
+if  NPIERCES>0 and calctype=="p":
+    for li in PIERCEINDEXES:
+        #typs=li[0][1]+li[1][1]
+        loop1,loop2=[],[]
+        if li[0][1]=='il':
+            loop1.append(li[0][0][0])
+            loop1.append(li[0][0][len(li[0][0])-1])
+        if li[0][1]=='st':
+            loop1.append(li[0][0][0])
+            loop1.append(li[0][0][len(li[0][0])/2-1])
+            loop1.append(li[0][0][len(li[0][0])/2])
+            loop1.append(li[0][0][len(li[0][0])-1])
+        if li[0][1]=='hp':
+            loop1.append(li[0][0][0])
+            loop1.append(li[0][0][len(li[0][0])-1])
+        if li[1][1]=='il':
+            loop2.append(li[1][0][0])
+            loop2.append(li[1][0][len(li[1][0])-1])
+        if li[1][1]=='st':
+            loop2.append(li[1][0][0])
+            loop2.append(li[1][0][len(li[1][0])/2-1])
+            loop2.append(li[1][0][len(li[1][0])/2])
+            loop2.append(li[1][0][len(li[1][0])-1])
+        if li[1][1]=='hp':
+            loop2.append(li[1][0][0])
+            loop2.append(li[1][0][len(li[1][0])-1])
+        #print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
+        LINKOUTPUT.append([[li[0][1],' '.join(str(x) for x in loop1)],[li[1][1],' '.join(str(x) for x in loop2)]])
 
-if NLINKS>0 or NPIERCES>0:
+if(calctype=="p"):
     OUTFILE=open(LINKFILE,"w")
     orig_stdout=sys.stdout
     sys.stdout=OUTFILE
-    print "REMARK LNKDLPS "+str(KL)+" "+str(NLINKS+NPIERCES)
-    for li in ALLINDEXES:
-        typs=li[0][1]+li[1][1]
-        loop1,loop2=[],[]
-        if li[0][1]=='hp':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[0][1]=='ul':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[0][1]=='st':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])/2-1])
-            loop1.append(li[0][0][len(li[0][0])/2])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[1][1]=='hp':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        if li[1][1]=='ul':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        if li[1][1]=='st':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])/2-1])
-            loop2.append(li[1][0][len(li[1][0])/2])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
-    for li in PIERCEINDEXES:
-        typs=li[0][1]+li[1][1]
-        loop1,loop2=[],[]
-        if li[0][1]=='ul':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[0][1]=='st':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])/2-1])
-            loop1.append(li[0][0][len(li[0][0])/2])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[0][1]=='hp':
-            loop1.append(li[0][0][0])
-            loop1.append(li[0][0][len(li[0][0])-1])
-        if li[1][1]=='ul':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        if li[1][1]=='st':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])/2-1])
-            loop2.append(li[1][0][len(li[1][0])/2])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        if li[1][1]=='hp':
-            loop2.append(li[1][0][0])
-            loop2.append(li[1][0][len(li[1][0])-1])
-        print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
-
+    LOOPLIST=[]
+    cnt=0
+    for li in LINKOUTPUT:
+        for loo in li:
+            if loo not in LOOPLIST:
+                LOOPLIST.append(loo)
+                cnt=cnt+1
+    #print LINKOUTPUT
+    print str(NPIERCES)+" "+str(len(LOOPLIST))+" "+str(KL)+" "+str(KL)
+    for loo in LOOPLIST:
+        print loo[0], loo[1]
+    for li in LINKOUTPUT:
+        print LOOPLIST.index(li[0]),LOOPLIST.index(li[1])
     OUTFILE.close()
     sys.stdout=orig_stdout
+

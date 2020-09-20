@@ -30,3 +30,5 @@ for { set i 0 } {$i<[expr $N_NT] } {incr i} {
     topo addbond [expr $i*$N_ATS_PER_NT + 2] [expr $i*$N_ATS_PER_NT ]
     topo addbond [expr $i*$N_ATS_PER_NT + 1] [expr $i*$N_ATS_PER_NT +2]
 }
+mol modcolor 0 top Index
+mol modstyle 0 top Licorice 0.300000 12.000000 12.000000

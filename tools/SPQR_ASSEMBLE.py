@@ -15,6 +15,7 @@ parser.add_argument("-g","--forgi", help="Forgi vectors: coords and twists",type
 parser.add_argument("-o","--output", help="Output name",type=str,default="init")
 parser.add_argument("-p","--pairs", help="No stacks, only pairs",action='store_true',default=False)
 parser.add_argument("-d","--duplex", help="Makes duplex with complementary structure",action='store_true',default=False)
+parser.add_argument("-f","--fasta", help="Fasta file, for secondary structure creation",type=str,default="")
 
 args=parser.parse_args()
 ssflag=False
@@ -26,8 +27,9 @@ PRDUPLEX=args.duplex
 splseq=args.sequences.split("&")
 splsst=args.sstruct.split("&")
 OUTNAME=args.output
+FASTA=args.fasta
 
-if(args.sequences==""):
+if(args.sequences=="" and FASTA==""):
     print "ERROR: a sequence must be entered."
     parser.print_help()
     exit(1)
@@ -88,20 +90,46 @@ if PRDUPLEX and ssflag :
     print "ERROR:It is not recommended to use options -d and -t simultaneously."
     exit(1)
 
+
 seq=[]
 strandseq=[]
 fullss=[]
 rawseq=[]
-for i in xrange(0,len(args.sequences)):
-    if(args.sequences[i]!="&"):
-        strandseq.append(args.sequences[i])
-        rawseq.append(args.sequences[i])
-        if(ssflag):
-            fullss.append(args.sstruct[i])
-    if(args.sequences[i]=="&"):
-        seq.append(strandseq)
-        strandseq=[]
-seq.append(strandseq)
+if(args.sequences!=""):
+    for i in xrange(0,len(args.sequences)):
+        if(args.sequences[i]!="&"):
+            strandseq.append(args.sequences[i])
+            rawseq.append(args.sequences[i])
+            if(ssflag):
+                fullss.append(args.sstruct[i])
+        if(args.sequences[i]=="&"):
+            seq.append(strandseq)
+            strandseq=[]
+    seq.append(strandseq)
+
+if(FASTA!=""):
+    seq=[]
+    strandseq=[]
+    fullss=[]
+    rawseq=[]
+    fastafile=open(FASTA,"r")
+    fastablock=fastafile.readlines()
+    fastaseq=fastablock[1].strip()
+    fastasstruct=fastablock[2].strip()
+    if(fastasstruct!=""):
+        ssflag=True
+    fastafile.close()
+    for i in xrange(0,len(fastaseq)):
+        if(fastaseq[i]!="&"):
+            strandseq.append(fastaseq[i])
+            rawseq.append(fastaseq[i])
+            if(ssflag):
+                fullss.append(fastasstruct[i])
+        if(fastaseq[i]=="&"):
+            seq.append(strandseq)
+            strandseq=[]
+    seq.append(strandseq)
+
 
 DIM=3
 NAT=5
