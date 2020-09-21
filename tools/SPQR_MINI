@@ -3,7 +3,7 @@ set -e
 echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/spoblete/data/52_ernwin_big/10_LONGER_MINI/00_loop_treatment/spqr
+SPQR_PATH=
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools
@@ -163,7 +163,7 @@ if [ $CONVERT ] ; then
     echo "Creating SPQR pdb format structure..."
     cp $TOOLS_PATH/pdb2spqr.py $DIRNAME
     cd $DIRNAME
-    python pdb2spqr.py $PDBSTRUCT > $DIRNAME/init.pdb
+    python pdb2spqr.py ../$PDBSTRUCT > init.pdb
     rm pdb2spqr.py
     cd ..
 else cp $PDBSTRUCT $DIRNAME/init.pdb

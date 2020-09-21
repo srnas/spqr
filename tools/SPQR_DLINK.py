@@ -169,8 +169,7 @@ for nt in xrange(0,NNT):
             cpair=pair[0]
     PAIRLIST.append(cpair)
 
-
-##FIND STACKS##
+##FIND STEMS##
 opairs=bpairs.sort()
 preSTEMS,STEMS=[],[]
 CSTACK=[bpairs[0]]
@@ -191,13 +190,13 @@ for st in preSTEMS:
         unf.append(pa[1])
     STEMS.append(unf)
 
-
 #FIND UNSTRUCTURED LOOPS
-FULLUNSTLS=[]
+UNSTLS=[]
 loops=[]
 tloop=[]
 op=0
 prevst=0
+
 for nt in xrange(0,NNT-1):
     ist,ihp,iul,nist=-1,-1,-1,-1
     for st in xrange(0,len(STEMS)):
@@ -208,49 +207,70 @@ for nt in xrange(0,NNT-1):
     for hp in xrange(0,len(HAIRPINS)):
         if(nt in HAIRPINS[hp]):
             ihp=hp
-    for ul in xrange(0,len(FULLUNSTLS)):
-        if(nt in FULLUNSTLS[ul]):
-            iul=ul
-    if(((ist!=-1 and nist==-1 and ihp==-1) or (ist!=-1 and nist!=-1 and nist!=ist) or (ist==-1 and nt==0)) and (iul==-1)):
+            
+    if(((ist!=-1 and nist==-1 and ihp==-1) or (ist!=-1 and nist!=-1 and nist!=ist) or (ist==-1 and nt==0)) ):
         #start internal loop
         lstart,lnt=nt,nt
         tloop.append(nt)
         lendfl=False
         lnt=lnt+1
         vpair=-1
-        while lendfl is False:
-            if(lnt!=lstart):
-                tloop.append(lnt)
-            else:
-                FULLUNSTLS.append(tloop)
+        while lendfl == False:
+            if(lnt==NNT-1):
+                UNSTLS.append(tloop)
                 tloop=[]
                 lendfl=True
+                break
+            tloop.append(lnt)
             if(PAIRLIST[lnt]==-1):
                 lnt=lnt+1
             else:
-                if(vpair==-1):
-                    lnt=PAIRLIST[lnt]
-                else:
-                    lnt=lnt+1
-                vpair=-vpair
+                UNSTLS.append(tloop)
+                tloop=[]
+                lendfl=True
+
+#now we join the loops
 #USE THE FULL UNSTRUCTURED LOOPS FOR GAUSSIAN INTEGRALS
-#now we split the unstructured loops for piercings
-UNSTLS=[]
-for uloop in FULLUNSTLS:
-    tloop=[]
-    tloop.append(uloop[0])
-    for nt in xrange(0,len(uloop)-1):
-        if(uloop[nt+1]-uloop[nt]>1):
-            UNSTLS.append(tloop)
+FULLUNSTLS=[]
+for iul in xrange(0,len(UNSTLS)):
+    uloop=UNSTLS[iul]
+    tloop=uloop
+    lstart=uloop[0]
+    cend=uloop[len(uloop)-1]
+    lendfl=False
+    while lendfl == False:
+        #find next
+        hasnext=False
+        for nloop in UNSTLS:
+            nstart=nloop[0]
+            
+            if(cend==PAIRLIST[nstart]):
+                floop=nloop
+                hasnext=True
+                break
+        if hasnext is False:
             tloop=[]
-        tloop.append(uloop[nt+1])
-    UNSTLS.append(tloop)
-    
+            lendfl=True
+            break
+        else:
+            tloop=tloop+floop
+        cend=floop[len(floop)-1]
+        if(cend==PAIRLIST[lstart]):
+            if(sorted(tloop) not in FULLUNSTLS):
+                FULLUNSTLS.append(sorted(tloop))
+            tloop=[]
+            lendfl=True
+            break
 if verboseflag:
     FILENAME=OUTPUT+"_LOOPS.dat"
     tfile=open(FILENAME,"w")
-    tfile.write( "UNSTRUCTURED\n")
+    tfile.write( "UNSTRUCTURED STRANDS\n")
     for lo in UNSTLS:
+        for nt in lo:
+            tfile.write(str(nt)+" ")
+        tfile.write("\n")
+    tfile.write( "UNSTRUCTURED LOOPS\n")
+    for lo in FULLUNSTLS:
         for nt in lo:
             tfile.write(str(nt)+" ")
         tfile.write("\n")
@@ -295,6 +315,9 @@ ULCOORDS=[]
 FULLULCOORDS=[]
 
 for ful in FULLUNSTLS:
+    #here we exclude the first and last unstructured loops if they are free strands
+#    if (0 not in ful and NNT-1 not in ful):
+    #the loops here are all closed. no worries
     ulc=[]
     fflag=True
     for nt in xrange(0,len(ful)-1):
@@ -330,7 +353,6 @@ for ul in UNSTLS:
     #ulc.append(np.array(COORDS[ul[0]][0]))
     ULCOORDS.append(ulc)
 
-
 for hp in HAIRPINS:
     hpc=[]
     hpc.append(np.array(COORDS[hp[0]][0]))
@@ -364,6 +386,19 @@ if verboseflag:
     lcnt=0
     cnt=0
     for loo in FULLULCOORDS:
+        FILENAME=OUTPUT+"_LOOP_JL"+str(cnt)+".xyz"
+        tfile=open(FILENAME,"w")
+        tfile.write(str( len(loo))+"\n")
+        tfile.write("Junction"+" "+str( cnt)+"\n")
+        for nt in loo:
+            line="C "+str( nt[0])+" "+str( nt[1])+" "+str( nt[2])+"\n"
+            tfile.write(line)
+
+        cnt,lcnt=cnt+1,lcnt+1
+        tfile.close()
+
+    cnt=0
+    for loo in ULCOORDS:
         FILENAME=OUTPUT+"_LOOP_UL"+str(cnt)+".xyz"
         tfile=open(FILENAME,"w")
         tfile.write(str( len(loo))+"\n")
