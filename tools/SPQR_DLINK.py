@@ -59,18 +59,22 @@ def check_pierce(tri, vlist):
     NORM=np.cross(V1,V2)
     NORM=NORM/sqrt(np.dot(NORM,NORM))
     for segind in xrange(0,len(vlist)-1):
-        seg=vlist[segind+1]-vlist[segind]
-        tinter=np.dot(NORM,(tri[0]-vlist[segind]))/np.dot(NORM,seg)
-        if(tinter>0 and tinter<1):
-            ivec=tinter*seg+vlist[segind]
-            check=np.dot(ivec-tri[0],NORM)
-            if(check>0.001):
-                print "no!", check
-                exit(1)
-            if(np.dot(np.cross(ivec-tri[0],tri[1]-tri[0]),np.cross(tri[2]-tri[0],tri[1]-tri[0]))>0 and
-               np.dot(np.cross(ivec-tri[1],tri[2]-tri[1]),np.cross(tri[0]-tri[1],tri[2]-tri[1]))>0 and
-               np.dot(np.cross(ivec-tri[2],tri[0]-tri[2]),np.cross(tri[1]-tri[2],tri[0]-tri[2]))>0):
-                npie=npie+1
+        intersc=False
+        for coo in tri:
+            intersc=intersc or np.array_equal(coo,vlist[segind+1]) or np.array_equal(coo,vlist[segind])
+        if(intersc==False):
+            seg=vlist[segind+1]-vlist[segind]
+            tinter=np.dot(NORM,(tri[0]-vlist[segind]))/np.dot(NORM,seg)
+            if(tinter>0 and tinter<1):
+                ivec=tinter*seg+vlist[segind]
+                check=np.dot(ivec-tri[0],NORM)
+                if(check>0.001):
+                    print "no!", check
+                    exit(1)
+                if(np.dot(np.cross(ivec-tri[0],tri[1]-tri[0]),np.cross(tri[2]-tri[0],tri[1]-tri[0]))>0 and
+                   np.dot(np.cross(ivec-tri[1],tri[2]-tri[1]),np.cross(tri[0]-tri[1],tri[2]-tri[1]))>0 and
+                   np.dot(np.cross(ivec-tri[2],tri[0]-tri[2]),np.cross(tri[1]-tri[2],tri[0]-tri[2]))>0):
+                    npie=npie+1
     return npie
 
 def diloops(l1, l2):
@@ -490,90 +494,56 @@ PIERCEINDEXES=[]
 REDUNDANTINDEXES=[]
 
 if calctype=="p":
-    LOOPCOORDS=[]
-    LOOPINDEXS=[]
-    for hp in xrange(0,len(HPCOORDS)):
-        LOOPCOORDS.append([HPCOORDS[hp],["hairpin ",hp]])
-        LOOPINDEXS.append(HAIRPINS[hp])
-    for st in xrange(0,len(STCOORDS)):
-        LOOPCOORDS.append([STCOORDS[st],["stem ", st]])
-        LOOPINDEXS.append(STEMS[st])
-    for ul in xrange(0,len(ULCOORDS)):
-        LOOPCOORDS.append([ULCOORDS[ul],["unst ", ul]])
-        LOOPINDEXS.append(UNSTLS[ul])
-#    print LOOPINDEXS
-    for iloop1 in xrange(0,len(LOOPCOORDS)):
-        trianglist=make_triangles(LOOPCOORDS[iloop1][0])
-        for iloop2 in xrange(0,len(LOOPCOORDS)):
-            #sameflag=inddifloops(LOOPCOORDS[iloop1][0],LOOPCOORDS[iloop2][0])
-            sameflag=inddifloops(LOOPINDEXS[iloop1],LOOPINDEXS[iloop2])
-            #print sameflag, iloop1,iloop2
-            #if(sameflag):
-             #   print sameflag,iloop1,iloop2
-            if(sameflag):
- #               print sameflag
-                totpierce=0
-                for triang in trianglist:
-                    npierce=check_pierce(triang,LOOPCOORDS[iloop2][0])
-                    totpierce=totpierce+npierce
-                if totpierce>0:
-                    type1,looi1=LOOPCOORDS[iloop1][1][0],LOOPCOORDS[iloop1][1][1]
-                    type2,looi2=LOOPCOORDS[iloop2][1][0],LOOPCOORDS[iloop2][1][1]
-                    #print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+" pierced " + str(totpierce) +" times."
-                    indexes=[]
-                    if(type1=="hairpin "):
-                        indexes.append([HAIRPINS[looi1],"hp"])
-                    elif(type1=="stem "):
-                        indexes.append([STEMS[looi1],"st"])
-                    elif(type1=="unst "):
-                        indexes.append([UNSTLS[looi1],"il"])
-                    if(type2=="hairpin "):
-                        indexes.append([HAIRPINS[looi2],"hp"])
-                    elif(type2=="stem "):
-                        indexes.append([STEMS[looi2],"st"])
-                    elif(type2=="unst "):
-                        indexes.append([UNSTLS[looi2],"il"])
-                    #if(iloop1<iloop2):
-                    #PIERCEINDEXES.append(indexes)
-                    REDUNDANTINDEXES.append(indexes)
+    LOOPCOORDS1,LOOPINDEXS1=[],[]
+    LOOPCOORDS2,LOOPINDEXS2=[],[]
 
+    for hp in xrange(0,len(HPCOORDS)):
+        LOOPCOORDS1.append([HPCOORDS[hp],["hairpin ",hp]])
+        LOOPINDEXS1.append(HAIRPINS[hp])
+        LOOPCOORDS2.append([HPCOORDS[hp],["hairpin ",hp]])
+        LOOPINDEXS2.append(HAIRPINS[hp])
+    for st in xrange(0,len(STCOORDS)):
+        LOOPCOORDS1.append([STCOORDS[st],["stem ", st]])
+        LOOPINDEXS1.append(STEMS[st])
+        LOOPCOORDS2.append([STCOORDS[st],["stem ", st]])
+        LOOPINDEXS2.append(STEMS[st])
+    for ul in xrange(0,len(ULCOORDS)):
+        LOOPCOORDS2.append([ULCOORDS[ul],["unst ", ul]])
+        LOOPINDEXS2.append(UNSTLS[ul])
+
+    for iloop1 in xrange(0,len(LOOPCOORDS1)):
+        trianglist=make_triangles(LOOPCOORDS1[iloop1][0])
+        for iloop2 in xrange(0,len(LOOPCOORDS2)):
+            totpierce=0
+            for triang in trianglist:
+                npierce=check_pierce(triang,LOOPCOORDS2[iloop2][0])
+                totpierce=totpierce+npierce
+            if totpierce>0:
+                type1,looi1=LOOPCOORDS1[iloop1][1][0],LOOPCOORDS1[iloop1][1][1]
+                type2,looi2=LOOPCOORDS2[iloop2][1][0],LOOPCOORDS2[iloop2][1][1]
+                indexes=[]
+                if(type1=="hairpin "):
+                    indexes.append([HAIRPINS[looi1],"hp"])
+                elif(type1=="stem "):
+                    indexes.append([STEMS[looi1],"st"])
+                elif(type1=="unst "):
+                    indexes.append([UNSTLS[looi1],"il"])
+                if(type2=="hairpin "):
+                    indexes.append([HAIRPINS[looi2],"hp"])
+                elif(type2=="stem "):
+                    indexes.append([STEMS[looi2],"st"])
+                elif(type2=="unst "):
+                    indexes.append([UNSTLS[looi2],"il"])
+                #if(iloop1<iloop2):
+                #PIERCEINDEXES.append(indexes)
+                REDUNDANTINDEXES.append(indexes)
+                            
 for pair in REDUNDANTINDEXES:
     if(pair not in PIERCEINDEXES and [pair[1],pair[0]] not in PIERCEINDEXES):
         PIERCEINDEXES.append(pair)
         print "LINK DETECTED: ("+str(pair[0][1])+") : "+str(pair[0][0])+ "  and  ("+str(pair[1][1])+") : "+str(pair[1][0])
-
-        #print "LINK DETECTED: loops "+str(iloop1)+" ( "+type1+" )"+" and "+str( iloop2)+" ( "+type2+")"+" pierced " + str(totpierce) +" times."
 NLINKS,NPIERCES=len(ALLINDEXES),len(PIERCEINDEXES)
 LINKOUTPUT=[]
-#if NLINKS>0 and calctype=="g":
-#    #print "REMARK LNKDLPS "+str(KL)+" "+str(NLINKS+NPIERCES)
-#    for li in ALLINDEXES:
-#        #typs=li[0][1]+li[1][1]
-#        loop1,loop2=[],[]
-#        if li[0][1]=='hp':
-#            loop1.append(li[0][0][0])
-#            loop1.append(li[0][0][len(li[0][0])-1])
-#        if li[0][1]=='il':
-#            loop1.append(li[0][0][0])
-#            loop1.append(li[0][0][len(li[0][0])-1])
-#        if li[0][1]=='st':
-#            loop1.append(li[0][0][0])
-#            loop1.append(li[0][0][len(li[0][0])/2-1])
-#            loop1.append(li[0][0][len(li[0][0])/2])
-#            loop1.append(li[0][0][len(li[0][0])-1])
-#        if li[1][1]=='hp':
-#            loop2.append(li[1][0][0])
-#            loop2.append(li[1][0][len(li[1][0])-1])
-#        if li[1][1]=='il':
-#            loop2.append(li[1][0][0])
-#            loop2.append(li[1][0][len(li[1][0])-1])
-#        if li[1][1]=='st':
-#            loop2.append(li[1][0][0])
-#            loop2.append(li[1][0][len(li[1][0])/2-1])
-#            loop2.append(li[1][0][len(li[1][0])/2])
-#            loop2.append(li[1][0][len(li[1][0])-1])
-#        #print typs+ " "+' '.join(str(x) for x in loop1) + " "+' '.join(str(x) for x in loop2)
-#        LINKOUTPUT.append([[li[0][1],' '.join(str(x) for x in loop1)] ,[li[1][1],' '.join(str(x) for x in loop2)]])
 if  NPIERCES>0 and calctype=="p":
     for li in PIERCEINDEXES:
         #typs=li[0][1]+li[1][1]
