@@ -194,8 +194,8 @@ int main(int argc, char **argv) {
     }
     sa_prev_energ=sa_this_energ;
     SA_params_to_arr(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, SA_DATA);
-    
-    MC_save_checkpoint(mc_n, rx, ry, rz, eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
+    if((eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter %(mc_chkp_steps)))
+      MC_save_checkpoint(mc_n, rx, ry, rz, eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
     //printf("%d %d  %d %d\n", mc_iter, eff_iter, sa_mark,eff_iter+(ann_step-sa_mark)*eff_iter + sa_mark*mc_iter );
     //SA_save_params(sa_temp, sa_tmin, sa_tfac, ann_step+1, sa_NT, sa_prev_energ, sa_sfac, sa_resc_times, mpi_id);
   }

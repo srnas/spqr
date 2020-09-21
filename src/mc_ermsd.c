@@ -18,6 +18,8 @@ void MC_set_linked_loops(int nt_n, double *posx, double *posy, double *posz){
   sprintf(filename, "linked_loops.lst");
   if((lnkdloopsfile=fopen(filename, "r"))==NULL){
     printf("PULL AWAY LINKS: No reference structure found for LINK pulling %s. No pulling.\n", filename);
+    //for(i=0;i<nt_n;i++)
+    // printf("%d  %d\n", i, in_link[i]);
   }
   else{
     ptmpout=fgets(loopline,MAXSTR,lnkdloopsfile);
@@ -169,6 +171,7 @@ int nts_in_same_link_but_different_loops(int nt_a, int nt_b){
       continue;
     }
   }
+  return ret;
 }
 
 void get_real_sugpos(int nt, int nt_c, double *rx, double *ry, double *rz, double *rpos){

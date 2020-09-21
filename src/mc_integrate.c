@@ -1513,13 +1513,6 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
       {
 	at_ne=N_PARTS_PER_NT*nt2;
 	at_c=N_PARTS_PER_NT*nt_c;
-/* #ifdef ERMSDR */
-/* #ifdef NOCTCS */
-/* #ifdef LNKRMV */
-/* 	  if(G_groups[nt_c][nt2]<0) */
-/* #endif */
-/* #endif */
-/* #endif	 */    
 #ifdef LNKRMV
 	if(in_link[nt_c]<0 || in_link[nt2]<0)
 	  if(nts_in_same_link_but_different_loops(nt_c, nt2)==0)
@@ -1540,7 +1533,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 		if(flag!=0)
 		  return flag;
 	      }
-	    }	      
+	    }
 #ifdef ERMSDR
 	if(G_groups[nt_c][nt2]>-1){
 	  calc_min_vec(rx[at_ne], ry[at_ne], rz[at_ne], mc_temp_x[at_c], mc_temp_y[at_c], mc_temp_z[at_c], r_vec, &r);
@@ -1554,7 +1547,7 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	    //}
 	  }
 #endif  
-	}
+      }
     }
     *energ_calc=energ;
 #ifdef ERMSDR
