@@ -222,14 +222,15 @@ fi
 LNKFLAG=""
 if [ "$LNKRMV" ]; then
     echo "Detecting links between loops..."
-    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o linked_loops.lst -p > dlink.out
-    if [ -s linked_loops.lst ] ; then
+    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o CLASH -p > dlink.out
+    if [ -s linked_loops_CLASH.lst ] ; then
+	mv linked_loops_CLASH.lst linked_loops.lst
 	LNKFLAG=1
-	echo "Links detected. Removal will be needed"
+	echo "Links detected. Removal will be needed."
     fi
 fi
 cd ../..
-echo "Clashes removed successfuly"
+echo "Clashes removed successfully."
 
 #######
 #HERE DETECT AND REMOVE LINKS IF THEY EXIST!#
@@ -265,11 +266,11 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     for lstep in `seq 1 $LNKRM_STEPS`; do
 	echo "Step $lstep"
 	./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
-	check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o check -p`
+	check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o CHECK -p`
 	if [ "$check" ] ; then
 	    echo "Trying again"
 	    cp configs/chk.last.p00.mc pdb_inits/init.mc
-	    mv check linked_loops.lst
+	    #mv linked_loops_CHECK.lst linked_loops.lst
 	else
 	    break
 	fi
@@ -298,7 +299,7 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     mkdir $DIRNAME/$THISSIM/pdb_inits
     #cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
     cp $DIRNAME/$PREVSIM/final.p00.pdb $DIRNAME/$THISSIM/pdb_inits/init.pdb
-    cp $DIRNAME/$PREVSIM/linked_loops.lst $DIRNAME/$THISSIM/
+    #cp $DIRNAME/$PREVSIM/linked_loops.lst $DIRNAME/$THISSIM/
     sed -i 's/NN/NA/g' $DIRNAME/$THISSIM/pdb_inits/init.pdb
     cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
     cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
@@ -326,15 +327,15 @@ done
 	echo "There are still clashes in the initial condition of $INDMINI. Try increasing the CLASH_NMC variable in the script." ; exit ;
     fi
     cd ../..
-    echo "Links removed successfuly"
+    echo "Links removed successfuly."
 else
-    echo "Skipped detection of links"
+    echo "Skipped detection of links."
 fi
 
 ########
 
 #STEP 2#
-echo "Structure refinement: minimization of ERMSD with respect to original structure"
+echo "Structure refinement: minimization of ERMSD with respect to original structure."
 THISSIM=02
 PREVSIM=01
 mkdir $DIRNAME/$THISSIM
@@ -362,7 +363,7 @@ echo "ERMSD minimization successful!"
 ########
 
 #STEP 3#
-echo "Structure refinement: minimization of SPQR energy"
+echo "Structure refinement: minimization of SPQR energy."
 THISSIM=03
 PREVSIM=02
 mkdir $DIRNAME/$THISSIM
@@ -390,9 +391,11 @@ for cgstruct in `ls final.p*`; do
 done
 cp mini_at_*.pdb ..
 cd ../..
+echo "Energy minimized."
 
 ######
 #FINAL CHECK#
+echo "Checking loops for last time."
 cd $DIRNAME/01
 python SPQR_DLINK.py -i ../final.p00.pdb -t $NPSSTRUCT -o fcheck > ../fcheck.dat
 python SPQR_DLINK.py -i ../final.p00.pdb -t $NPSSTRUCT -o fcheck_pier -p > ../fcheck_pier.dat

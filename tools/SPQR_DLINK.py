@@ -61,8 +61,11 @@ def check_pierce(tri, vlist):
     for segind in xrange(0,len(vlist)-1):
         intersc=False
         for coo in tri:
-            intersc=intersc or np.array_equal(coo,vlist[segind+1]) or np.array_equal(coo,vlist[segind])
+            intersc=(intersc or np.array_equal(coo,vlist[segind+1]) or np.array_equal(coo,vlist[segind]))
         if(intersc==False):
+            #if(np.dot(tri[0]-vlist[segind+1],tri[0]-vlist[segind+1])==0 or np.dot(tri[1]-vlist[segind+1],tri[1]-vlist[segind+1])==0 or np.dot(tri[2]-vlist[segind+1],tri[2]-vlist[segind+1])==0 or np.dot(tri[0]-vlist[segind],tri[0]-vlist[segind])==0 or np.dot(tri[1]-vlist[segind],tri[1]-vlist[segind])==0 or np.dot(tri[2]-vlist[segind],tri[2]-vlist[segind])==0):
+             #   print "AIEEEEEEEE!"
+             #   exit(1)
             seg=vlist[segind+1]-vlist[segind]
             tinter=np.dot(NORM,(tri[0]-vlist[segind]))/np.dot(NORM,seg)
             if(tinter>0 and tinter<1):
@@ -75,6 +78,8 @@ def check_pierce(tri, vlist):
                    np.dot(np.cross(ivec-tri[1],tri[2]-tri[1]),np.cross(tri[0]-tri[1],tri[2]-tri[1]))>0 and
                    np.dot(np.cross(ivec-tri[2],tri[0]-tri[2]),np.cross(tri[1]-tri[2],tri[0]-tri[2]))>0):
                     npie=npie+1
+                #else:
+            #print "someone is repeated:" , tri, vlist[segind+1], vlist[segind]
     return npie
 
 def diloops(l1, l2):
@@ -364,7 +369,7 @@ for hp in HAIRPINS:
     for nt in xrange(1,len(hp)):
         hpc.append(np.array(COORDS[hp[nt]][2]))
         hpc.append(np.array(COORDS[hp[nt]][1]))
-    hpc.append(np.array(COORDS[hp[len(hp)-1]+1][0]))
+    hpc.append(np.array(COORDS[hp[len(hp)-1]][0]))
     hpc.append(np.array(COORDS[hp[0]][0]))
     HPCOORDS.append(hpc)
 
