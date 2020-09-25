@@ -519,29 +519,30 @@ if calctype=="p":
     for iloop1 in xrange(0,len(LOOPCOORDS1)):
         trianglist=make_triangles(LOOPCOORDS1[iloop1][0])
         for iloop2 in xrange(0,len(LOOPCOORDS2)):
-            totpierce=0
-            for triang in trianglist:
-                npierce=check_pierce(triang,LOOPCOORDS2[iloop2][0])
-                totpierce=totpierce+npierce
-            if totpierce>0:
-                type1,looi1=LOOPCOORDS1[iloop1][1][0],LOOPCOORDS1[iloop1][1][1]
-                type2,looi2=LOOPCOORDS2[iloop2][1][0],LOOPCOORDS2[iloop2][1][1]
-                indexes=[]
-                if(type1=="hairpin "):
-                    indexes.append([HAIRPINS[looi1],"hp"])
-                elif(type1=="stem "):
-                    indexes.append([STEMS[looi1],"st"])
-                elif(type1=="unst "):
-                    indexes.append([UNSTLS[looi1],"il"])
-                if(type2=="hairpin "):
-                    indexes.append([HAIRPINS[looi2],"hp"])
-                elif(type2=="stem "):
-                    indexes.append([STEMS[looi2],"st"])
-                elif(type2=="unst "):
-                    indexes.append([UNSTLS[looi2],"il"])
-                #if(iloop1<iloop2):
-                #PIERCEINDEXES.append(indexes)
-                REDUNDANTINDEXES.append(indexes)
+            if(iloop1!= iloop2):
+                totpierce=0
+                for triang in trianglist:
+                    npierce=check_pierce(triang,LOOPCOORDS2[iloop2][0])
+                    totpierce=totpierce+npierce
+                if totpierce>0:
+                    type1,looi1=LOOPCOORDS1[iloop1][1][0],LOOPCOORDS1[iloop1][1][1]
+                    type2,looi2=LOOPCOORDS2[iloop2][1][0],LOOPCOORDS2[iloop2][1][1]
+                    indexes=[]
+                    if(type1=="hairpin "):
+                        indexes.append([HAIRPINS[looi1],"hp"])
+                    elif(type1=="stem "):
+                        indexes.append([STEMS[looi1],"st"])
+                    elif(type1=="unst "):
+                        indexes.append([UNSTLS[looi1],"il"])
+                    if(type2=="hairpin "):
+                        indexes.append([HAIRPINS[looi2],"hp"])
+                    elif(type2=="stem "):
+                        indexes.append([STEMS[looi2],"st"])
+                    elif(type2=="unst "):
+                        indexes.append([UNSTLS[looi2],"il"])
+                    #if(iloop1<iloop2):
+                    #PIERCEINDEXES.append(indexes)
+                    REDUNDANTINDEXES.append(indexes)
                             
 for pair in REDUNDANTINDEXES:
     if(pair not in PIERCEINDEXES and [pair[1],pair[0]] not in PIERCEINDEXES):
