@@ -589,19 +589,20 @@ void MC_write_ermsd_obs(int step, double energ){
 }
 
 double MC_wall_energy(double px, double py, double pz){
-  double ret=0;
+  double ret=0.0;
   int w;
   for(w=0;w<N_WALLS;w++){
     if(wall_epsilon[w]>0){
       double dist=fabs(wall_A[w]*px+wall_B[w]*py+wall_C[w]*pz+wall_D[w])/wall_MODSQ[w];
       
-      double d3=1.0/(SQ(dist)*dist);
+      double d3=(wall_sigma[w]/dist)*(wall_sigma[w]/dist)*(wall_sigma[w]/dist);
+      double repd3=(1.0/dist)*(1.0/dist)*(1.0/dist);
       double nd2=SQR(wall_sigma[w]/dist);
       if(WALL_TYPE[w]==0)
-	ret+=d3*d3*d3-wall_epsilon[w]*exp(-dist/wall_sigma[w]);
+	ret+=repd3*repd3*repd3-wall_epsilon[w]*exp(-dist/wall_sigma[w]);//debye huckel
       //ret+=-wall_epsilon[w]*exp(-dist/wall_sigma[w])/dist+d4*d4*d4;
-      else if(WALL_TYPE[w]==1)
-	ret+=wall_epsilon[w]*SQR(nd2)*(nd2*nd2*nd2-1);
+      else if(WALL_TYPE[w]==1) //mie
+	ret+=wall_epsilon[w]*d3*(d3*d3-1);
       //ret+=wall_epsilon[w]*dist+d4*d4*d4;
       else{
 	printf("ERROR: Wall type not recognized!\n");
