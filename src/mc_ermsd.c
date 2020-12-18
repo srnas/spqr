@@ -595,11 +595,14 @@ double MC_wall_energy(double px, double py, double pz){
     if(wall_epsilon[w]>0){
       double dist=fabs(wall_A[w]*px+wall_B[w]*py+wall_C[w]*pz+wall_D[w])/wall_MODSQ[w];
       
-      double d4=1.0/(SQ(SQ(dist)));
+      double d3=1.0/(SQ(dist)*dist);
+      double nd2=SQR(wall_sigma[w]/dist);
       if(WALL_TYPE[w]==0)
-	ret+=-wall_epsilon[w]*exp(-dist/wall_sigma[w])/dist+d4*d4*d4;
+	ret+=d3*d3*d3-wall_epsilon[w]*exp(-dist/wall_sigma[w]);
+      //ret+=-wall_epsilon[w]*exp(-dist/wall_sigma[w])/dist+d4*d4*d4;
       else if(WALL_TYPE[w]==1)
-	ret+=wall_epsilon[w]*dist+d4*d4*d4;
+	ret+=wall_epsilon[w]*SQR(nd2)*(nd2*nd2*nd2-1);
+      //ret+=wall_epsilon[w]*dist+d4*d4*d4;
       else{
 	printf("ERROR: Wall type not recognized!\n");
 	exit(ERR_INPUT);
