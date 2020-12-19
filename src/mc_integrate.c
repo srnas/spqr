@@ -737,7 +737,7 @@ double MC_eval_displacement(int nt_n, double **rx, double **ry, double **rz, int
   double sign=1; if(n_ene-o_ene+wc_ene_nmo<0) sign=-1; //sign of DELTA_E
   int accflag=0;
   if(mc_target_temp>0.05){
-    if(sign*(n_ene-o_ene+wc_ene_nmo)/mc_target_temp < 100){
+    if(sign*(n_ene-o_ene+wc_ene_nmo)/mc_target_temp < 1000){
       expfac=exp(-(n_ene-o_ene+wc_ene_nmo)/mc_target_temp);
       ranf=rand_d(1.0);
       if(ranf<expfac) accflag=1;
