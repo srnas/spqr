@@ -43,7 +43,7 @@ int *mc_temp_puck;
 int **mc_bondlist, **mc_anglelist, **mc_dihedrallist, **mc_nbonds, **mc_tab_bonds_list;
 int **mc_anglecenter;
 FILE *mc_bond_file;
-
+FILE *mc_configs;
 /* /\* mc_cells *\/ */
 /* int *mc_cells; */
 /* int mc_n_linked_cells; */
@@ -54,7 +54,7 @@ FILE *mc_bond_file;
 int mc_chkp_steps;
 int mc_traj_steps;
 int PDB_OUTPUT;
-
+FILE *pdb_configs;
 /* mc_energies */
 int mc_n_types;
 int mc_n_bond_types;

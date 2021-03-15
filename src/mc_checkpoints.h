@@ -8,8 +8,8 @@
 #include "mc_utils.h"
 #include "mc_initialization.h"
 #include <sys/stat.h>
-FILE *mc_configs;
-FILE *pdb_configs;
+extern FILE *mc_configs;
+extern FILE *pdb_configs;
 
 extern int mc_chkp_steps;
 extern int mc_traj_steps;
