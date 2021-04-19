@@ -7,7 +7,7 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
   int mc_trial_flag=0;
   int nt_to_select=nt_n;
   double d_energ=0.0;
-  double oUCM[DIM],nUCM[DIM], oeUCM, neUCM;
+  double oUCM[DIM],nUCM[DIM], oeUCM, neUCM, oUR, nUR;
   /** RG STUFF**/
   double oRG2=0,nRG2=0,oeRG,neRG,rgnats=0;
   double RCM[DIM];
@@ -27,7 +27,7 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
       MC_copy_nt(nt_c, *rx, *ry, *rz);
 
       /** CALC RADIUS OF GYRATION **/
-      if(KRG>0 || UMBRELLA_TYPE==0){
+      if(KRG>0 || UMBRELLA_TYPE==0 || UMBRELLA_TYPE==1){
 	for(d=0;d<DIM;d++) RCM[d]=0;oRG2=0;
 	rgnats=0;
 	//for(rgat=0;rgat<mc_n;rgat++){
@@ -59,9 +59,9 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
 	    }
 	  }
 	  }
-	oRG2/=(double)rgnats;
+	  oRG2/=(double)rgnats;
 	}//printf("%lf %lf\t %lf %lf %lf   %lf\n", sqrt(oRG2), RG_target,RCM[0],RCM[1],RCM[2], rgnats);
-	if(UMBRELLA_TYPE==0){
+	if(UMBRELLA_TYPE==0 || UMBRELLA_TYPE==1){
 	  for(d=0;d<DIM;d++)
 	    oUCM[d]=RCM[d];
 	}
@@ -83,7 +83,7 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
       mc_trial_flag=MC_calculate_local_energy(*rx, *ry, *rz, nt_c, &new_energy, nt_n, trial); //here we calculate the energy of the selected particle, from temp position
 
       /** CALC RADIUS OF GYRATION AGAIN**/
-      if(KRG>0 || UMBRELLA_TYPE==0){
+      if(KRG>0 || UMBRELLA_TYPE==0 || UMBRELLA_TYPE==1){
 	for(d=0;d<DIM;d++) RCM[d]=0;nRG2=0;
 	rgnats=0;
 	for(rgnt=0;rgnt<nt_n;rgnt++){
@@ -129,12 +129,19 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
 	  neRG=KRG*SQ(sqrt(nRG2)-RG_target);
 	  //printf("SECOND %lf %lf  \t %lf %lf %lf   %lf\n", sqrt(nRG2), RG_target,RCM[0],RCM[1],RCM[2], rgnats);
 	}
-	if(UMBRELLA_TYPE==0){
+	if(UMBRELLA_TYPE==0 || UMBRELLA_TYPE==1){
 	  for(d=0;d<DIM;d++)
 	    nUCM[d]=RCM[d];
-	  
+	}
+	if(UMBRELLA_TYPE==0){
 	  oeUCM=0.5*UCMK0*SQ(UCM[0]-oUCM[0])+0.5*UCMK1*SQ(UCM[1]-oUCM[1])+0.5*UCMK2*SQ(UCM[2]-oUCM[2]);
 	  neUCM=0.5*UCMK0*SQ(UCM[0]-nUCM[0])+0.5*UCMK1*SQ(UCM[1]-nUCM[1])+0.5*UCMK2*SQ(UCM[2]-nUCM[2]);
+	}
+	else if(UMBRELLA_TYPE==1){
+	  oUR=sqrt((UCM[0]-oUCM[0])*(UCM[0]-oUCM[0]) + (UCM[1]-oUCM[1])*(UCM[1]-oUCM[1]) + (UCM[2]-oUCM[2])*(UCM[2]-oUCM[2]));
+	  nUR=sqrt((UCM[0]-nUCM[0])*(UCM[0]-nUCM[0]) + (UCM[1]-nUCM[1])*(UCM[1]-nUCM[1]) + (UCM[2]-nUCM[2])*(UCM[2]-nUCM[2]));
+	  oeUCM=0.5*(oUR-UCMK0)*(oUR-UCMK0)*UCMK1;
+	  neUCM=0.5*(nUR-UCMK0)*(nUR-UCMK0)*UCMK1;
 	}
       }
 #ifndef NOCTCS
@@ -144,7 +151,7 @@ double MC_integrate(int mc_n, double **rx, double **ry, double **rz){
 	//printf("%lf %lf    %lf %lf\n", neRG, oeRG, new_energy, old_energy);
 	//printf("  %lf\n", new_energy);
 	if(KRG>0) {new_energy+=neRG-oeRG; }
-	if(UMBRELLA_TYPE==0){new_energy+=neUCM-oeUCM;}
+	if(UMBRELLA_TYPE==0 || UMBRELLA_TYPE==1){new_energy+=neUCM-oeUCM;}
 	d_energ+=MC_eval_displacement(nt_n,rx, ry, rz, nt_c, old_energy, new_energy, dwce); //if the movement is accepted, we update the position
       }
     }

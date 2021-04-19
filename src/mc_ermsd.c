@@ -611,6 +611,15 @@ double MC_wall_energy(double px, double py, double pz){
       }
       //printf("%d %lf %lf %lf %lf %lf %lf\t%lf\n",w, wall_epsilon[w],wall_A[w], wall_B[w],wall_C[w],wall_D[w],wall_MODSQ[w],ret);
     }
+    if(WALL_TYPE[w]==2){
+      //shell centered at the origin
+      double cdist=sqrt(px*px+py*py+pz*pz)-wall_C[w];
+      double d10=cdist*cdist*cdist*cdist*cdist;
+      d10=d10*d10;
+      //energy is      A/(r-C)^10 - (B/(r-C)) exp(-(r-C)/sigma)
+      double eshell=wall_A[w]/d10-wall_B[w]/cdist*exp(-(cdist)/wall_sigma[w]);
+      ret+=eshell;
+    }
   }
   //printf("%lf  %lf\n", dist, ret);
   
