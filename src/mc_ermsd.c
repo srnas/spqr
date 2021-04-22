@@ -591,7 +591,7 @@ void MC_write_ermsd_obs(int step, double energ){
 double MC_wall_energy(double px, double py, double pz){
   double ret=0.0;
   int w;
-  double cdist,d9, eshell, ssinhox, dws,ncdist;
+  double cdist,d9,d3, eshell, ssinhox, dws,ncdist;
   for(w=0;w<N_WALLS;w++){
     if(wall_epsilon[w]>0){
       double dist=fabs(wall_A[w]*px+wall_B[w]*py+wall_C[w]*pz+wall_D[w])/wall_MODSQ[w];
@@ -615,10 +615,10 @@ double MC_wall_energy(double px, double py, double pz){
     if(WALL_TYPE[w]==2){
       //shell centered at the origin
       cdist=sqrt(px*px+py*py+pz*pz);
-
+      
       dws=fabs(cdist-wall_C[w]);
-      d9=dws*dws*dws;
-      d9=d9*d9*d9;
+      d3=dws*dws*dws;
+      d9=d3*d3*d3;
       //energy is      A/(r-C)^9 - (B*sigma/r) sinh(-r/sigma)
       ncdist=cdist/wall_sigma[w];
       ssinhox=1.0;
