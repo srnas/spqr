@@ -502,7 +502,7 @@ for i in xrange(0,NNT):
     temppuck="X"
     tempglyc="X"
     if(len(cline)>=57):
-        temppuck=cline[55]
+        temppuck=cline[57]
         tempglyc=cline[56]
     if((temppuck=="3" or temppuck=="2") and (tempglyc=="A" or tempglyc=="H" or tempglyc=="S")):
         puck=temppuck
