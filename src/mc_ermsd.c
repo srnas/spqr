@@ -106,7 +106,7 @@ void mc_update_loop(int iloop, int nt_c, double *rx, double *ry, double *rz){
     get_real_sugpos(nt2,nt_c,rx,ry,rz,pos2);
     for(d=0;d<DIM;d++)
       mc_loop_clpair[iloop][d]=0.5*(pos1[d]+pos2[d]);
-  } else if(mc_loop_type[iloop]==LOOP_ST){
+  } else if(mc_loop_type[iloop]==LOOP_IL){
     nt1=mc_loops[iloop][0];
     nt2=mc_loops[iloop][mc_loop_size[iloop]-1];
     get_real_sugpos(nt1,nt_c,rx,ry,rz,pos1);
@@ -115,7 +115,7 @@ void mc_update_loop(int iloop, int nt_c, double *rx, double *ry, double *rz){
       mc_loop_clpair[iloop][d]=pos1[d];
       mc_loop_clpair[iloop][2*d]=pos2[d];
     }
-  } else if(mc_loop_type[iloop]==LOOP_IL){
+  } else if(mc_loop_type[iloop]==LOOP_ST){
     nt1=mc_loops[iloop][0];
     nt2=mc_loops[iloop][mc_loop_size[iloop]/2-1];
     nt3=mc_loops[iloop][mc_loop_size[iloop]/2];
@@ -207,7 +207,7 @@ double calc_link_energy(int nt_c, double *rx, double *ry, double *rz){
       if(mc_loop_type[l1]!=LOOP_HP){
 	d2sq=0;
 	for(d=0;d<DIM;d++)
-	  d2sq+=SQ(mc_loop_CM[l2][2*d]-mc_loop_clpair[l1][d]);
+	  d2sq+=SQ(mc_loop_CM[l2][d]-mc_loop_clpair[l1][2*d]);
 	energ+=-LOOP_K_cmclp*sqrt(d2sq);
       }
       if(mc_loop_type[l2]!=LOOP_HP){
