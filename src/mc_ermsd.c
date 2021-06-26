@@ -627,6 +627,23 @@ double MC_wall_energy(double px, double py, double pz){
       eshell=wall_A[w]/d9-wall_B[w]*ssinhox;
       ret+=eshell;
     }
+    if(WALL_TYPE[w]==3){
+      //shell centered at some point (B C D)
+      cdist=sqrt((px-wall_B[w])*(px-wall_B[w])+(py-wall_C[w])*(py-wall_C[w])+(pz-wall_D[w])*(pz-wall_D[w]));
+      if(cdist>0.9*wall_sigma[w]){
+	dws=0.1*wall_sigma[w];
+	d3=dws*dws*dws;
+	d9=d3*d3*d3;
+	eshell=wall_A[w]/d9+wall_A[w]*(cdist-0.9*wall_sigma[w]);
+      } else {
+	dws=fabs(cdist-wall_sigma[w]);
+	d3=dws*dws*dws;
+	d9=d3*d3*d3;
+	//energy is      A/(r-sigma)^9
+	eshell=wall_A[w]/d9;
+      }
+      ret=eshell;
+    }
   }
   //printf("%lf  %lf\n", dist, ret);
   
