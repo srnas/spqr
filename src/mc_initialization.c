@@ -6,13 +6,13 @@ int MC_detect_initial_condition(int mpi_id){
   int flag=-1;
   //case 1
   printf("Detecting initial condition...");
-  sprintf(initname, "pdb_inits/init.p%02d.mc", mpi_id);
+  sprintf(initname, "spqr_inits/init.p%02d.mc", mpi_id);
   if((infile=fopen(initname, "rb"))==NULL){
-    sprintf(initname, "pdb_inits/init.mc");
+    sprintf(initname, "spqr_inits/init.mc");
     if((infile=fopen(initname, "rb"))==NULL){
-      sprintf(initname, "pdb_inits/init.p%02d.pdb", mpi_id);
+      sprintf(initname, "spqr_inits/init.p%02d.pdb", mpi_id);
       if((infile=fopen(initname, "r"))==NULL){
-	sprintf(initname, "pdb_inits/init.pdb");
+	sprintf(initname, "spqr_inits/init.pdb");
 	if((infile=fopen(initname, "r"))==NULL){
 	  printf("No valid initial condition found for processor %d!\n", mpi_id);
 	  exit(ERR_INPUT);
@@ -45,15 +45,15 @@ int MC_initialize(int *mc_n, double **rsx, double **rsy, double **rsz, int *mc_i
   int init=0;
   char initfile[256];
   if(init_type==0 || init_type==1){
-    if(init_type==0) sprintf(initfile, "pdb_inits/init.p%02d.mc", mpi_id);
-    else  sprintf(initfile, "pdb_inits/init.mc"  );
+    if(init_type==0) sprintf(initfile, "spqr_inits/init.p%02d.mc", mpi_id);
+    else  sprintf(initfile, "spqr_inits/init.mc"  );
     MC_read_params(mc_iter, rand_a,mpi_id);
    
     init=MC_read_checkpoint(mc_n, rsx, rsy, rsz, rand_a, mpi_id, initfile, read_flag, add_data);
   }
   else{
-    if(init_type==2) sprintf(initfile, "pdb_inits/init.p%02d.pdb", mpi_id);
-    else  sprintf(initfile, "pdb_inits/init.pdb"  );
+    if(init_type==2) sprintf(initfile, "spqr_inits/init.p%02d.pdb", mpi_id);
+    else  sprintf(initfile, "spqr_inits/init.pdb"  );
     MC_read_nsolute(mc_n, mpi_id, initfile);
     MC_read_params(mc_iter, rand_a, mpi_id);
     MC_initialize_global(*mc_n, *rand_a, mpi_id);
@@ -106,7 +106,7 @@ void MC_read_pdb(int mc_n, double **rx, double **ry, double **rz, int mpi_id, ch
   char *lline=NULL;
   
   if(outpdbname==NULL)
-    sprintf(pdbname,"pdb_inits/mc.p%02d.pdb", mpi_id); 
+    sprintf(pdbname,"spqr_inits/mc.p%02d.pdb", mpi_id); 
   else 
     strcpy(pdbname, outpdbname); 
   if((pdbfile=fopen(pdbname, "r"))==NULL){
@@ -115,9 +115,9 @@ void MC_read_pdb(int mc_n, double **rx, double **ry, double **rz, int mpi_id, ch
       exit(ERR_INPUT);
     }
     fileflag=0;
-    sprintf(pdbname,"pdb_inits/mc.pdb"); 
+    sprintf(pdbname,"spqr_inits/mc.pdb"); 
     if((pdbfile=fopen(pdbname, "r"))==NULL){
-      printf("No decent init files found in pdb_inits. Can not run like this.\n");
+      printf("No decent init files found in spqr_inits. Can not run like this.\n");
       exit(ERR_INPUT);
       fileflaggen=0;
     }
@@ -376,7 +376,7 @@ void MC_read_nsolute(int *mc_n, int mpi_id, char *pdbname){
   static char *lline=NULL;
     
   if((pdbfile=fopen(pdbname, "r"))==NULL){
-    printf("No decent init files found in pdb_inits. Can not run like this.\n");
+    printf("Unable to open file %s \n", pdbname);
     exit(ERR_INPUT);
   }
   

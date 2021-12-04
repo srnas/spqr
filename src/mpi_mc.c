@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 	  mpi_id=atoi((char *)optarg);
 	  break;
 	case 'h':
-	  printf("Usage: SPQR_MC [-i job_id] [-r]\nRemember that params.pms and the directory pdb_inits, with a proper initial condition must be present in the simulation directory.\n-r option is for using the random seed and initial time of initial condition (in .mc format).\n");
+	  printf("Usage: SPQR_MC [-i job_id] [-r]\nRemember that params.pms and the directory spqr_inits, with a proper initial condition must be present in the simulation directory.\n-r option is for using the random seed and initial time of initial condition (in .mc format).\n");
 	  exit(ERR_INPUT);
 	  break;
 	case 'r':

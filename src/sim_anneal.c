@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	  //printf("Job_id = %d\n",mpi_id);
 	  break;
 	case 'h':
-	  printf("Usage: SPQR_SA [-i job_id] [-r]\nRemember that params.pms and pdb_inits, with a proper initial condition must be present in the simulation directory.\n");
+	  printf("Usage: SPQR_SA [-i job_id] [-r]\nRemember that params.pms and spqr_inits, with a proper initial condition must be present in the simulation directory.\n");
 	  exit(ERR_INPUT);
 	  break;
 	case 'r':

@@ -207,6 +207,7 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
   
   if((chkfile=fopen(chkname, "rb"))==NULL){
     printf("Unable to read binary file %s\n", chkname);
+    exit(ERR_INPUT);
   }
   else{
     frout=fread(mc_n, sizeof(int), 1, chkfile);
@@ -329,6 +330,7 @@ int MC_read_checkpoint(int *mc_n, double **rx, double **ry, double **rz, int *ra
 #endif
   return tempiter;
 }
+
 
 void MC_save_checkpoint(int mc_n, double *rx, double *ry, double *rz, int iter, double energy_t,int mpi_id, double *add_data){
   int i, tempi, nt;
@@ -522,4 +524,101 @@ void MC_min_energ_xyz_configuration(int mc_n, double *rx, double *ry, double *rz
     }
     fclose(mcconf);
   }
+}
+
+
+int MC_read_trajectory(int mc_n, double *rx, double *ry, double *rz, FILE *trajfile, int read_flag){
+  int i, tempi, nt_n=mc_n/N_PARTS_PER_NT;
+  double ftempfr, tempd;
+  size_t frout;
+  //read the first data, already obtained from checkpoint or pdb
+  int eofflag=0;
+  if(read_flag==0){
+    frout=fread(&tempi, sizeof(int), 1, trajfile);
+    if(frout != 1) eofflag=1;
+    for(i=0;i<mc_n;i++){
+      frout=fread(&tempi, sizeof(int), 1, trajfile);
+      if(frout !=1) eofflag=1;
+    }
+  }
+  
+  frout=fread(&tempd,sizeof(double),1,trajfile);if(frout !=1) eofflag=1;
+  frout=fread(&tempd,sizeof(double),1,trajfile);if(frout !=1) eofflag=1;
+  //and then the configuration
+  for(i=0;i<mc_n;i++){
+    frout=fread(&tempd,sizeof(double),1,trajfile);(rx)[i]=tempd;if(frout != 1) eofflag=1;
+    frout=fread(&tempd,sizeof(double),1,trajfile);(ry)[i]=tempd;if(frout != 1) eofflag=1;
+    frout=fread(&tempd,sizeof(double),1,trajfile);(rz)[i]=tempd;if(frout != 1) eofflag=1;
+  }
+  for(i=0;i<nt_n;i++){
+    frout=fread(&tempi,sizeof(int),1,trajfile);mc_glyc[i]=tempi;if(frout != 1) eofflag=1;
+    frout=fread(&tempi,sizeof(int),1,trajfile);mc_puck[i]=tempi;if(frout != 1) eofflag=1;
+    //printf("%d %d\n", mc_glyc[i], mc_puck[i]);
+    
+  }
+  //printf("eof = %d\n",eofflag);
+  if(eofflag==1) return 1;
+  return 0;
+}
+
+
+void MC_write_nt_pdb(int nt, double *rx, double *ry, double *rz, FILE *outfile){
+  int at, tchain,nintdig ;
+  char at_num[10], at_name[10], res_name[10], res_num[10], chain_id[10], xp[256], yp[256], zp[256], gly[10], pck[10], glp[10], frz[10];
+  char pdbname[256];
+  for(at=nt*N_PARTS_PER_NT;at<(nt+1)*N_PARTS_PER_NT;at++){
+    sprintf(at_num, "%5d", at);
+    if(mc_types[at]==-1) sprintf(at_name,"XVEC");
+    else if(mc_types[at]==-2) sprintf(at_name,"YVEC");
+    else if(mc_types[at]==-3) sprintf(at_name,"SUGR");
+    else if(mc_types[at]==-4) sprintf(at_name,"PHOS");
+    else sprintf(at_name,"BASE");
+    
+    if(mc_types[nt*N_PARTS_PER_NT]==TYP_ADENINE)  sprintf(res_name, "  A");
+    else if(mc_types[nt*N_PARTS_PER_NT]==TYP_URACIL)   sprintf(res_name, "  U");
+    else if(mc_types[nt*N_PARTS_PER_NT]==TYP_GUANINE)  sprintf(res_name, "  G");
+    else if(mc_types[nt*N_PARTS_PER_NT]==TYP_CYTOSINE) sprintf(res_name, "  C");
+    else {printf("Residue type not recognized writing pdb\n"); exit(ERR_WRITING);}
+    tchain=0;
+    //if(nt>0 && at%N_PARTS_PER_NT==0) {if(MC_are_neighbors(nt, nt-1)==0) tchain++;}
+    //tchain=0;
+    sprintf(chain_id, "%d", tchain);
+    sprintf(res_num, "%4d", nt);
+    sprintf(xp, "%d", (int)rx[at]);
+    nintdig=strlen(xp); if(nintdig>8){printf("ERROR: particle %d out of range for x coordinate in pdb format\n", at); exit(ERR_WRITING);}if(rx[at]<0 && (int)rx[at]==0) nintdig++;
+    //sprintf(xp, "%.*f ", rx[at], 6-nintdig);
+    sprintf(xp, "%.*f ", 6-nintdig,rx[at]);
+    sprintf(yp, "%d", (int)ry[at]);
+    nintdig=strlen(yp); if(nintdig>8){printf("ERROR: particle %d out of range for y coordinate in pdb format\n", at); exit(ERR_WRITING);}if(ry[at]<0 && (int)ry[at]==0) nintdig++;
+    //sprintf(yp, "%.*f ", ry[at], 6-nintdig);
+    sprintf(yp, "%.*f ", 6-nintdig,ry[at]);
+    sprintf(zp, "%d", (int)rz[at]);
+    nintdig=strlen(zp); if(nintdig>8){printf("ERROR: particle %d out of range for z coordinate in pdb format\n", at); exit(ERR_WRITING);}if(rz[at]<0 && (int)rz[at]==0) nintdig++;
+    //sprintf(zp, "%.*f ", rz[at], 6-nintdig);
+    sprintf(zp, "%.*f ", 6-nintdig,rz[at]);
+    /* sprintf(xp, "%8.3f", rx[at]); */
+    /* sprintf(yp, "%8.3f", ry[at]); */
+    /* sprintf(zp, "%8.3f", rz[at]); */
+    
+    fprintf(outfile, "ATOM  %s %s %s %s%s    %s%s%s", at_num, at_name, res_name, chain_id, res_num, xp, yp, zp);
+    //printf( "ATOM  %s     %d  %d   %d", res_name,  at, nt, mc_types[nt*N_PARTS_PER_NT]);
+    if(at%N_PARTS_PER_NT==0){
+      if(mc_glyc[nt]==GLYC_A) sprintf(gly,"A");
+      if(mc_glyc[nt]==GLYC_H) sprintf(gly,"H");
+      if(mc_glyc[nt]==GLYC_S) sprintf(gly,"S");
+      if(mc_puck[nt]==PUCK_3) sprintf(pck,"3");
+      if(mc_puck[nt]==PUCK_2) sprintf(pck,"2");
+      if(glp_is_flippable[nt]==GLP_FIXED) sprintf(glp,"N");
+      if(glp_is_flippable[nt]==GLP_GLYC) sprintf(glp,"G");
+      if(glp_is_flippable[nt]==GLP_PUCK) sprintf(glp,"P");
+      if(glp_is_flippable[nt]==GLP_BOTH) sprintf(glp,"A");
+      if(fr_is_mobile[nt]==FR_MOB_FROZ) sprintf(frz,"N");
+      if(fr_is_mobile[nt]==FR_MOB_BASE) sprintf(frz,"B");
+      if(fr_is_mobile[nt]==FR_MOB_PHOS) sprintf(frz,"P");
+      if(fr_is_mobile[nt]==FR_MOB_FULL) sprintf(frz,"A");
+      fprintf(outfile, "  %s%s%s%s", gly, pck, glp, frz);
+    }
+    fprintf(outfile, "\n");
+  }
+
 }

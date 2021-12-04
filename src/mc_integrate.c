@@ -828,10 +828,6 @@ void MC_perform_bb_rotation(int nt_c){
     if(CM[d]>=box_l[d]) { CM_pbox[d]++ ; CM[d]-=box_l[d];}
 #endif
   
-  //if(CM_pbox[0]!=mc_temp_pbox[3][0] || CM_pbox[1]!=mc_temp_pbox[3][1] || CM_pbox[2]!=mc_temp_pbox[3][2]){
-  //printf("AAAAAAAAAAAAAAAAAA\n");
-  //exit(1);}
-  //printf("CM   %lf %lf %lf\nSUG  %lf %lf %lf\n", CM[0], CM[1], CM[2], mc_temp_x[3], mc_temp_y[3], mc_temp_z[3]);
   /* rot axis is perpendicular to the base plane  - X x Y*/
   Xvec[0]=dist_1d(mc_temp_x[at_c+1], mc_temp_x[at_c],0);
   Xvec[1]=dist_1d(mc_temp_y[at_c+1], mc_temp_y[at_c],1);
@@ -1683,4 +1679,104 @@ int is_pyrimidine(int nt){
   
   if(mc_types[nt*N_PARTS_PER_NT]==TYP_URACIL || mc_types[nt*N_PARTS_PER_NT]==TYP_CYTOSINE) return 1;
   else return 0;
+}
+
+
+void MC_calc_and_write_ernwin_contacts(int nt_n, double *rx, double *ry, double *rz, int nloops, int *loopnnt, int **loopindxs, char**looplabels, int tr, char * init ){
+  int nt_c, at_c, typ1, typ2;
+  double b_st=0.0, b_sg=0.0, b_ev=0.0,nb_st=0.0, nb_wc=0.0;
+  double tot_b_st=0.0, tot_b_sg=0.0, tot_b_ev=0.0,tot_nb_st=0.0, tot_nb_wc=0.0, tot_nb_ev=0.0;
+  double d_vec[DIM], r_vec[DIM], r_vec_inv[DIM];
+  double dist, sugdistsq;
+  int typ_ind, typ_ind2;
+  FILE *trtyctcs;
+  int b, nt_neigh, ba, at_ne;
+  double eta, theta, eta2;
+  int temp_flag;
+  double epsilon, sigma;
+  int nt2,n;
+  int wc_pair_array1[3],wc_pair_array2[3];
+  //printf("CALCULATING WITH %d NTS\n", nt_n);
+  int temp_face1, temp_face2;
+  double energ_wc=MC_calculate_total_wc_energy(nt_n,-1,rx, ry, rz);
+  MC_update_wc_lists(nt_n);
+  int loo1,nti1,loo2,nti2;
+  char fa1, fa2;
+  char *output=NULL;
+  char totstr[1000], tstr[1000];
+  sprintf(totstr,"%d", tr);
+  sprintf(tstr,"%d", tr);
+  char linestr[1000];
+  char fname[1000];
+  char ctyp1, ctyp2;
+  int ifpnt, fpnt;
+  
+  for(loo1=0;loo1<nloops;loo1++){
+    for(nti1=0;nti1<loopnnt[loo1];nti1++){
+      nt_c=loopindxs[loo1][nti1];
+      at_c=N_PARTS_PER_NT*nt_c;
+      MC_copy_nt(nt_c, rx, ry, rz);
+      typ1=mc_types[nt_c*N_PARTS_PER_NT];
+      for(loo2=loo1+1;loo2<nloops;loo2++){
+	for(nti2=0;nti2<loopnnt[loo2];nti2++){
+	  nt2=loopindxs[loo2][nti2];
+	  at_ne=N_PARTS_PER_NT*nt2;
+	  typ2=mc_types[nt2*N_PARTS_PER_NT];
+	  MC_is_wc_corresp(nt_c, nt2, nt_n, wc_pair_array1);
+	  MC_is_wc_corresp(nt2, nt_c, nt_n, wc_pair_array2);
+	  temp_face1=wc_pair_array1[0];
+	  temp_face2=wc_pair_array2[0];
+	  if(temp_face1>=0 && temp_face2>=0) {
+	    //a contact is found
+	    if(typ1==0) ctyp1='A';
+	    if(typ1==1) ctyp1='U';
+	    if(typ1==2) ctyp1='G';
+	    if(typ1==3) ctyp1='C';
+	    if(typ2==0) ctyp2='A';
+	    if(typ2==1) ctyp2='U';
+	    if(typ2==2) ctyp2='G';
+	    if(typ2==3) ctyp2='C';
+	    
+	    if(temp_face2==WC_FACE_SUGAR)
+	      fa2='S';
+	    else if(temp_face2==WC_FACE_WATSCRICK)
+	      fa2='W';
+	    else if(temp_face2==WC_FACE_HOOGSTEEN)
+	      fa2='H';
+	    if(temp_face1==WC_FACE_SUGAR)
+	      fa1='S';
+	    else if(temp_face1==WC_FACE_WATSCRICK)
+	      fa1='W';
+	    else if(temp_face1==WC_FACE_HOOGSTEEN)
+	      fa1='H';
+	    
+	    //sprintf(linestr, "[ %d %d (%c%c,%c%c) ( %d %d %c%c %c%c ) ]", loo1, loo2, looplabels[loo1][0], looplabels[loo1][1], looplabels[loo2][0], looplabels[loo2][1], nt_c, nt2, fa1, fa2, ctyp1, ctyp2);
+	    sprintf(linestr, "[ %c%c %c%c (%c%d,%c%d %c%c) ]",looplabels[loo1][0], looplabels[loo1][1], looplabels[loo2][0], looplabels[loo2][1], ctyp1, nt_c, ctyp2, nt2, fa1, fa2);
+	    strcat(totstr,linestr);
+	  
+	  
+	    //now we print the positions of the nucleotides for ermsd
+	    sprintf(fname, "tctc_%s_%s.%s.pdb",  looplabels[loo1], looplabels[loo2], init);
+	    trtyctcs=fopen(fname, "w");
+	    fprintf(trtyctcs, "REMARK %c%c %c%c (%c%d,%c%d %c%c)\n",looplabels[loo1][0], looplabels[loo1][1], looplabels[loo2][0], looplabels[loo2][1], ctyp1, nt_c, ctyp2, nt2, fa1, fa2);
+	    //for(ifpnt=0;ifpnt<loopnnt[loo1];ifpnt++){
+	    //  fpnt=loopindxs[loo1][ifpnt];
+	    //  MC_write_nt_pdb(fpnt, rx, ry, rz, trtyctcs);
+	    //}
+	    //for(ifpnt=0;ifpnt<loopnnt[loo2];ifpnt++){
+	    //  fpnt=loopindxs[loo2][ifpnt];
+	    //  MC_write_nt_pdb(fpnt, rx, ry, rz, trtyctcs);
+	    //}
+	    for(ifpnt=0;ifpnt<nt_n;ifpnt++)
+	      MC_write_nt_pdb(ifpnt, rx, ry, rz, trtyctcs);
+	    fclose(trtyctcs);
+	  }
+	}
+      }
+    }
+  }
+  if(strcmp(totstr,tstr)!=0)
+    printf("%s\n", totstr);
+  
+  
 }

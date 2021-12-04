@@ -76,6 +76,8 @@ void MC_print_radius_of_gyration(int, double*, double*, double*);
 void MC_print_secondary_structure(int, double*, double*, double *);
 int is_canonical(int, int);
 
+void MC_calc_and_write_ernwin_contacts(int, double*, double*, double*, int, int*, int**, char**,  int, char *);
+
 /* double boltzmann_dist(double, double); */
 /* void fold_coordinate(double *, double, double); */
 /* double vec_norm(double, double, double); */
