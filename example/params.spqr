@@ -8,7 +8,7 @@ MC_TRAJ_STEPS 	100
 MC_CHKP_STEPS 	500
 RANDOM_SEED   	10
 MC_NT_ANGLE   	0.03 0.1
-ENERGS_PATH     ../interactions/intrac.btb
+ENERGS_PATH     SPQRPATH/interactions/intrac.btb
 SA_TINI		12
 SA_TMIN		1.0
 SA_TFAC		0.75

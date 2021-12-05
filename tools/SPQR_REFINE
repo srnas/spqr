@@ -1,12 +1,13 @@
 #!/bin/bash
+
 set -e
-echo "SPQR_MINI: quick energy minimization of PDB files with SPQR."
+echo "SPQR_REFINE: quick structural refinement of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=
+SPQR_PATH=SPQRPATH
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
-TOOLS_PATH=$SPQR_PATH/tools
+TOOLS_PATH=$SPQR_PATH/tools/python3
 INTRAC=intrac.btb
 NPROC=1
 MPROC=$((NPROC - 1))
@@ -39,16 +40,22 @@ ERMSD_CUTOFF=100
 PDBSTRUCT=""
 NAME=""
 PARAMS=""
-CONVERT=""
+CONVERT=1
 LINKDCHECK=""
 SSTRUCT=""
 LNKRMV=""
 RSEED=1
 
+SIM1=01_CLASHRM
+SIM2=02_ERMSDMI
+SIM3=03_ENERGMI
+LR1SIM1=01_CLASHRM_LR1
+LR2SIM1=01_CLASHRM_LR2
+
 show_usage ()
 {
     echo "Usage: SPQR_MINI -i <input_file> [ -o <output_suffix> ] [ -c ]  [ -t <secondary structure file> -r <random_seed> ]"
-    echo "input_file must be in SPQR-pdb format. If not, the flag -c will take care of that."
+    echo "input_file must be in PDB format. If not, the flag -c will take care of that."
     echo "Secondary structure is optional. It must contain the sequence in the first line and the secondary structure in Vienna format in the second line."
 }
 
@@ -95,7 +102,7 @@ while (( "$#" )); do
 	    shift 2
 	    ;;
 	-c|--convert)
-	    CONVERT=1
+	    CONVERT=""
 	    shift
 	    ;;
 	-d|--doublecheck)
@@ -141,11 +148,20 @@ if [ ! $PDBSTRUCT ] ; then
     exit 1
 fi
 
+#if [ ! $CONVERT ] ; then
+ISSPQR=` grep 'BASE\|XVEC\|YVEC\|SUGR\|PHOS' $PDBSTRUCT | wc |  awk '{print $1}'`
+if [ "$ISSPQR" -ne "0" ] ; then
+    echo "It seems that the input pdb file is in spqr representation. You might want ignore the conversion using the -c option."
+    show_usage
+    exit 1
+fi
+#fi
+
 if [ ! $NAME ] ; then
     NAME=$PDBSTRUCT
 fi
 
-DIRNAME=miniSPQR_$NAME
+DIRNAME=refSPQR_$NAME
 if [ -d "$DIRNAME" ] ; then
     echo "Directory $DIRNAME already exists. Please rename the output."
     exit 1
@@ -157,7 +173,7 @@ eval set -- "$PARAMS"
 #################
 
 #STEP 1#
-THISSIM=01
+THISSIM=$SIM1
 mkdir $DIRNAME
 if [ $CONVERT ] ; then 
     echo "Creating SPQR pdb format structure..."
@@ -181,8 +197,8 @@ SAPARAMS1[0]=$CLASH_TSA
 SAPARAMS1[4]=$CLASH_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS1[@]} 1 ${SAPARAMS1[@]}
 
-mkdir $DIRNAME/$THISSIM/pdb_inits
-cp $DIRNAME/init.pdb $DIRNAME/$THISSIM/pdb_inits/init.pdb
+mkdir $DIRNAME/$THISSIM/spqr_inits
+cp $DIRNAME/init.pdb $DIRNAME/$THISSIM/spqr_inits/init.pdb
 cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
 cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
 
@@ -204,40 +220,44 @@ for cstep in `seq 1 $CLASH_STEPS`; do
     ./$BINANNOT $mcconf -t > clashtemp
     fc=`grep "No clashes found" clashtemp | wc | awk '{print $1}'`
     if [ "$fc" -eq "1" ] ; then
-	cp configs/chk.last.p$IND.mc ../01.mc
+	cp configs/chk.last.p$IND.mc ../$SIM1.mc
 	PDBSELECTED=final.p$IND.pdb
 	SELECTED=configs/chk.last.p00.mc
 	break
     else
 	echo "Trying again..."
-	cp configs/chk.last.p$IND.mc pdb_inits/init.p$IND.mc
+	cp configs/chk.last.p$IND.mc spqr_inits/init.p$IND.mc
     fi
 done
 if [  "$PDBSELECTED" ] ; then
-    echo "Minimization successful!"
+    echo "Clashes removed successfully."
 else
-    echo "There are still clashes in the initial condition of $INDMINI. Try increasing the CLASH_NMC variable in the script." ; exit ;
+    echo "There are still clashes in the initial condition of $INDMINI. Try increasing the CLASH_NMC variable in the script." ; exit 1 ;
 fi
+
 ######################
+
 LNKFLAG=""
 if [ "$LNKRMV" ]; then
     echo "Detecting links between loops..."
-    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o CLASH -p > dlink.out
-    if [ -s linked_loops_CLASH.lst ] ; then
+    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o CLASH -p 
+    if [ -s dlink_CLASH.log ] ; then
 	mv linked_loops_CLASH.lst linked_loops.lst
 	LNKFLAG=1
 	echo "Links detected. Removal will be needed."
+    else
+	echo "No links detected."
     fi
 fi
 cd ../..
-echo "Clashes removed successfully."
+
 
 #######
 #HERE DETECT AND REMOVE LINKS IF THEY EXIST!#
 if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     echo "Attempting to remove links..."
-    THISSIM=LR1
-    PREVSIM=01
+    THISSIM=$LR1SIM1
+    PREVSIM=$SIM1
     mkdir $DIRNAME/$THISSIM
     MCPARAMSL1=(${MC_PARAMS[@]})
     SAPARAMSL1=(${SA_PARAMS[@]})
@@ -249,9 +269,9 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     SAPARAMSL1[0]=$CLASH_TSA
     SAPARAMSL1[4]=$CLASH_NSA
     write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMSL1[@]} 0 ${SAPARAMSL1[@]}
-    mkdir $DIRNAME/$THISSIM/pdb_inits
-    cp $DIRNAME/$PREVSIM/$SELECTED $DIRNAME/$THISSIM/pdb_inits/init.mc
-    cp $DIRNAME/$PREVSIM/$PDBSELECTED $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    mkdir $DIRNAME/$THISSIM/spqr_inits
+    cp $DIRNAME/$PREVSIM/$SELECTED $DIRNAME/$THISSIM/spqr_inits/init.mc
+    cp $DIRNAME/$PREVSIM/$PDBSELECTED $DIRNAME/$THISSIM/spqr_inits/init.pdb
     cp $DIRNAME/$PREVSIM/linked_loops.lst $DIRNAME/$THISSIM
     cp $BIN_PATH/$BINLNKRMV $DIRNAME/$THISSIM
     cp $TOOLS_PATH/SPQR_DLINK.py $DIRNAME/$THISSIM
@@ -265,17 +285,19 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     rm lnkrm.pdb ; mv ermsd_frags_lnkrm.lst ermsd_frags.lst
     for lstep in `seq 1 $LNKRM_STEPS`; do
 	echo "Step $lstep"
-	./$BINLNKRMV $iconf > lnkrmv_$NAME.$iconf.out
-	check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o CHECK -p`
-	if [ "$check" ] ; then
+	./$BINLNKRMV  > lnkrmv_$NAME.out
+	#check=`python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o CHECK -p`
+	python SPQR_DLINK.py -i final.p00.pdb -t $NPSSTRUCT -o CHECK -p
+	if [ -s dlink_CHECK.log ] ; then
 	    echo "Trying again"
-	    cp configs/chk.last.p00.mc pdb_inits/init.mc
+	    rm dlink_CHECK.log
+	    cp configs/chk.last.p00.mc spqr_inits/init.mc
 	    #mv linked_loops_CHECK.lst linked_loops.lst
 	else
 	    break
 	fi
     done
-    if [ "$check" ] ; then
+    if [ -s dlink_CHECK.log ] ; then
 	echo "Links not removed after $LNKRM_STEPS refinement steps. Try increasing the LNKRM_NMC or LNKRM_STEPS parameters."
 	exit 1
     fi
@@ -296,15 +318,15 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     SAPARAMSL2[0]=$CLASH_TSA
     SAPARAMSL2[4]=$CLASH_NSA
     write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMSL2[@]} 1 ${SAPARAMSL2[@]}
-    mkdir $DIRNAME/$THISSIM/pdb_inits
-    #cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
-    cp $DIRNAME/$PREVSIM/final.p00.pdb $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    mkdir $DIRNAME/$THISSIM/spqr_inits
+    #cp $DIRNAME/$PREVSIM/configs/chk.last.p00.mc $DIRNAME/$THISSIM/spqr_inits/init.mc
+    cp $DIRNAME/$PREVSIM/final.p00.pdb $DIRNAME/$THISSIM/spqr_inits/init.pdb
     #cp $DIRNAME/$PREVSIM/linked_loops.lst $DIRNAME/$THISSIM/
-    sed -i 's/NN/NA/g' $DIRNAME/$THISSIM/pdb_inits/init.pdb
+    sed -i 's/NN/NA/g' $DIRNAME/$THISSIM/spqr_inits/init.pdb
     cp $BIN_PATH/$BINCLASH $DIRNAME/$THISSIM
     cp $BIN_PATH/$BINANNOT $DIRNAME/$THISSIM
     cd $DIRNAME/$THISSIM
-
+    
     ./$BINCLASH -i $INDMINI > clash_$INDMINI.out
     PDBSELECTED=""
     mcconf=configs/chk.last.p$IND.mc
@@ -313,18 +335,18 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
 	./$BINANNOT $mcconf -t > clashtemp
     fc=`grep "No clashes found" clashtemp | wc | awk '{print $1}'`
     if [ "$fc" -eq "1" ] ; then
-	cp configs/chk.last.p$IND.mc ../01.mc
+	cp configs/chk.last.p$IND.mc ../$SIM1.mc
 	PDBSELECTED=final.p$IND.pdb
 	break
     else
 	echo "Trying again..."
-	cp configs/chk.last.p$IND.mc pdb_inits/init.p$IND.mc
+	cp configs/chk.last.p$IND.mc spqr_inits/init.p$IND.mc
     fi
-done
+    done
     if [  "$PDBSELECTED" ] ; then
 	echo "Minimization successful!"
     else
-	echo "There are still clashes in the initial condition of $INDMINI. Try increasing the CLASH_NMC variable in the script." ; exit ;
+	echo "There are still clashes in the initial condition of $INDMINI. Try increasing the CLASH_NMC variable in the script." ; exit 1 ;
     fi
     cd ../..
     echo "Links removed successfuly."
@@ -336,10 +358,10 @@ fi
 
 #STEP 2#
 echo "Structure refinement: minimization of ERMSD with respect to original structure."
-THISSIM=02
-PREVSIM=01
+THISSIM=$SIM2
+PREVSIM=$SIM1
 mkdir $DIRNAME/$THISSIM
-mkdir $DIRNAME/$THISSIM/pdb_inits
+mkdir $DIRNAME/$THISSIM/spqr_inits
 MCPARAMS2=(${MC_PARAMS[@]})
 SAPARAMS2=(${SA_PARAMS[@]})
 MCPARAMS2[6]=$ERMSD_NMC
@@ -349,14 +371,25 @@ MCPARAMS2[12]=$ENERGY_PATH/$INTRAC
 SAPARAMS2[0]=$ERMSD_TSA
 SAPARAMS2[4]=$ERMSD_NSA
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS2[@]} 1 ${SAPARAMS2[@]}
-cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/pdb_inits/init.mc
+cp $DIRNAME/$PREVSIM.mc $DIRNAME/$THISSIM/spqr_inits/init.mc
 
-cp $SSTRUCT $DIRNAME/$THISSIM
+if [ "$LNKFLAG" ] ; then
+    cp $SSTRUCT $DIRNAME/$THISSIM
+fi
+
 cp $BIN_PATH/$BINERMSD $DIRNAME/$THISSIM
 cp $TOOLS_PATH/spqr2ermsd.py $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
-python spqr2ermsd.py -i ../init.pdb -t $NPSSTRUCT -o ermsd_frags.lst -e
+
+if [ "$LNKFLAG" ] ; then
+    echo "Since secondary structure is present, the base pairing will be enforced as well."
+    python spqr2ermsd.py -i ../init.pdb -t $NPSSTRUCT -o ermsd_frags.lst -e
+else
+    python spqr2ermsd.py -i ../init.pdb -o ermsd_frags.lst
+fi
+
 ./$BINERMSD > ermsd_$NAME.out
+
 cd ../..
 echo "ERMSD minimization successful!"
 
@@ -364,10 +397,10 @@ echo "ERMSD minimization successful!"
 
 #STEP 3#
 echo "Structure refinement: minimization of SPQR energy."
-THISSIM=03
-PREVSIM=02
+THISSIM=$SIM3
+PREVSIM=$SIM2
 mkdir $DIRNAME/$THISSIM
-mkdir $DIRNAME/$THISSIM/pdb_inits
+mkdir $DIRNAME/$THISSIM/spqr_inits
 MCPARAMS3=(${MC_PARAMS[@]})
 SAPARAMS3=(${SA_PARAMS[@]})
 MCPARAMS3[6]=$ENERG_NMC
@@ -378,7 +411,7 @@ SAPARAMS3[0]=$ENERG_TSA
 SAPARAMS3[4]=$ENERG_NSA                                                                                                                           
 write_params $DIRNAME/$THISSIM/params.spqr ${MCPARAMS3[@]} 1 ${SAPARAMS3[@]}
 SEL_ERMSD_FILE=$DIRNAME/$PREVSIM/configs/chk.last.p$IND.mc
-cp $SEL_ERMSD_FILE $DIRNAME/$THISSIM/pdb_inits/init.p$IND.mc
+cp $SEL_ERMSD_FILE $DIRNAME/$THISSIM/spqr_inits/init.p$IND.mc
 cp $BIN_PATH/$BINENERG $DIRNAME/$THISSIM
 cd $DIRNAME/$THISSIM
 ./$BINENERG  > energ_$NAME.out
@@ -395,15 +428,23 @@ echo "Energy minimized."
 
 ######
 #FINAL CHECK#
-echo "Checking loops for last time."
-cd $DIRNAME/01
-python SPQR_DLINK.py -i ../final.p00.pdb -t $NPSSTRUCT -o fcheck > ../fcheck.dat
-python SPQR_DLINK.py -i ../final.p00.pdb -t $NPSSTRUCT -o fcheck_pier -p > ../fcheck_pier.dat
-cd ../..
-
+if [ "$LNKRMV" ] ; then
+    echo "Checking links for last time."
+    cd $DIRNAME
+    cp $TOOLS_PATH/SPQR_DLINK.py .
+    python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_gauss 
+    python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_pierc -p 
+    rm SPQR_DLINK.py
+    cd ..
+fi
 ########
 #CLEANING
-rm $DIRNAME/01.mc
+cd $DIRNAME
+rm $SIM1.mc
+mv final.p00.pdb $DIRNAME.p00.pdb
+mv chk.last.p00.mc $DIRNAME.p00.mc
+mv mini_at_p00.pdb at_$DIRNAME.p00.pdb
+cd ..
 
 echo "Optimization successfully ended."
 

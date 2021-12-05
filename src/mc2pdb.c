@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define DIM 3
 #define N_PARTS_PER_NT 5
@@ -19,7 +20,8 @@
 #define GLYC_S 2
 #define PUCK_3 0 
 #define PUCK_2 1
-
+#define ERR_INPUT 1
+#define MAXCHAR 256
 
 FILE *md_configs;
 double *posx, *posy, *posz;
@@ -33,39 +35,62 @@ void MC_open_analysis_files(char *);
 void MC_read_ith_configuration(double *, double *);
 void MC_close_analysis_files();
 
+static void show_usage(){
+    fprintf(stderr, "Usage: MC2PDB -i <mc file name> -o <pdb file name> [ -s <init conf> ] [ -t <conf total number> ] \n");
+    exit(ERR_INPUT);
+}
+
 /* declare here analysis files and functions */
 void MC_write_pdb(FILE * , int, double *, double *, double *, double , double , int *, int *, int *);
 
 /*********************************************/
-
-int main(int nargs, char **args){
+int main(int argc, char **argv){
+  printf("MC2PDB: SPQR tool for converting mc files into pdb format.\n"); 
   int i,j,d;
-  if(nargs != 4){
-    fprintf(stderr, "Analysis requires the file name, the number of configurations saved there and the initial config number.\n");
-    exit(1);
-  }
-  
-  int nconfs=atoi(args[2]);
-  int confini=atoi(args[3]);
+  int nconfs=1, confini=0;
+  int opt;
+  char mcfilename[MAXCHAR], pdbfilename[MAXCHAR];
   char ttype;
-  char name[256];
   double temperature, energy_t;
-  
-  MC_open_analysis_files(args[1]);
-  sprintf(name, "confs.pdb");
+  sprintf(pdbfilename, "confs.pdb");
+  sprintf(mcfilename,"");
+  while ((opt = getopt(argc, argv, "i:o:s:t:")) != -1) {
+    switch (opt)
+      {
+      case 'i':
+	sprintf(mcfilename, "%s", optarg);
+	break;
+      case 'o':
+	sprintf(pdbfilename, "%s", optarg);
+	break;
+      case 's':
+	confini=atoi(optarg);
+	break;
+	  case 't':
+	    nconfs=atoi(optarg);
+	    break;
+      default:
+	show_usage();
+      }
+  }
+      
+  if (strlen(mcfilename)==0){
+    fprintf(stderr, "ERROR: Input file must be provided!\n");
+    show_usage();
+  }
+  MC_open_analysis_files(mcfilename);
   FILE *tempconf;
-  tempconf=fopen(name, "w");
+  
+  tempconf=fopen(pdbfilename, "w");
 
+  
   for(i=0;i<nconfs;i++){
     MC_read_ith_configuration(&energy_t, &temperature);
     if(i>=confini){
       /* do analysis here */
       fprintf(tempconf, "MODEL %d\n", i);
       MC_write_pdb(tempconf,  MC_N,  posx, posy, posz,  energy_t, temperature, glyc, puck, type);
-      
-
       fprintf(tempconf, "ENDMDL\n");
-
     }
   }
   MC_close_analysis_files();
