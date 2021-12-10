@@ -108,7 +108,7 @@ int main(int argc, char **argv){
 	ssflag=1;
 	break;
       case 'L':
-        sprintf(ntrawlist, "%s", optarg);
+	sprintf(ntrawlist, "%s", optarg);
 	clistflag=1;
 	break;
       case 'F':
@@ -153,20 +153,24 @@ int main(int argc, char **argv){
 	if(tok[chend]=='-'){
 	  twoflag=1;
 	  temptok=realloc(temptok, (chend-chini)*sizeof(char));
+	  temptok[chend-chini]='\0';
 	  strncpy(temptok,tok+chini,chend-chini);
 	  nt1=atoi(temptok);
 	  nt2=nt1;
 	  chini=chend+1;
 	}
       }
+      //printf("realloc with %d   %d, %d\n", chend-chini, chend, chini);
       temptok=realloc(temptok, (chend-chini)*sizeof(char));
+      temptok[chend-chini]='\0';
       strncpy(temptok,tok+chini,chend-chini);
       nt2=atoi(temptok);
       if(twoflag==0) nt1=nt2;
       //here apply the offset
       nt1-=offset;
       nt2-=offset;
-      if(nt1<0 || nt1 > NT_N || nt1<0 || nt1 > NT_N ){printf("ERROR: invalid nucleotide index.\n"); exit(ERR_INPUT);}
+      //printf("%d %d\n", nt1, nt2);
+      if(nt1<0 || nt1 > NT_N || nt2<0 || nt2 > NT_N ){printf("ERROR: invalid nucleotide index %d or %d.\n", nt1, nt2); exit(ERR_INPUT);}
       tok=strtok(NULL,",");
       for(i=nt1;i<nt2+1;i++){
 	unfrzlist[i]=1;
@@ -207,6 +211,7 @@ int main(int argc, char **argv){
 	if(tok[chend]=='-'){
 	  twoflag=1;
 	  temptok=realloc(temptok, (chend-chini)*sizeof(char));
+	  temptok[chend-chini]='\0';
 	  strncpy(temptok,tok+chini,chend-chini);
 	  //temptok[chend-chini]=NULL;
 	  //printf("copied %s\n", temptok);
@@ -217,6 +222,7 @@ int main(int argc, char **argv){
 	}
       }
       temptok=realloc(temptok, (chend-chini)*sizeof(char));
+      temptok[chend-chini]='\0';
       strncpy(temptok,tok+chini,chend-chini);
       //temptok[chend-chini]=NULL;
       
@@ -226,7 +232,7 @@ int main(int argc, char **argv){
       //here apply the offset
       nt1-=offset;
       nt2-=offset;
-      if(nt1<0 || nt1 > NT_N || nt1<0 || nt1 > NT_N ){printf("ERROR: invalid nucleotide index.\n"); exit(ERR_INPUT);}
+      if(nt1<0 || nt1 > NT_N || nt2<0 || nt2 > NT_N ){printf("ERROR: invalid nucleotide index.\n"); exit(ERR_INPUT);}
       tok=strtok(NULL,",");
       for(i=nt1;i<nt2+1;i++){
 	ntlist[i]=1;
