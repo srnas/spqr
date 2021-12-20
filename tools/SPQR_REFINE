@@ -217,7 +217,7 @@ PDBSELECTED=""
 SELECTED=""
 for cstep in `seq 1 $CLASH_STEPS`; do
     echo "Step $cstep"
-    ./$BINANNOT $mcconf -t > clashtemp
+    ./$BINANNOT -i $mcconf -t > clashtemp
     fc=`grep "No clashes found" clashtemp | wc | awk '{print $1}'`
     if [ "$fc" -eq "1" ] ; then
 	cp configs/chk.last.p$IND.mc ../$SIM1.mc
@@ -332,7 +332,7 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     mcconf=configs/chk.last.p$IND.mc
     for cstep in `seq 1 $CLASH_STEPS`; do
 	echo "Step $cstep"
-	./$BINANNOT $mcconf -t > clashtemp
+	./$BINANNOT -i $mcconf -t > clashtemp
     fc=`grep "No clashes found" clashtemp | wc | awk '{print $1}'`
     if [ "$fc" -eq "1" ] ; then
 	cp configs/chk.last.p$IND.mc ../$SIM1.mc
