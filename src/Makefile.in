@@ -58,8 +58,8 @@ install:
 	./WRITETABLES
 	mv MCEDIT MC2PDB $(localtools)
 	echo $(abspath)
-	sed -i "s:EPATH:$(abspath):g" $(abspath)/example/params.spqr
-	sed -i "s:EPATH:$(abspath):g" $(abspath)/tools/SPQR_REFINE
+	sed -i "s:SPQRPATH:$(abspath):g" $(abspath)/example/params.spqr
+	sed -i "s:SPQRPATH:$(abspath):g" $(abspath)/tools/SPQR_REFINE
 clean:
 	rm -f *.o $(binaries)
 	rm -rf bin
