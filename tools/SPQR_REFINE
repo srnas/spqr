@@ -148,14 +148,21 @@ if [ ! $PDBSTRUCT ] ; then
     exit 1
 fi
 
-#if [ ! $CONVERT ] ; then
+
+
 ISSPQR=` grep 'BASE\|XVEC\|YVEC\|SUGR\|PHOS' $PDBSTRUCT | wc |  awk '{print $1}'`
 if [ "$ISSPQR" -ne "0" ] ; then
     echo "It seems that the input pdb file is in spqr representation. You might want ignore the conversion using the -c option."
     show_usage
     exit 1
+#if [ ! $CONVERT ] ; then
+#    ISSPQR=` grep 'BASE\|XVEC\|YVEC\|SUGR\|PHOS' $PDBSTRUCT | wc |  awk '{print $1}'`
+#    if [ "$ISSPQR" -eq "0" ] ; then
+#	echo "It seems that the input pdb file is in an atomistic representation. You might want to convert it to SPQR format adding the -c option."##
+#	show_usage
+#	exit 1
+#    fi
 fi
-#fi
 
 if [ ! $NAME ] ; then
     NAME=$PDBSTRUCT
@@ -306,8 +313,8 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     
     ########
     #NOW, REMOVE CLASHES ONCE MORE#
-    THISSIM=LR2
-    PREVSIM=LR1
+    THISSIM=$LR2SIM1
+    PREVSIM=$LR1SIM1
     mkdir $DIRNAME/$THISSIM
     MCPARAMSL2=(${MC_PARAMS[@]})
     SAPARAMSL2=(${SA_PARAMS[@]})
