@@ -234,6 +234,7 @@ for cstep in `seq 1 $CLASH_STEPS`; do
     else
 	echo "Trying again..."
 	cp configs/chk.last.p$IND.mc spqr_inits/init.p$IND.mc
+	./$BINCLASH -i $INDMINI >> clash_$INDMINI.out
     fi
 done
 if [  "$PDBSELECTED" ] ; then
@@ -247,7 +248,7 @@ fi
 LNKFLAG=""
 if [ "$LNKRMV" ]; then
     echo "Detecting links between loops..."
-    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o CLASH -p 
+    python SPQR_DLINK.py -i $PDBSELECTED -t $NPSSTRUCT -o CLASH -p > dlink.out 
     if [ -s dlink_CLASH.log ] ; then
 	mv linked_loops_CLASH.lst linked_loops.lst
 	LNKFLAG=1
@@ -348,6 +349,7 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     else
 	echo "Trying again..."
 	cp configs/chk.last.p$IND.mc spqr_inits/init.p$IND.mc
+	./$BINCLASH -i $INDMINI >> clash_$INDMINI.out
     fi
     done
     if [  "$PDBSELECTED" ] ; then
