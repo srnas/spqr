@@ -144,7 +144,8 @@ void MC_read_pdb(int mc_n, double **rx, double **ry, double **rz, int mpi_id, ch
 	sresind=strndup(lline+22,4);tempres=atoi(sresind);free(sresind);
 	tempchain=lline[21];
 	if(at==0) {prevchain=tempchain;prevres=tempres-1;}
-	if((tempchain!=prevchain || tempres!=(prevres+1))) currchain++;
+	//if((tempchain!=prevchain || tempres!=(prevres+1))) currchain++;
+	if((tempchain!=prevchain)) currchain++;
 	//chain=currchain;
 	//prevchain=currchain;prevres=tempres;
       }
