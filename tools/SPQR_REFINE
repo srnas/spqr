@@ -4,7 +4,7 @@ set -e
 echo "SPQR_REFINE: quick structural refinement of PDB files with SPQR."
 
 #PARAMETERS#
-SPQR_PATH=/home/spoblete/data/63_ernwin_selected/spqr
+SPQR_PATH=SPQRPATH
 ENERGY_PATH=$SPQR_PATH/interactions
 BIN_PATH=$SPQR_PATH/bin
 TOOLS_PATH=$SPQR_PATH/tools/python3
@@ -456,6 +456,12 @@ rm $SIM1.mc
 mv final.p00.pdb $DIRNAME.p00.pdb
 mv chk.last.p00.mc $DIRNAME.p00.mc
 mv mini_at_p00.pdb at_$DIRNAME.p00.pdb
+
+
+cd $SIM1
+./$BINANNOT -i ../$DIRNAME.p00.mc -t > ../$DIRNAME.energ
+cd ..
+
 cd ..
 
 echo "Optimization successfully ended."
