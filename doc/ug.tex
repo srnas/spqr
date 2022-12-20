@@ -173,11 +173,11 @@ The \verb -p ~option is for splitting the secondary structure constraint only as
 python SPQR_BBACKMAP.py [ -i <input> ] [ -o <output> ]
 \end{verbatim}
 
-\item \verb SPQR_MINI : A bash script for minimizing the energy of a pdb structure. It requires the definition (in its 6th line) of the path where SPQR is installed. Its syntax is
+\item \verb SPQR_REFINE : A bash script for minimizing the energy of a pdb structure. It requires the definition (in its 6th line) of the path where SPQR is installed. Its syntax is
 \begin{verbatim}
-  SPQR_MINI -i <input_file> [ -o <output_suffix> ] [ -c ]
+  SPQR_REFINE -i <input_file> [ -o <output_suffix> ] [ -c ]
 \end{verbatim}
-It creates three simulations: a minimization of energy with capped potentials to remove clashes; an \cal{E}RMSD minimization with respect to the original structure and a final full-energy minimization. The input can be an all-atom pdb (converted automatically with the \verb -c  ~option) or a SPQR-pdb file.
+It creates three simulations: a minimization of energy with capped potentials to remove clashes; an \cal{E}RMSD minimization with respect to the original structure and a final full-energy minimization. The input can be an all-atom pdb, or a SPQR-pdb file by giving the \verb -c ~option.
 
 \item \verb at.tcl : A \verb tcl ~script which allows to visualize the SPQR representation of a \verb pdb ~ in \verb vmd. It must be loaded from \verb vmd ~ with the command \verb source ~ \verb at.tcl ~once a molecule is already loaded.
   
