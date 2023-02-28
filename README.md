@@ -1,4 +1,4 @@
-## SPQR - SPlit and conQueR for RNA structure prediction!
+# SPQR - SPlit and conQueR for RNA structure prediction!
 
 SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [1].
 
@@ -6,15 +6,16 @@ A nucleotide is represented as two particles: an anisotropic one which stands fo
 <p align="center">
 <img src="https://github.com/srnas/spqr/blob/master/doc/src/rnacg.png" width="200">
 <p>
-# Features
 
-## Interactions
+## Features
+
+### Interactions
 Our energy function makes a geometrically detailed description of canonical and non-canonical base pairs, stacking interactions and even base-phosphate interactions! They are constructed as knowledge-based potentials inspired by the ESCORE function [2].
 
-## Base degrees of freedom
+### Base degrees of freedom
 Also, SPQR allows the definition of different glycosidic bond angle conformations: ANTI, HIGH-ANTI and SYN, and it is able to distinguish between sugar pucker conformations: C3' endo and C2' endo.
 
-## Backmapping procedure
+### Backmapping procedure
 Due to the anisotropic representation of the nucleobases, SPQR allows the reintroduction of atomistic details in the predicted structures through steered-Molecular Dynamics [3].
 
 SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [1].
