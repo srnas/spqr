@@ -4,7 +4,7 @@ SPQR is a coarse-grained representation and energy function for the prediction o
 
 A nucleotide is represented as two particles: an anisotropic one which stands for the nucleoside and a point particle for the phosphate group.
 
-<img src="http://people.sissa.it/~spoblete/webpage/multiscale.png" width="500">
+<img align="center" src="https://github.com/srnas/spqr/blob/master/doc/src/rnacg.png" width="200">
 
 # Features
 
@@ -23,6 +23,17 @@ SPQR has successfully been tested on several structures, including duplexes, hai
 SPQR is implemented in a versatile and clear, bug free C code which is available to download for free. The simulations can run constant temperature Monte Carlo simulations, and use Simulated Annealing and Simulated Tempering algorithms for finding the minimum energy conformations. It also includes a set of analysis tools for making the whole process easier.
 
 We include here a small tutorial for the folding of a small tetraloop hairpin, and a user manual.
+
+# Installing
+After downloading the source, go to the ```src directory and run
+```autoconf
+```./configure
+```make
+```make install
+
+# Getting started
+
+
 
 
 
