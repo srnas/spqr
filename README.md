@@ -3,9 +3,9 @@
 SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [1].
 
 A nucleotide is represented as two particles: an anisotropic one which stands for the nucleoside and a point particle for the phosphate group.
-
-<img align="center" src="https://github.com/srnas/spqr/blob/master/doc/src/rnacg.png" width="200">
-
+<p align="center">
+<img src="https://github.com/srnas/spqr/blob/master/doc/src/rnacg.png" width="200">
+<p>
 # Features
 
 ## Interactions
@@ -25,6 +25,7 @@ SPQR is implemented in a versatile and clear, bug free C code which is available
 We include here a small tutorial for the folding of a small tetraloop hairpin, and a user manual.
 
 # Installing
+
 After downloading the source, go to the ```src directory and run
 ```autoconf
 ```./configure
