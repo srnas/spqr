@@ -1,4 +1,4 @@
-# SPQR - SPlit and conQueR for RNA structure prediction!
+# SPQR - SPlit and conQueR for RNA structure prediction
 
 SPQR is a coarse-grained representation and energy function for the prediction of the three-dimensional structure of RNA from the knowledge of its sequence [1].
 
@@ -20,20 +20,22 @@ Due to the anisotropic representation of the nucleobases, SPQR allows the reintr
 
 SPQR has successfully been tested on several structures, including duplexes, hairpins and junctions [1].
 
-# The code
+## The code
 SPQR is implemented in a versatile and clear, bug free C code which is available to download for free. The simulations can run constant temperature Monte Carlo simulations, and use Simulated Annealing and Simulated Tempering algorithms for finding the minimum energy conformations. It also includes a set of analysis tools for making the whole process easier.
 
 We include here a small tutorial for the folding of a small tetraloop hairpin, and a user manual.
 
-# Installing
+### Installing
 
-After downloading the source, go to the ```src directory and run
-```autoconf
-```./configure
-```make
-```make install
+After downloading the source, go to the `src` directory and run
+```
+autoconf
+./configure
+make
+make install
+```
 
-# Getting started
+### Getting started
 
 
 
