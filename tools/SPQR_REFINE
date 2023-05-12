@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 echo "SPQR_REFINE: quick structural refinement of PDB files with SPQR."
 
@@ -14,19 +13,19 @@ MPROC=$((NPROC - 1))
 INDMINI=0
 IND=`printf %02d $INDMINI`
 CLASH_STEPS=30
-CLASH_NMC=10000
-CLASH_NSA=20
+CLASH_NMC=1000
+CLASH_NSA=10
 CLASH_TSA=2
-ERMSD_NMC=10000
+ERMSD_NMC=100
 ERMSD_NSA=1
 ERMSD_TSA=9
 ERMSD_NTO=$((ERMSD_NMC*ERMSD_NSA))
-ENERG_NMC=10000
-ENERG_NSA=10
+ENERG_NMC=100
+ENERG_NSA=5
 ENERG_TSA=2
-LNKRM_NMC=1000
+LNKRM_NMC=2000
 LNKRM_TMC=9
-LNKRM_STEPS=20
+LNKRM_STEPS=10
 BINCLASH=SPQR_wSA
 BINANNOT=SPQR_ENERG
 BINERMSD=SPQR_eSA
@@ -441,13 +440,15 @@ echo "Energy minimized."
 ######
 #FINAL CHECK#
 if [ "$LNKRMV" ] ; then
-    echo "Checking links for last time."
-    cd $DIRNAME
-    cp $TOOLS_PATH/SPQR_DLINK.py .
-    python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_gauss 
-    python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_pierc -p 
-    rm SPQR_DLINK.py
-    cd ..
+    if [ "LINKDCHECK" ] ; then
+	echo "Checking links for last time."
+	cd $DIRNAME
+	cp $TOOLS_PATH/SPQR_DLINK.py .
+	#python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_gauss 
+	python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_pierc -p 
+	rm SPQR_DLINK.py
+	cd ..
+    fi
 fi
 ########
 #CLEANING

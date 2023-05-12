@@ -252,14 +252,18 @@ int main(int argc, char **argv){
   else {
     printf("Secondary structure taken from file %s\n", ssfilename);
     l=getline(&lline, &st_l, FSECSTR);
+    while(lline[0]=='#')    l=getline(&lline, &st_l, FSECSTR);
     l=getline(&lline, &st_l, FSECSTR);
     l=getline(&lline, &st_l, FSECSTR);
     int cnt=0;
+    
     while(lline[cnt]!='\n'){
+      printf("%c", lline[cnt]);
       if(lline[cnt]=='.'){
 	if(verboseflag)
 	  printf("%d is flippable\n", cnt);
 	is_flipp[cnt]=GLP_BOTH;
+
       }
       else 
 	is_flipp[cnt]=GLP_FIXED;
