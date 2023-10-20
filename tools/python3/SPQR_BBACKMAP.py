@@ -1,33 +1,21 @@
-from math import sqrt
+
 import argparse
 import sys
-N_PARTS_PER_NT=5
-ALLFILE=[]
+import scipy
+from math import sqrt
+from scipy.spatial.transform import Rotation
+import numpy as np
+
 
 parser=argparse.ArgumentParser()
+refflag=False
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
-parser.add_argument("-o","--output", help="Output file",type=str,default="bbm_output.pdb")
+parser.add_argument("-o","--output", help="Output file",type=str,default="mul_output.pdb")
+parser.add_argument("-A","--atreference", help="Reference atomistic pdb file",type=str,default="")
+parser.add_argument("-C","--cgreference", help="Reference spqr pdb file",type=str,default="")
 args=parser.parse_args()
 
-
-
-
-INPUTFILE=args.input
-if INPUTFILE=="":
-    print("ERROR : input file needed.")
-    parser.print_help()
-    exit(1)
-BBMFILE=args.output
-
-
-for line in open(INPUTFILE):
-    nam=line[:4]
-    if(nam.strip()=="ATOM"):
-        ALLFILE.append(line)
-
-
-NATS=len(ALLFILE)
-NNT=NATS//N_PARTS_PER_NT
+NATNT=5
 
 ###########################DATA##########################
 TEMPL_A_A3=["P	-6.207395636331726	-4.363997760912843	0.7389665539851726	",
@@ -480,20 +468,267 @@ TEMPL_U_H2=["P	-2.440288274724436	-5.120728126985013	-1.3427939682998822	",
             "C5	-1.3755915172934539	-0.03406456675421041	0.007481425734991665	",
             "C6	-0.6713554626774282	-1.1740672190019117	0.010726768098886785	"]
 
-#order is base, pucker, glyc - as usual: puck 3,2=0,1; glyc A,H,S=0,1,2
-TEMPLATES=[[[TEMPL_A_A3,TEMPL_A_H3,TEMPL_A_S3],[TEMPL_A_A2,TEMPL_A_H2,TEMPL_A_S2]],
-           [[TEMPL_U_A3,TEMPL_U_H3],[TEMPL_U_A2,TEMPL_U_H2]],
-           [[TEMPL_G_A3,TEMPL_G_H3,TEMPL_G_S3],[TEMPL_G_A2,TEMPL_G_H2,TEMPL_G_S2]],
-           [[TEMPL_C_A3,TEMPL_C_H3],[TEMPL_C_A2,TEMPL_C_H2]] ]
+########################### CG TEMPLATES ###############################
 
-COUNTAT=0
-OUTFILE=open(BBMFILE,"w")
-orig_stdout=sys.stdout
-sys.stdout=OUTFILE
-for i in range(0,NNT):
-    cline=ALLFILE[i*N_PARTS_PER_NT]
-    xline=ALLFILE[i*N_PARTS_PER_NT+1]
-    yline=ALLFILE[i*N_PARTS_PER_NT+2]
+
+CGTEMPL_A_A3 = np.array([
+    [  5.437,-1.755,0.625],
+    [  6.237,-1.159,0.558],
+    [  4.849,-0.999,0.336],
+    [  6.944,-6.161,2.808],
+    [  3.055,-8.587,3.037]
+])
+CGTEMPL_A_A2 = np.array([
+    [  5.437,-1.754,0.625],
+    [  6.237,-1.158,0.558],
+    [  4.850,-0.998,0.336],
+    [  6.944,-6.161,2.806],
+    [  3.728,-8.759,2.684]
+])
+CGTEMPL_A_S3 = np.array([
+    [  5.440,-1.754,0.624],
+    [  6.239,-1.157,0.558],
+    [  4.851,-0.999,0.336],
+    [  7.939,-5.059,1.938],
+    [  9.025,-2.212,5.758]
+])
+CGTEMPL_A_S2 = np.array([
+    [  5.435,-1.755,0.626],
+    [  6.235,-1.159,0.559],
+    [  4.848,-1.000,0.336],
+    [  7.929,-5.061,1.946],
+    [  10.408,-1.993,2.391]
+])
+CGTEMPL_A_H3 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.238,-1.158,0.559],
+    [  4.850,-0.998,0.336],
+    [  6.940,-6.157,2.816],
+    [  5.012,-8.353,-1.597]
+])
+CGTEMPL_A_H2 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.237,-1.158,0.559],
+    [  4.849,-0.998,0.336],
+    [  6.943,-6.157,2.814],
+    [  4.832,-9.396,0.227]
+])
+CGTEMPL_U_A3 = np.array([
+    [  5.437,-1.755,0.625],
+    [  6.237,-1.159,0.558],
+    [  4.849,-0.999,0.336],
+    [  6.944,-6.161,2.808],
+    [  3.055,-8.587,3.037]
+])
+CGTEMPL_U_A2 = np.array([
+    [  5.437,-1.754,0.625],
+    [  6.237,-1.158,0.558],
+    [  4.850,-0.998,0.336],
+    [  6.944,-6.161,2.806],
+    [  3.728,-8.759,2.684]
+])
+CGTEMPL_U_S3 = np.array([
+    [  5.440,-1.754,0.624],
+    [  6.239,-1.157,0.558],
+    [  4.851,-0.999,0.336],
+    [  7.939,-5.059,1.938],
+    [  9.025,-2.212,5.758]
+])
+CGTEMPL_U_S2 = np.array([
+    [  5.435,-1.755,0.626],
+    [  6.235,-1.159,0.559],
+    [  4.848,-1.000,0.336],
+    [  7.929,-5.061,1.946],
+    [  10.408,-1.993,2.391]
+])
+CGTEMPL_U_H3 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.238,-1.158,0.559],
+    [  4.850,-0.998,0.336],
+    [  6.940,-6.157,2.816],
+    [  5.012,-8.353,-1.597]
+])
+CGTEMPL_U_H2 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.237,-1.158,0.559],
+    [  4.849,-0.998,0.336],
+    [  6.943,-6.157,2.814],
+    [  4.832,-9.396,0.227]
+])
+CGTEMPL_C_A3 = np.array([
+    [  5.437,-1.755,0.625],
+    [  6.237,-1.159,0.558],
+    [  4.849,-0.999,0.336],
+    [  6.944,-6.161,2.808],
+    [  3.055,-8.587,3.037]
+])
+CGTEMPL_C_A2 = np.array([
+    [  5.437,-1.754,0.625],
+    [  6.237,-1.158,0.558],
+    [  4.850,-0.998,0.336],
+    [  6.944,-6.161,2.806],
+    [  3.728,-8.759,2.684]
+])
+CGTEMPL_C_S3 = np.array([
+    [  5.440,-1.754,0.624],
+    [  6.239,-1.157,0.558],
+    [  4.851,-0.999,0.336],
+    [  7.939,-5.059,1.938],
+    [  9.025,-2.212,5.758]
+])
+CGTEMPL_C_S2 = np.array([
+    [  5.435,-1.755,0.626],
+    [  6.235,-1.159,0.559],
+    [  4.848,-1.000,0.336],
+    [  7.929,-5.061,1.946],
+    [  10.408,-1.993,2.391]
+])
+CGTEMPL_C_H3 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.238,-1.158,0.559],
+    [  4.850,-0.998,0.336],
+    [  6.940,-6.157,2.816],
+    [  5.012,-8.353,-1.597]
+])
+CGTEMPL_C_H2 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.237,-1.158,0.559],
+    [  4.849,-0.998,0.336],
+    [  6.943,-6.157,2.814],
+    [  4.832,-9.396,0.227]
+])
+CGTEMPL_G_A3 = np.array([
+    [  5.437,-1.755,0.625],
+    [  6.237,-1.159,0.558],
+    [  4.849,-0.999,0.336],
+    [  6.944,-6.161,2.808],
+    [  3.055,-8.587,3.037]
+])
+CGTEMPL_G_A2 = np.array([
+    [  5.437,-1.754,0.625],
+    [  6.237,-1.158,0.558],
+    [  4.850,-0.998,0.336],
+    [  6.944,-6.161,2.806],
+    [  3.728,-8.759,2.684]
+])
+CGTEMPL_G_S3 = np.array([
+    [  5.440,-1.754,0.624],
+    [  6.239,-1.157,0.558],
+    [  4.851,-0.999,0.336],
+    [  7.939,-5.059,1.938],
+    [  9.025,-2.212,5.758]
+])
+CGTEMPL_G_S2 = np.array([
+    [  5.435,-1.755,0.626],
+    [  6.235,-1.159,0.559],
+    [  4.848,-1.000,0.336],
+    [  7.929,-5.061,1.946],
+    [  10.408,-1.993,2.391]
+])
+CGTEMPL_G_H3 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.238,-1.158,0.559],
+    [  4.850,-0.998,0.336],
+    [  6.940,-6.157,2.816],
+    [  5.012,-8.353,-1.597]
+])
+CGTEMPL_G_H2 = np.array([
+    [  5.437,-1.754,0.626],
+    [  6.237,-1.158,0.559],
+    [  4.849,-0.998,0.336],
+    [  6.943,-6.157,2.814],
+    [  4.832,-9.396,0.227]
+])
+
+TEMPLATES=[
+    [[TEMPL_A_A3,TEMPL_A_H3,TEMPL_A_S3],[TEMPL_A_A2,TEMPL_A_H2,TEMPL_A_S2]],
+    [[TEMPL_U_A3,TEMPL_U_H3],[TEMPL_U_A2,TEMPL_U_H2]],
+    [[TEMPL_G_A3,TEMPL_G_H3,TEMPL_G_S3],[TEMPL_G_A2,TEMPL_G_H2,TEMPL_G_S2]],
+    [[TEMPL_C_A3,TEMPL_C_H3],[TEMPL_C_A2,TEMPL_C_H2]]
+]
+
+CGTEMPLATES=[
+    [[CGTEMPL_A_A3,CGTEMPL_A_H3,CGTEMPL_A_S3],[CGTEMPL_A_A2,CGTEMPL_A_H2,CGTEMPL_A_S2]],
+    [[CGTEMPL_U_A3,CGTEMPL_U_H3],[CGTEMPL_U_A2,CGTEMPL_U_H2]],
+    [[CGTEMPL_G_A3,CGTEMPL_G_H3,CGTEMPL_G_S3],[CGTEMPL_G_A2,CGTEMPL_G_H2,CGTEMPL_G_S2]],
+    [[CGTEMPL_C_A3,CGTEMPL_C_H3],[CGTEMPL_C_A2,CGTEMPL_C_H2]]
+]
+
+
+#######################################
+
+
+def read_coords(filename, pdbdata, coords):
+    alldata=[]
+    if filename=="":
+        print("File not found!")
+        exit(1)
+    for line in open(filename):
+        nam=line[:4]
+        if(nam.strip()=="ATOM"):
+            alldata.append(line)
+    currnt=int(alldata[0][22:26].strip())
+    ntcoord,ntline=[],[]
+    for atom in alldata:
+        thisnt=int(atom[22:26].strip())
+        if thisnt!=currnt:
+            currnt=thisnt
+            coords.append(ntcoord)
+            pdbdata.append(ntline)
+            ntcoord,ntline=[],[]
+        ntcoord.append(np.array([float(atom[30:38].strip()), float(atom[38:46].strip()), float(atom[46:54].strip())]) )
+        ntline.append(atom)
+    coords.append(ntcoord)
+    pdbdata.append(ntline)
+
+def center_vec(vecs):
+    #we assume that the vectors are the atoms of a cg nucleotide
+    cmvec=vecs[0]
+    cvecs=[]
+    for v in vecs:
+        cvecs.append(v-cmvec)
+    xvec=cvecs[1]/sqrt(np.dot(cvecs[1],cvecs[1]))
+    yvec=cvecs[2]/sqrt(np.dot(cvecs[2],cvecs[2]))
+    zvec=np.cross(xvec,yvec)
+    zvec=zvec/sqrt(np.dot(zvec,zvec))
+    return [cvecs,cmvec,np.array([xvec,yvec,zvec])]
+    
+def align_on_basis(cgnt, basis):
+    ccg=center_vec(cgnt)
+    rot_vec=[]
+    for av in ccg[0]:
+        aa=np.dot(av,ccg[2][0])
+        bb=np.dot(av,ccg[2][1])
+        cc=np.dot(av,ccg[2][2])
+        rot_av=aa*basis[0]+bb*basis[1]+cc*basis[2]
+        rot_vec.append(rot_av)
+    return [rot_vec,ccg]
+
+def get_rmsd(v1,v2):
+    rmsdv=0
+    for av in range(0,len(v1)):
+        rmsdv=rmsdv+np.dot(v1[av]-v2[av],v1[av]-v2[av])
+    rmsdv=sqrt(rmsdv/float(len(v1)))
+    return rmsdv
+
+def align_and_displace(atom, cgnt, ntdata):
+    #        NEWCOORD=align_and_displace(SELNT,SELCG,NTTBM)    
+    rot_align_av=[]
+    #for av in atnt:
+    
+    dav=atom-cgnt[1][1]
+    aa=np.dot(dav,cgnt[1][2][0])
+    bb=np.dot(dav,cgnt[1][2][1])
+    cc=np.dot(dav,cgnt[1][2][2])
+    rot_at=aa*ntdata[2][0]+bb*ntdata[2][1]+cc*ntdata[2][2]+ntdata[1]
+    #rot_align_av.append(rot_av)
+    return rot_at
+
+
+def perform_brute_backmapping(cgntdata):
+    cline=cgntdata[0]
+    xline=cgntdata[1]
+    yline=cgntdata[2]
     basetyp=cline[17:20].strip()
     resind=int(cline[22:26].strip())
     chain=cline[21].strip()
@@ -507,17 +742,16 @@ for i in range(0,NNT):
     if((temppuck=="3" or temppuck=="2") and (tempglyc=="A" or tempglyc=="H" or tempglyc=="S")):
         puck=temppuck
         glyc=tempglyc
-
-    CM=[float(cline[30:38].strip()), float(cline[38:46].strip()), float(cline[46:54].strip())]
+    CM=np.array([float(cline[30:38].strip()), float(cline[38:46].strip()), float(cline[46:54].strip())])
     rXV=[float(xline[30:38].strip())-CM[0], float(xline[38:46].strip())-CM[1], float(xline[46:54].strip())-CM[2]]
     rYV=[float(yline[30:38].strip())-CM[0], float(yline[38:46].strip())-CM[1], float(yline[46:54].strip())-CM[2]]
     mXV=sqrt(rXV[0]*rXV[0]+rXV[1]*rXV[1]+rXV[2]*rXV[2])
     mYV=sqrt(rYV[0]*rYV[0]+rYV[1]*rYV[1]+rYV[2]*rYV[2])
-    XV=[rXV[0]/mXV,rXV[1]/mXV,rXV[2]/mXV]
-    YV=[rYV[0]/mYV,rYV[1]/mYV,rYV[2]/mYV]
+    XV=np.array([rXV[0]/mXV,rXV[1]/mXV,rXV[2]/mXV])
+    YV=np.array([rYV[0]/mYV,rYV[1]/mYV,rYV[2]/mYV])
     rZV=[XV[1]*YV[2]-XV[2]*YV[1], XV[2]*YV[0]-XV[0]*YV[2], XV[0]*YV[1]-XV[1]*YV[0]]
     mZV=sqrt(rZV[0]*rZV[0]+rZV[1]*rZV[1]+rZV[2]*rZV[2])
-    ZV=[rZV[0]/mZV,rZV[1]/mZV,rZV[2]/mZV]
+    ZV=np.array([rZV[0]/mZV,rZV[1]/mZV,rZV[2]/mZV])
     cpuck,cglyc,cbase=-10,-10,-10
     if(puck=="3"):
         cpuck=0
@@ -537,9 +771,8 @@ for i in range(0,NNT):
         cbase=2
     if(basetyp=="C"):
         cbase=3
-    
-    #coordfile="bbm_templates/"+basetyp+"_"+glyc+puck+".rco"
-    #for resline in open(coordfile):
+    atoutdata,atcoords=[],[]
+    COUNTAT=0
     
     for resline in TEMPLATES[cbase][cpuck][cglyc]:
         reslist=resline.split()
@@ -567,9 +800,77 @@ for i in range(0,NNT):
         resindex='{:4}'.format(resind)
         xpos,ypos,zpos='{:8.3f}'.format(newx),'{:8.3f}'.format(newy),'{:8.3f}'.format(newz)
         line=record+atindex+" "+atname+" "+resname+" "+chindex+resindex+"    "+xpos+ypos+zpos+"  1.00  0.00"
-        print(line)
-        #print "ATOM ", str(COUNTAT ).rjust(5), attype.rjust(4),  str(basetyp).rjust(3), chain, str(resind).rjust(3),"   ",  strX, strY, strZ," 1.00  0.00"
+        atoutdata.append(line)
+        atcoords.append(np.array([newx,newy,newz]))
         COUNTAT=COUNTAT+1
-sys.stdout=orig_stdout
+    #now, the atoms of the cg template must also be centered and aligned
+    cgoutcoords=[]
+    cgnt=CGTEMPLATES[cbase][cpuck][cglyc]
+    cg0=CGTEMPLATES[cbase][cpuck][cglyc][0]
+    cgxV,cgyV=cgnt[1]-cg0,cgnt[2]-cg0
+    cgxV,cgyV=cgxV/np.sqrt(np.dot(cgxV,cgxV)),cgyV/np.sqrt(np.dot(cgyV,cgyV))
+    cgzV=np.cross(cgxV,cgyV)
+    cgzV=cgzV/np.sqrt(np.dot(cgzV,cgzV))
+    
+    for cgat in cgnt:
+        centered=cgat-cg0
+        cgx,cgy,cgz=np.dot(centered,cgxV),np.dot(centered,cgyV),np.dot(centered,cgzV)
+        newcgpos=cgx*XV+cgy*YV+cgz*ZV+CM
+        cgoutcoords.append(newcgpos)
+    return atoutdata,atcoords,cgoutcoords
+
+########################################################################################################################
+DATACGTEMPL,CGTEMPL=[],[]
+DATACG2BM,CG2BM=[],[]
+DATAATTEMPL,ATTEMPL=[],[]
+read_coords(args.input, DATACG2BM, CG2BM)
+if args.atreference!="" and args.cgreference!="":
+    refflag=True
+    read_coords(args.atreference, DATAATTEMPL, ATTEMPL)
+    read_coords(args.cgreference, DATACGTEMPL, CGTEMPL)
+
+
+#### we do cg of reference structure ####
+
+#compare nucleotides
+if refflag:
+    if len(DATACG2BM) != len(DATACGTEMPL) or len(DATACG2BM) != len(DATAATTEMPL):
+        print("Number of nucleotides does not match between structures!")
+        exit(1)
+
+ATIND=0
+OUTFILE=open(args.output,"w")
+for nt in range(0,len(DATACG2BM)):
+    CHAIN=0
+
+    NTTBM=center_vec(CG2BM[nt]) #gets the centered vectors, the displacement and the basis, where the center is the DATACG2BM base - MOVES NT TO THE ORIGIN
+    DATAATNTBBM,ATNTBBM,CGNTBBM=perform_brute_backmapping(DATACG2BM[nt])
+    NTCGBBM=align_on_basis(CGNTBBM, NTTBM[2])
+    rmsdbbm=get_rmsd(NTCGBBM[0],NTTBM[0])
+    rmsdtem=rmsdbbm+1
+    if refflag:
+        NTCGTEM=align_on_basis(CGTEMPL[nt], NTTBM[2]) #centers and aligns vectors with basis.  NTTBM[2] is the basis
+        rmsdtem=get_rmsd(NTCGTEM[0],NTTBM[0]) #NTTBM[0] is the set of centered vectors
+
+    SELNT=ATNTBBM
+    SELLINE=DATAATNTBBM
+    SELCG=NTCGBBM
+    if refflag and rmsdtem<rmsdbbm:
+        SELNT=ATTEMPL[nt]
+        SELLINE=DATAATTEMPL[nt]
+        SELCG=NTCGTEM
+        
+    
+    for atom in range(0,len(SELNT)):
+        atindex='{:>5}'.format(ATIND)
+        atname='{:>4}'.format(SELLINE[atom][12:16].strip())
+        resname='{:>3}'.format(SELLINE[atom][17:20].strip())
+        resindex='{:>4}'.format(nt)
+        NEWCOORD=align_and_displace(SELNT[atom], SELCG, NTTBM)
+        newx,newy,newz=NEWCOORD[0],NEWCOORD[1],NEWCOORD[2]
+        xpos,ypos,zpos='{:8.3f}'.format(newx),'{:8.3f}'.format(newy),'{:8.3f}'.format(newz)
+        NEWLINE=SELLINE[atom][0:6]+atindex+" "+atname+" "+resname+" "+str(CHAIN)+resindex+SELLINE[atom][26:30]+xpos+ypos+zpos+SELLINE[atom][54:56]
+        #SELLINE[atom][11:21]+str(CHAIN)+resindex+SELLINE[atom][26:30]+xpos+ypos+zpos+SELLINE[atom][54:56]
+        ATIND=ATIND+1
+        OUTFILE.write(NEWLINE.strip()+"\n")
 OUTFILE.close()
-#print "ENDMDL"

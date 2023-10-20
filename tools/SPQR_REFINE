@@ -432,8 +432,10 @@ cp $TOOLS_PATH/SPQR_BBACKMAP.py .
 for cgstruct in `ls final.p*`; do
     BBIND=`echo $cgstruct | awk 'BEGIN {FS="."}; {print $2}'`
     python SPQR_BBACKMAP.py -i $cgstruct -o mini_at_$BBIND.pdb
+    python SPQR_BBACKMAP.py -i $cgstruct -o mini_at2_$BBIND.pdb -A ../../$PDBSTRUCT -C ../init.pdb
+    
 done
-cp mini_at_*.pdb ..
+cp mini_at_*.pdb mini_at2_*.pdb ..
 cd ../..
 echo "Energy minimized."
 
@@ -444,7 +446,6 @@ if [ "$LNKRMV" ] ; then
 	echo "Checking links for last time."
 	cd $DIRNAME
 	cp $TOOLS_PATH/SPQR_DLINK.py .
-	#python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_gauss 
 	python SPQR_DLINK.py -i final.p00.pdb -t $SIM1/$NPSSTRUCT -o fcheck_pierc -p 
 	rm SPQR_DLINK.py
 	cd ..
@@ -457,6 +458,7 @@ rm $SIM1.mc
 mv final.p00.pdb $DIRNAME.p00.pdb
 mv chk.last.p00.mc $DIRNAME.p00.mc
 mv mini_at_p00.pdb at_$DIRNAME.p00.pdb
+mv mini_at2_p00.pdb at_$DIRNAME.p00.opt.pdb
 
 
 cd $SIM1
