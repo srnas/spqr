@@ -39,7 +39,8 @@ make install
 
 The binary files will be stored in the `spqr/bin` directory and the tools, in the `spqr/tools` file. A more detailed manual is stored in `spqr/doc`.
 
-## Quick energy minimization
+## Quick energy minimization and scoring
+#For optimizing a structure, remove its topological artifacts or generate a suitable initial configuration for a SPQR simulation#
 
 A simple minimization can be run on a pdb file containing a single-strand of RNA. Copy the `SPQR_REFINE` script into any directory and run
 ```
@@ -60,11 +61,21 @@ source at.tcl
 which can be found in the `tools/` directory.
 
 ## A single run
-Three files are required for running a SPQR simulation : an initial condition, a parameters file and the binary to execute. An initial condition can be generated using the `SPQR_ASSEMBLE.py` script in the `tools/` directory or by preparing an initial condition through the minimization procedure aforementioned. They must be stored in a directory named `spqr_inits/` as `init.pdb` or `init.mc`. Note that the pdb structure must be in SPQR format, which can also be generated using the script `spqr2pdb.py` found in `tools/`. The parameters file must be named `params.spqr`, and specifies the length, saving frequency, energy function and other restraints such as surface or radius of gyration potentials (see documentation) [6]. An example of this file is contained in the `tutorials/single_run/` directory. For a single run, copy the `SPQR_MC` binary from the `bin/` directory and run
+Three files are required for running a SPQR simulation : an initial condition, a parameters file and the binary to execute. An initial condition can be generated using the `SPQR_ASSEMBLE.py` script in the `tools/` directory or by preparing an initial condition through the minimization procedure aforementioned. They must be stored in a directory named `spqr_inits/` as `init.pdb` or `init.mc`.
+The generation of a single strand can be done by running
+```
+python SPQR_ASSEMBLE.py -s <SEQUENCE>
+```
+which generates an `init.pdb` file.
+
+Note that the pdb structure must be in SPQR format, which can also be generated using the script `spqr2pdb.py` found in `tools/` as well.
+
+The parameters file must be named `params.spqr`, and specifies the length, saving frequency, energy function and other restraints such as surface or radius of gyration potentials (see documentation) [6]. An example of this file is contained in the `tutorials/single_run/` directory. For a single run, copy the `SPQR_MC` binary from the `bin/` directory and run
 ```
 ./SPQR_MC [ -i <INDEX> ]
 ```
-The INDEX provided is a positive integer number, optional, which serves as an identifier for running different simulations with the same initial condition but different random seeds.
+The INDEX provided is a positive integer number, optional, which serves as an identifier for running different simulations with the same initial condition but different random seeds. More initial conditions can be specified with the index by naming them properly in the `spqr_inits/` directory (see the user's guide in the `doc/` directory).
+
 The output files are contained in the `configs/` directory, while a copy in pdb format is created in the working directory under the name `final.p<INDEX>.pdb`.
 
 ## Simulated annealing
