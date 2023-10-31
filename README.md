@@ -40,7 +40,7 @@ make install
 The binary files will be stored in the `spqr/bin` directory and the tools, in the `spqr/tools` file. A more detailed manual is stored in `spqr/doc`.
 
 ## Quick energy minimization and scoring
-# For optimizing a structure, remove its topological artifacts or generate a suitable initial configuration for a SPQR simulation
+### For optimizing a structure, remove its topological artifacts or generate a suitable initial configuration for a SPQR simulation
 
 A simple minimization can be run on a pdb file containing a single-strand of RNA. Copy the `SPQR_REFINE` script into any directory and run
 ```
