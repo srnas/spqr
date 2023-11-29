@@ -123,7 +123,7 @@ if WITHSS and ENSUSS:
         stp=stp+" " +str(pair[0])+" "+str(pair[1])
     print(stp)
 
-if WITHSS:
+if WITHSS and ONLYSS:
     for st in STEMS:
         stp="REMARK ERMSD GROUP " + str(KERMSD)
         for nt in st:
