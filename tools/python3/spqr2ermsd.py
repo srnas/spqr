@@ -113,7 +113,7 @@ OUTFILE=open(ERMSDFILE,"w")
 orig_stdout=sys.stdout
 sys.stdout=OUTFILE
 NGROUPS=1
-if WITHSS:
+if WITHSS and ONLYSS:
     NGROUPS=len(STEMS) 
 print("REMARK ERMSD PARAMS "+ str(NGROUPS)+" " + str(RERMSD))
 
