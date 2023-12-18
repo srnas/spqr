@@ -46,7 +46,7 @@ all: 	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  m
 	$(CC) $(CFLAGS)	sim_anneal.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies.o  mc_initialization.o mc_integrate.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_SA -lm
 	$(CC) $(CFLAGS)	sim_anneal.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_wa.o  mc_initialization_wa.o mc_integrate_wa.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd_wa.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_wSA -lm
 	$(CC) $(CFLAGS)	sim_anneal_ea.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_ea.o  mc_initialization_ea.o mc_integrate_ea.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_eSA -lm
-	$(CC) $(CFLAGS) mcedit.o -o MCEDIT
+	$(CC) mcedit.o -o MCEDIT
 	$(CC) $(CFLAGS) mc2pdb.o -o MC2PDB
 
 install:

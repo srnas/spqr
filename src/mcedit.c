@@ -241,10 +241,23 @@ int main(int argc, char **argv){
       chainshift++;
     }
   }
-
-  
-  //for (i=0;i<NT_N;i++) printf("%d ", chainlist[i]);
-  //for(i=0;i<NT_N;i++) printf("%d ", ntlist[i]); printf("\n");
+  //count effective nucleotides
+  int Neffnts=0;
+  for (i=0;i<NT_N;i++){
+    if (ntlist[i]==1)
+      Neffnts++;
+  }
+  int *effnts;
+  effnts=(int *)malloc(sizeof(int)*Neffnts);
+  int effcnt=0;
+  for (i=0;i<NT_N;i++){
+    if (ntlist[i]==1){
+      effnts[effcnt]=i;
+      effcnt++;
+    }
+  }
+  //for(i=0;i<Neffnts;i++) printf("%d  %d\n",i,effnts[i]);
+  //exit(1);
   if((FSECSTR=fopen(ssfilename, "r"))==NULL){
     if(verboseflag)
       printf("No secondary structure in file fasta file found.\n");
@@ -256,31 +269,19 @@ int main(int argc, char **argv){
     l=getline(&lline, &st_l, FSECSTR);
     l=getline(&lline, &st_l, FSECSTR);
     int cnt=0;
+
+    //this loop must be done over the selected/cropped nts
     
     while(lline[cnt]!='\n'){
-      printf("%c", lline[cnt]);
       if(lline[cnt]=='.'){
 	if(verboseflag)
 	  printf("%d is flippable\n", cnt);
-	is_flipp[cnt]=GLP_BOTH;
-
+	is_flipp[effnts[cnt]]=GLP_BOTH;
       }
       else 
-	is_flipp[cnt]=GLP_FIXED;
+	is_flipp[effnts[cnt]]=GLP_FIXED;
       cnt++;
     }
-    /*secstr[ntind_group[gr][i]]=1;
-      for(i=0;i<NT_N;i++){
-      //is_flipp[i]=GLP_FIXED;
-      // is_mob[i]=FR_MOB_FULL;
-      if(secstr[i]!=1){
-      printf("%d is flippable\n", i);
-      is_flipp[i]=GLP_BOTH;
-      }
-      else 
-      is_flipp[i]=GLP_FIXED;
-      }
-    */
   }
   
   ////////////////////////////////////////////////////////////////////////////////

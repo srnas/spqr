@@ -394,7 +394,7 @@ cd $DIRNAME/$THISSIM
 
 if [ "$LNKFLAG" ] ; then
     echo "Since secondary structure is present, the base pairing will be enforced as well."
-    python spqr2ermsd.py -i ../init.pdb -t $NPSSTRUCT -o ermsd_frags.lst -e
+    python spqr2ermsd.py -i ../init.pdb -f $NPSSTRUCT -o ermsd_frags.lst -e
 else
     python spqr2ermsd.py -i ../init.pdb -o ermsd_frags.lst
 fi
