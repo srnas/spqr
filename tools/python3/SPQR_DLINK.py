@@ -34,7 +34,7 @@ if INPUTFILE=="" or SSFILE=="":
 
 ALLSSFILE=[]
 for line in open(SSFILE):
-    if line[0]!=">":
+    if line[0]!=">" and line[0]!="#":
         ALLSSFILE.append(line.strip())
 fullss=list(ALLSSFILE[1])
 NNT=len(fullss)

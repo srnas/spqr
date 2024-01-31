@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
     }
   
   printf("Processor (job) %d starting from time %d\n", mpi_id, mc_i0);
+  
   sa_temp=sa_tmax;
   SA_init_mc_trials(&smc_nt_xyz, &smc_ph_xyz, &smc_nt_ang, MC_NT_XYZ*sa_pow(sa_sfac,sa_resc_times),MC_PH_XYZ*sa_pow(sa_sfac,sa_resc_times),MC_NT_ANGLE*sa_pow(sa_sfac,sa_resc_times));
 
@@ -136,10 +137,12 @@ int main(int argc, char **argv) {
   energy_t=MC_get_energy(nt_n, rx, ry, rz, 3);
   if(sa_ini==0)
     sa_prev_energ=energy_t;
+  
   printf("JOB %d , INITIAL ENERGY IS %lf\n", mpi_id, energy_t);
 #ifdef ERMSDR
   //energy_t+=0.5*ERMSD_PREF*ERMSD_SQ;
   energy_t+=ERMSD_ENERG;
+  MC_write_ermsd_obs(0,energy_t);
 #endif
   for(ann_step=sa_ini;ann_step<sa_NT;ann_step++){
     printf("Step %d on processor %d, temperature set to %lf\n", ann_step, mpi_id, sa_temp);
@@ -164,8 +167,10 @@ int main(int argc, char **argv) {
 #ifdef ERMSDR
       sa_temp_energ-=ERMSD_ENERG;
       //0.5*ERMSD_PREF*ERMSD_SQ;
-      if((i+1)%mc_traj_steps==0)
+      if((i+1)%mc_traj_steps==0){
 	MC_write_ermsd_obs(i+1,energy_t);
+	//printf("%d  %d\n", i, ann_step);
+      }
 #endif
       //if(i==mc_i0+1) sa_this_energ=sa_temp_energ;
       if(sa_this_energ > sa_temp_energ) //find the minimum energy
@@ -203,6 +208,9 @@ int main(int argc, char **argv) {
   //MC_write_pdb("final", mc_n, rx, ry, rz, sa_this_energ, mpi_id);
   MC_write_pdb("final", mc_n, rx, ry, rz, energy_t, mpi_id);
   MC_save_checkpoint(mc_n, rx, ry, rz, -1, energy_t, mpi_id, SA_DATA); //this writes a binary checkpoint
+#ifdef ERMSDR
+  MC_write_ermsd_obs(-1,energy_t);
+#endif
   MC_end(mc_n, rx, ry, rz, i, energy_t, mpi_id);
 
 #ifdef MPIMC

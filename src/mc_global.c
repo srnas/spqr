@@ -264,6 +264,10 @@ double **mc_loop_CM;
 double **mc_loop_clpair;
 double LOOP_K_cmcm;
 double LOOP_K_cmclp;
+double ***mc_loop_vsites;
+int *mc_N_clpairs;
+int ***mc_loop_strand_edges;
+int *mc_N_strands;
 
 /* mc_verlet_lists */
 int *vl_n_pairs;

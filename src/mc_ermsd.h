@@ -20,7 +20,7 @@
 #define LOOP_HP 0
 #define LOOP_ST 1
 #define LOOP_IL 2
-
+#define LOOP_JU 3
 
 #include "mc_global.h"
 #include "mc_utils.h"
@@ -63,8 +63,12 @@ extern int *mc_loop_size;
 extern int *mc_loop_type;
 extern double **mc_loop_CM;
 extern double **mc_loop_clpair;
+extern int *mc_N_clpairs;
 extern double LOOP_K_cmcm;
 extern double LOOP_K_cmclp;
+extern double ***mc_loop_vsites;
+extern int ***mc_loop_strand_edges;
+extern int *mc_N_strands;
 
 void MC_init_ermsd_restr(int);
 void MC_init_ermsd_out(int);
@@ -91,6 +95,6 @@ int nt_is_in_loop(int, int);
 int nts_in_same_link_but_different_loops(int, int);
 void get_real_sugpos(int, int, double*, double*, double*, double*);
 double calc_link_energy(int, double*, double*, double*);
-
+void init_loop_vsites(int, double *, double *, double*);
 double MC_wall_energy(double , double, double);
 #endif
