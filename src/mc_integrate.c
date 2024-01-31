@@ -1517,8 +1517,8 @@ int MC_calculate_local_energy(double *rx, double *ry, double *rz, int nt_c, doub
 	at_ne=N_PARTS_PER_NT*nt2;
 	at_c=N_PARTS_PER_NT*nt_c;
 #ifdef LNKRMV
-	if(in_link[nt_c]<0 || in_link[nt2]<0)
-	  if(nts_in_same_link_but_different_loops(nt_c, nt2)==0)
+	//if(in_link[nt_c]<0 || in_link[nt2]<0)
+	if(nts_in_same_link_but_different_loops(nt_c, nt2)==0)
 #endif
 #ifdef EBUILD
 	    //this is for making nts inside ermsd group invisible. For building models from the scratch
