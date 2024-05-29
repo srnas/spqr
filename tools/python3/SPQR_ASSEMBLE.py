@@ -114,8 +114,13 @@ if(FASTA!=""):
     rawseq=[]
     fastafile=open(FASTA,"r")
     fastablock=fastafile.readlines()
-    fastaseq=fastablock[1].strip()
-    fastasstruct=fastablock[2].strip()
+    fastaclean=[]
+    for ff in fastablock:
+        if ff[0]!="#":
+            fastaclean.append(ff)
+    
+    fastaseq=fastaclean[1].strip()
+    fastasstruct=fastaclean[2].strip()
     if(fastasstruct!=""):
         ssflag=True
     fastafile.close()

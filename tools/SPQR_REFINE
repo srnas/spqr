@@ -12,10 +12,10 @@ NPROC=1
 MPROC=$((NPROC - 1))
 INDMINI=0
 IND=`printf %02d $INDMINI`
-CLASH_STEPS=15
-CLASH_NMC=2000
+CLASH_STEPS=30
+CLASH_NMC=1000
 CLASH_NSA=10
-CLASH_TSA=5
+CLASH_TSA=2
 ERMSD_NMC=100
 ERMSD_NSA=1
 ERMSD_TSA=9
@@ -290,7 +290,6 @@ if [ "$LNKRMV" ] && [ "$LNKFLAG"  ]; then
     NPSSTRUCT=`basename $SSTRUCT`
     cd $DIRNAME/$THISSIM
     
-    #python spqr2ermsd.py -i ../init.pdb -t $NPSSTRUCT -o ermsd_frags.lst -e -k1 0.1 -k2 100
     python SPQR_ASSEMBLE.py -f $NPSSTRUCT -o lnkrm
     rm lnkrm.pdb ; mv ermsd_frags_lnkrm.lst ermsd_frags.lst
     for lstep in `seq 1 $LNKRM_STEPS`; do

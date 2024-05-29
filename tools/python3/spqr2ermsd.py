@@ -11,7 +11,7 @@ RERMSD=100
 parser=argparse.ArgumentParser()
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
 parser.add_argument("-o","--output", help="Output file",type=str,default="out_ermsd_frags.lst")
-parser.add_argument("-t","--sstruct", help="Secondary structure",type=str,default="")
+parser.add_argument("-f","--sstruct", help="Secondary structure",type=str,default="")
 parser.add_argument("-r","--onlystems", help="Only stems",action="store_true")
 parser.add_argument("-e","--ensurestems", help="Ensure integrity of stems",action="store_true")
 parser.add_argument("-k1","--K_ERMSD", help="K ERMSD",type=float,default=KERMSD)
@@ -31,9 +31,16 @@ WITHSS=False
 if args.sstruct != "" :
     ssfile=open(args.sstruct,"r")
     WITHSS=True
-    ssfile.readline()
-    SEQ=ssfile.readline().strip()
-    rawSSTR=list(ssfile.readline().strip())
+    fastablock=ssfile.readlines()
+    fastaclean=[]
+    for ff in fastablock:
+        if ff[0]!="#":
+            fastaclean.append(ff)
+    SEQ=fastaclean[1].strip()
+    rawSSTR=list(fastaclean[2].strip())
+    #ssfile.readline()
+    #SEQ=ssfile.readline().strip()
+    #rawSSTR=list(ssfile.readline().strip())
 ONLYSS=args.onlystems
 ENSUSS=args.ensurestems
 KERMSD=args.K_ERMSD
