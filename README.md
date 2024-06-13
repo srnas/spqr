@@ -53,6 +53,23 @@ The minimization of energy is a good starting point for evaluating the SPQR ener
 If the secondary structure elements such as hairpins, stems and internal loops are entangled, these artifacts can also be removed automatically [5]. In this case, the secondary structure must be provided in a fasta file containing three lines : a comment line, the sequence and the secondary structure in Vienna format, without pseudoknots. The option `-t <SECONDARYSTRUCTURE>` takes care of this.
 Other options can be found in the user's guide and the help message displayed with the `-h` flag.
 
+In the example contained in the folder `tutorials/entanglement` we have an atomistic pdb structure with its secondary structure in Vienna format. The original structure is entangled. With a short energy minimization we can remove this artifact. 
+Optimal parameters in the `SPQR_REFINE` file have been determined. Just make sure that the script has
+```
+CLASH_NMC=2000
+CLASH_NSA=20
+CLASH_TSA=5
+LNKRM_STEPS=20
+```
+keeping the rest of parameters as they come from the source files. The structure can be refined and disentangled using
+```
+./SPQR_REFINE -i entangled.pdb -t entangled.ss -o result
+```
+The final structures are shown below. A better energy minimization can be performed by increasing the length of the simulation for steering the structure towards its initial conformation, by tuning the parameter `ERMSD_NMC`, or minimizing the final energy with the parameter `ENERG_NMC`.
+
+<p align="center">
+<img src="https://github.com/srnas/spqr/blob/master/doc/src/ent-disent.png" width="200">
+<p>
 ## Visualization
 SPQR pdb files can be visualized in VMD. In order to load the topology, a tcl script must be loaded from the console by running
 ```
