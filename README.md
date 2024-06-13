@@ -68,7 +68,7 @@ keeping the rest of parameters as they come from the source files. The structure
 The final structures are shown below. A better energy minimization can be performed by increasing the length of the simulation for steering the structure towards its initial conformation, by tuning the parameter `ERMSD_NMC`, or minimizing the final energy with the parameter `ENERG_NMC`.
 
 <p align="center">
-<img src="https://github.com/srnas/spqr/blob/master/doc/src/ent-disent.png" width="200">
+<img src="https://github.com/srnas/spqr/blob/master/doc/src/ent-disent.png" width="800">
 <p>
 ## Visualization
 SPQR pdb files can be visualized in VMD. In order to load the topology, a tcl script must be loaded from the console by running
