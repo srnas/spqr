@@ -118,7 +118,7 @@ SPQR supports ERMSD restraints [3,7] for imposing secondary structure restraints
 
 [4] P. Kerpedjiev, C. Höner zu Siederdissen and I. L. Hofacker, Predicting RNA 3D structure using a coarse-grain helix-centered model. _RNA_ 21(6):1110-1121, (2015)
 
-[5] B. Thiel, G. Bussi, S. Poblete and I. L. Hofacker, [Link] https://doi.org/10.1093/nar/gkae602
+[5] B. Thiel, G. Bussi, S. Poblete and I. L. Hofacker. _Nucleic Acids Res._ 52(16), e73 (2024) [Link] https://doi.org/10.1093/nar/gkae602
 
 [6] S. Poblete, A. Bozic, M. Kanduc, R. Podgornik and H. V. Guzman, RNA Secondary Structures Regulate Adsorption of Fragments onto Flat Substrates. _ACS Omega_ 6(48):32823-32831 (2021).
 
