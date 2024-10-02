@@ -62,6 +62,9 @@ install:
 	mv MCEDIT MC2PDB $(localtools)
 	echo $(abspath)
 	cat  $(abspath)/tutorials/single_run/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/single_run/params.spqr
+	cat  $(abspath)/tutorials/rnaspider/untangling/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/rnaspider/untangling/params.spqr
+	cat  $(abspath)/tutorials/rnaspider/pulling/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/rnaspider/pulling/params.spqr
+
 	cat $(abspath)/tools/SPQR_REFINE | sed "s:SPQRPATH:$(abspath):g" > temp ; mv temp $(abspath)/tools/SPQR_REFINE
 	chmod +x $(abspath)/tools/SPQR_REFINE
 clean:
