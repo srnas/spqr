@@ -6,8 +6,8 @@ import subprocess
 
 NATNT=5
 SPQR_PATH="SPQRPATH"
-ENERGPATH=SPQR_PATH+"interactions/intrac.btb"
-BINPATH=SPQR_PATH+"bin/"
+ENERGPATH=SPQR_PATH+"/interactions/intrac.btb"
+BINPATH=SPQR_PATH+"/bin/"
 CLASHSTEPS=5
 def run_commands(command, where):
     commout=[]
@@ -166,7 +166,7 @@ else:
 
 
 pdbstruct01=DIR01+CLASHDIR+"/final.p"+IND+".pdb"
-struct01=DIR01+CLASHDIR+"/configs/chk.last.p"+IND+"01.mc"
+struct01=DIR01+CLASHDIR+"/configs/chk.last.p"+IND+".mc"
 TEMPLATEFILE=pdbstruct01
 
 
