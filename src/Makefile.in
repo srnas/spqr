@@ -12,7 +12,7 @@ localsrc=../src
 localtools=../tools
 localexample=../example
 SPQRFLAGS=-DFROZEN
-binaries=SPQR_MC SPQR_eMC SPQR_cMC SPQR_mMC SPQR_ENERG WRITETABLES SPQR_SA SPQR_cSA SPQR_wSA SPQR_eSA MCEDIT MC2PDB
+binaries=SPQR_MC SPQR_eMC SPQR_cMC SPQR_mMC SPQR_ENERG WRITETABLES SPQR_SA SPQR_cSA SPQR_wSA SPQR_eSA SPQR_mSA MCEDIT MC2PDB
 
 %.o : %.c
 	$(CC) $(CFLAGS) $(SPQRFLAGS)  -o $@ -c $<
@@ -49,22 +49,21 @@ all: 	mpi_mc.o mc_checkpoints.o  mc_end.o  mc_energies.o  mc_initialization.o  m
 	$(CC) $(CFLAGS)	sim_anneal.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_wa.o  mc_initialization_wa.o mc_integrate_wa.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd_wa.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_wSA -lm
 	$(CC) $(CFLAGS)	sim_anneal_ea.o sa_impl.o mc_checkpoints_sa.o mc_end.o  mc_energies_ea.o  mc_initialization_ea.o mc_integrate_ea.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd_ea.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_eSA -lm
 	$(CC) $(CFLAGS)	sim_anneal_ca.o sa_impl.o mc_checkpoints_ca.o mc_end.o  mc_energies_ca.o  mc_initialization_ca.o mc_integrate_ca.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd_ca.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_cSA -lm
+	$(CC) $(CFLAGS)	sim_anneal_mi.o sa_impl.o mc_checkpoints_mi.o mc_end.o  mc_energies_mi.o  mc_initialization_mi.o mc_integrate_mi.o  mc_verlet_lists.o  mc_global.o mc_base_pairing.o  mc_utils.o mc_ermsd.o -DSPQR_DATA=$(datadir)/spqr -o SPQR_mSA -lm
 	$(CC) mcedit.o -o MCEDIT
 	$(CC) $(CFLAGS) mc2pdb.o -o MC2PDB
 
 install:
 	rm -rf $(localbin)
 	mkdir -p $(localbin)
-	mv SPQR_MC SPQR_eMC SPQR_bMC SPQR_cMC SPQR_mMC SPQR_ENERG SPQR_SA SPQR_cSA SPQR_wSA SPQR_eSA $(localbin)
+	mv SPQR_MC SPQR_eMC SPQR_bMC SPQR_cMC SPQR_mMC SPQR_ENERG SPQR_SA SPQR_cSA SPQR_wSA SPQR_eSA SPQR_mSA $(localbin)
 	rm -rf $(localinteractions)
 	mkdir -p $(localinteractions)
 	./WRITETABLES
 	mv MCEDIT MC2PDB $(localtools)
 	echo $(abspath)
 	cat  $(abspath)/tutorials/single_run/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/single_run/params.spqr
-	cat  $(abspath)/tutorials/rnaspider/untangling/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/rnaspider/untangling/params.spqr
-	cat  $(abspath)/tutorials/rnaspider/pulling/params.spqr | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tutorials/rnaspider/pulling/params.spqr
-
+	cat  $(abspath)/tools/disentangle_from_RNAspider.py | sed "s:SPQRPATH:$(abspath):g" > temp; mv temp $(abspath)/tools/disentangle.py
 	cat $(abspath)/tools/SPQR_REFINE | sed "s:SPQRPATH:$(abspath):g" > temp ; mv temp $(abspath)/tools/SPQR_REFINE
 	chmod +x $(abspath)/tools/SPQR_REFINE
 clean:
