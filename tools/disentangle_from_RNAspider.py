@@ -5,7 +5,7 @@ import os
 import subprocess
 
 NATNT=5
-SPQR_PATH=SPQRPATH
+SPQR_PATH="SPQRPATH"
 ENERGPATH=SPQR_PATH+"interactions/intrac.btb"
 BINPATH=SPQR_PATH+"bin/"
 CLASHSTEPS=5
