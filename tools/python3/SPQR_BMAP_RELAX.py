@@ -313,12 +313,12 @@ def need_phos_relax(coords,atdata,refcoords,refdata):
     return res
 
     
-def relax_dinucleotide(coords,atdata,mobile,refcoords,refdata,glpdata):
+def relax_dinucleotide(coords,atdata,mobile,refcoords,refdata,glpdata,mcsweeps):
     KT=0.0
     BONDLISTS, ANGLELISTS, DIHEDRALLISTS, EVLISTS=create_interaction_lists(coords,atdata,glpdata)
     for ii in range(10):
         if need_phos_relax(coords,atdata,refcoords,refdata):
-            for jj in range(100):
+            for jj in range(mcsweeps):
                 mc_sweep(KT,coords,atdata,BONDLISTS,ANGLELISTS,DIHEDRALLISTS,EVLISTS,mobile,refcoords,refdata)
         else: break
     return coords
@@ -364,25 +364,27 @@ def update_coords(fullcoords,dnt,coords,atdata):
 parser=argparse.ArgumentParser()
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
 parser.add_argument("-r","--reference", help="Reference spqr pdb file",type=str,default="")
-parser.add_argument("-o", "--output", help="Output file", type=str, default="mc_mini.pdb")
+#parser.add_argument("-o", "--output", help="Output file", type=str, default="mc_mini.pdb")
+parser.add_argument("-s", "--steps", help="Number of MC sweeps", type=int, default=100)
 args=parser.parse_args()
+MCSWEEPS=args.steps
 if args.input=="" or args.reference=="":
     parser.print_help()
     exit(1)
 FULLCOORDS,FULLDATA,NNT, TEMPDATA=read_pdb(args.input)
 REFCOORDS,REFDATA,REFNNT,GLPDATA=read_pdb(args.reference)
 
-OUTFILE=open(args.output, "w")
-write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
+#OUTFILE=open(args.output, "w")
+#write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
 #big loop
 for dnt in range(NNT-1):
     COORDS,ATDATA,MOBILE,REFDNTCOORDS,REFDNTDATA,CGGLP=get_dinucleotide(dnt,FULLCOORDS,FULLDATA,REFCOORDS,REFDATA,GLPDATA)
-    print("DNT ", dnt)
-    relax_dinucleotide(COORDS,ATDATA,MOBILE,REFDNTCOORDS,REFDNTDATA,CGGLP)
+    print("Fixing DNT ", dnt)
+    relax_dinucleotide(COORDS,ATDATA,MOBILE,REFDNTCOORDS,REFDNTDATA,CGGLP,MCSWEEPS)
     FULLCOORDS=update_coords(FULLCOORDS,dnt,COORDS,ATDATA)
-    write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
+    #write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
 #boltzmann constant is 0.0083144621kJ mol−1K−1 . 300K makes kT=2.49433863
-OUTFILE.close()
+#OUTFILE.close()
 
 OUTFILE=open("last"+args.output, "w")
 write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
