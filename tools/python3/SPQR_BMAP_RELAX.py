@@ -364,7 +364,7 @@ def update_coords(fullcoords,dnt,coords,atdata):
 parser=argparse.ArgumentParser()
 parser.add_argument("-i","--input", help="Input file",type=str,default="")
 parser.add_argument("-r","--reference", help="Reference spqr pdb file",type=str,default="")
-#parser.add_argument("-o", "--output", help="Output file", type=str, default="mc_mini.pdb")
+parser.add_argument("-o", "--output", help="Output file", type=str, default="mc_mini.pdb")
 parser.add_argument("-s", "--steps", help="Number of MC sweeps", type=int, default=100)
 args=parser.parse_args()
 MCSWEEPS=args.steps
@@ -386,6 +386,6 @@ for dnt in range(NNT-1):
 #boltzmann constant is 0.0083144621kJ mol−1K−1 . 300K makes kT=2.49433863
 #OUTFILE.close()
 
-OUTFILE=open("last"+args.output, "w")
+OUTFILE=open(args.output, "w")
 write_full_coords(FULLCOORDS,FULLDATA,OUTFILE)
 OUTFILE.close()
