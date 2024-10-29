@@ -252,7 +252,9 @@ comm.append("cp "+SPQR_PATH+"/tools/python3/SPQR_BBACKMAP.py "+ WDIR )
 outbm1=run_commands(comm,".")
 comm=[]
 BMAPPEDNAME="AA_"+WDIR+".pdb"
+SPQRBMAPPEDNAME="SPQR_"+WDIR+".pdb"
 print( DIR03+ERMSDDIR+pdbfile)
+comm.append("cp " + "03_energy_mini"+ERMSDDIR+pdbfile+ " "+SPQRBMAPPEDNAME)
 comm.append("python SPQR_BBACKMAP.py -i "+ "03_energy_mini"+ERMSDDIR+pdbfile + " -o "+BMAPPEDNAME)
 outbm1=run_commands(comm,WDIR)
 print("All-atom structure saved in ", WDIR+"/"+BMAPPEDNAME)
