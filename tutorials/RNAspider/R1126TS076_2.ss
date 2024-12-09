@@ -1,0 +1,3 @@
+>sequence and secondary structure in vienna format
+GGAAUCUCGCCCGAUGUUCGCAUCGGGAUUUGCAGGUCCAUGGAUUACACCAUGCAACGCAGACCUGUAGAUGCCACGCUAGCCGUGGUGAGGGUCGGGUCCAGAUGUCAUUCGACUUUAACGCGCCUAAGCGUUGAAGGCGUGUUAGAGCAGAUAGUUCGCUAUCUGGGGAGCCUGUUCGCAGGCUCAGGAGCCUUCGGGCUCCUAGCGCUAUUACCCCGGACACCACCGGGCAGACAAGUAAUGGUGCUCCUCGAAUGACUUCUGUUGAGUAGAGUGUGGGCUCCGCGGCUAGUGUGCACCUUAGCGGUGAAUGUCUGACACCGUUAAGGUGGUUACUCUUCGGAGUAACGCCGAGAUUCC
+(((((((((((((..((..))..))))((.(.((((((.((((......))))........)))))).).))..(((.(((((((.((......((...((((((.(((((((.....((((.(((((.........))))).))))...(((((((....)))))))..(.(((((....))))).)((((((......))))))............(((........))).......................))))))).))))..))...)).........)).))))))).))).((((((.(((((.........))))).)))))).((.....(..).....))..)))))))))
