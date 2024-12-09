@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   }
 
   if(aflag+tflag+fflag+rflag+sflag>1){
-    sprintf(stderr, "Invalid combination of options.\n");
+    fprintf(stderr, "Invalid combination of options.\n");
     show_usage();
     exit(ERR_INPUT);
   }
