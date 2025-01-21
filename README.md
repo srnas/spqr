@@ -57,12 +57,59 @@ With an entangled pdb structure, its secondary structure (.ss file) and the outp
 ```
 python disentangle_from_RNAspider.py -i $SPIDERFILE.csv -o refined -p $PDBFILE.pdb -t $SEC_STRUCT.ss
 ```
+(For the moment, the length of the simulations for disentanglement and refinement can be adjusted in the script by modifying the values `disentparams['MC_STEPS']='6000'` (line 187) and `ermsdparams['MC_STEPS']='500'` (line 239).
 The output structures will be in the directory `refined`. Its all-atom version, in `refined/AA_refined.pdb` can be improved a bit before an energy minization with Molecular Dynamics, which is highly recommended. By running
 ```
 python SPQR_BMAP_RELAX.py -i AA_refined.pdb -r SPQR_refined.pdb -o AA_better.pdb
 ```
 with the tools provided in the `tools/` directory.
 An example of an entangled structure, together with the csv and secondary structure, is found in the directory `tutorials/RNAspider` , ready to be disentangled!
+
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/AA_ORIG.png" alt="Figure 1" width="300">
+      <br>
+      <em>All-atom structure, entangled</em>
+    </td>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/CG_orig.png" alt="Figure 2" width="300">
+      <br>
+      <em>CG structure, entangled</em>
+    </td>
+  </tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/CG_entangl.png" alt="Figure 1" width="300">
+      <br>
+      <em>Zoomed entanglement</em>
+    </td>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/disentangl.gif" alt="Figure 2" width="500">
+      <br>
+      <em>Disentanglement and refinement process</em>
+    </td>
+  </tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/CG_refi.png" alt="Figure 1" width="300">
+      <br>
+      <em>Disentangled CG structure</em>
+    </td>
+    <td align="center">
+      <img src="https://github.com/srnas/spqr/blob/master/doc/src/AA_refi.png" alt="Figure 2" width="300">
+      <br>
+      <em>Disentangled and refined all-atom structure</em>
+    </td>
+  </tr>
+</table>
 
 ## Visualization
 SPQR pdb files can be visualized in VMD. In order to load the topology, a tcl script must be loaded from the console by running
