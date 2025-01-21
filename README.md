@@ -57,7 +57,8 @@ With an entangled pdb structure, its secondary structure (.ss file) and the outp
 ```
 python disentangle_from_RNAspider.py -i $SPIDERFILE.csv -o refined -p $PDBFILE.pdb -t $SEC_STRUCT.ss
 ```
-(For the moment, the length of the simulations for disentanglement and refinement can be adjusted in the script by modifying the values `disentparams['MC_STEPS']='6000'` (line 187) and `ermsdparams['MC_STEPS']='500'` (line 239).
+(For the moment, the length of the simulations for disentanglement and refinement can be adjusted in the script by modifying the values `disentparams['MC_STEPS']='6000'` (line 187) and `ermsdparams['MC_STEPS']='500'` (line 239) ).
+
 The output structures will be in the directory `refined`. Its all-atom version, in `refined/AA_refined.pdb` can be improved a bit before an energy minization with Molecular Dynamics, which is highly recommended. By running
 ```
 python SPQR_BMAP_RELAX.py -i AA_refined.pdb -r SPQR_refined.pdb -o AA_better.pdb
